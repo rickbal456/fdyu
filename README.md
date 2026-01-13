@@ -1,20 +1,26 @@
 # AIKAFLOW
 
-A node-based drag-and-drop web application for creating and executing AI video workflows.
+A node-based drag-and-drop web application for creating and executing AI video workflows with multi-language support and integrated payment system.
 
-![AIKAFLOW](https://via.placeholder.com/800x400?text=AIKAFLOW+Screenshot)
+![AIKAFLOW](https://placehold.co/800x400?text=AIKAFLOW+Screenshot)
 
 ## Features
 
 - 🎨 **Visual Workflow Editor** - Drag-and-drop nodes to build AI video pipelines
 - 🔗 **Node Connections** - Connect nodes with bezier curves for intuitive flow visualization
-- 🎬 **AI Video Generation** - Text-to-video, image-to-video, and more
+- 🎬 **AI Video Generation** - Text-to-video, image-to-video (10-15s), and more
 - 🎵 **Audio Processing** - Music generation, voice cloning, text-to-speech
-- ✂️ **Video Editing** - Merge, trim, add audio, subtitles, and effects
+- ✂️ **Video Editing** - Merge, trim, crop, overlay, speed control, and effects
 - 📦 **Multiple AI Providers** - RunningHub.ai, Kie.ai (Suno), JsonCut.com
 - ☁️ **Cloud Storage** - BunnyCDN integration for media storage
-- 🔐 **Secure Authentication** - Session-based auth with API key support
+- 🔐 **Secure Authentication** - Session-based auth with Google OAuth and API key support
+- 💳 **Credit System** - Integrated payment with PayPal, Bank Transfer, and QRIS
+- 🌐 **Multi-Language** - English, Indonesian (Bahasa), and Arabic with RTL support
 - 📱 **Responsive Design** - Works on desktop and tablet devices
+- 🔌 **Plugin System** - Extensible architecture with plugin support
+- 👥 **Social Media Integration** - Post directly to Instagram, TikTok, Facebook, YouTube, X, LinkedIn, Pinterest, Bluesky, and Threads via Postforme API
+- 🔗 **Workflow Sharing** - Share workflows as read-only links
+- 🎁 **Invitation System** - Referral program with credit rewards
 
 ## Requirements
 
@@ -24,6 +30,7 @@ A node-based drag-and-drop web application for creating and executing AI video w
 - cURL extension
 - JSON extension
 - PDO MySQL extension
+- Composer (for dependencies)
 
 ## Quick Start
 
@@ -34,38 +41,44 @@ git clone https://github.com/yourusername/aikaflow.git
 cd aikaflow
 ```
 
-### 2. Configure Environment
+### 2. Install Dependencies
+
+```bash
+composer install
+```
+
+### 3. Configure Environment
 
 ```bash
 cp .env.example .env
 # Edit .env with your database and API credentials
 ```
 
-### 3. Create Database
+### 4. Create Database
 
 ```sql
 CREATE DATABASE aikaflow CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 GRANT ALL PRIVILEGES ON aikaflow.* TO 'your_user'@'localhost';
 ```
 
-### 4. Run Installation
+### 5. Run Installation
 
 Open `http://yourdomain.com/install.php` in your browser and follow the prompts.
 
-### 5. Delete Installation File
+### 6. Delete Installation File
 
 ```bash
 rm install.php
 ```
 
-### 6. Configure Cron (Optional but Recommended)
+### 7. Configure Cron (Optional but Recommended)
 
 ```bash
 # Add to crontab
 * * * * * php /path/to/aikaflow/cron.php >> /path/to/aikaflow/logs/cron.log 2>&1
 ```
 
-### 7. Start Background Worker
+### 8. Start Background Worker
 
 ```bash
 # Using the shell script
@@ -87,21 +100,49 @@ sudo supervisorctl update
 | `APP_URL` | Application URL | `http://localhost` |
 | `APP_DEBUG` | Enable debug mode | `false` |
 | `DB_HOST` | Database host | `localhost` |
+| `DB_PORT` | Database port | `3306` |
 | `DB_NAME` | Database name | `aikaflow` |
 | `DB_USER` | Database user | `root` |
 | `DB_PASS` | Database password | - |
-| `RUNNINGHUB_API_KEY` | RunningHub.ai API key | - |
-| `KIE_API_KEY` | Kie.ai API key | - |
-| `JSONCUT_API_KEY` | JsonCut.com API key | - |
+| `SESSION_SECURE` | Use secure cookies (HTTPS) | `false` |
 | `BUNNY_STORAGE_ZONE` | BunnyCDN storage zone | - |
 | `BUNNY_ACCESS_KEY` | BunnyCDN access key | - |
+| `BUNNY_STORAGE_URL` | BunnyCDN storage URL | `https://storage.bunnycdn.com` |
+| `BUNNY_CDN_URL` | BunnyCDN public URL | - |
 
-### API Keys
+### API Keys Configuration
 
-1. **RunningHub.ai** - Sign up at [runninghub.ai](https://runninghub.ai)
-2. **Kie.ai** - Sign up at [kie.ai](https://kie.ai)
-3. **JsonCut.com** - Sign up at [jsoncut.com](https://jsoncut.com)
-4. **BunnyCDN** - Sign up at [bunny.net](https://bunny.net)
+API keys can be configured in two ways:
+
+1. **Administration Panel** (Settings → Integrations)
+   - RunningHub.ai API Key
+   - Kie.ai API Key
+   - JsonCut.com API Key
+   - Postforme API Key (for social media posting)
+   - Google OAuth credentials
+
+2. **Per-Node Configuration** - Override global keys for specific nodes
+
+### Payment Methods
+
+Configure payment methods in Administration → Credits → Payment Methods:
+
+1. **PayPal** - Enter Client ID and Secret
+2. **Bank Transfer** - Configure bank account details
+3. **QRIS** - Upload QR code image for Indonesian e-wallet payments
+
+### Social Media Integration
+
+Connect social accounts in Settings → Social Accounts:
+- Instagram
+- TikTok
+- Facebook
+- YouTube
+- X (Twitter)
+- LinkedIn
+- Pinterest
+- Bluesky
+- Threads
 
 ## Usage
 
@@ -112,10 +153,18 @@ sudo supervisorctl update
 3. Connect node outputs to inputs by clicking and dragging
 4. Configure node properties in the right panel
 5. Click "Run" to execute the workflow
+6. View results in the Gallery or History panel
+
+### Sharing Workflows
+
+1. Click the Share button on the canvas
+2. Toggle "Enable Share Link"
+3. Click "Generate Share Link"
+4. Copy and share the link (recipients can view but not edit or run)
 
 ### API Access
 
-Use your API key to execute workflows programmatically:
+Generate your API key in Settings → API, then use it to execute workflows programmatically:
 
 ```bash
 curl -X POST https://yourdomain.com/api/workflows/execute.php \
@@ -134,6 +183,8 @@ curl -X POST https://yourdomain.com/api/workflows/execute.php \
 | `POST` | `/api/auth/login.php` | User login |
 | `POST` | `/api/auth/logout.php` | User logout |
 | `GET` | `/api/auth/me.php` | Get current user |
+| `GET` | `/api/auth/google.php` | Google OAuth login |
+| `GET` | `/api/auth/google-callback.php` | Google OAuth callback |
 
 #### Workflows
 
@@ -148,6 +199,33 @@ curl -X POST https://yourdomain.com/api/workflows/execute.php \
 | `GET` | `/api/workflows/status.php?id={id}` | Get execution status |
 | `POST` | `/api/workflows/cancel.php` | Cancel execution |
 | `GET` | `/api/workflows/history.php` | Execution history |
+
+#### Credits & Payments
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/credits/balance.php` | Get credit balance |
+| `GET` | `/api/credits/packages.php` | List credit packages |
+| `POST` | `/api/credits/topup.php` | Create top-up request |
+| `GET` | `/api/credits/history.php` | Transaction history |
+| `POST` | `/api/credits/apply-coupon.php` | Apply coupon code |
+| `POST` | `/api/payments/paypal-create.php` | Create PayPal order |
+| `POST` | `/api/payments/paypal-capture.php` | Capture PayPal payment |
+
+#### Social Media
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/social/accounts.php` | List connected accounts |
+| `POST` | `/api/social/connect.php` | Get OAuth URL for platform |
+| `DELETE` | `/api/social/accounts.php?id={id}` | Disconnect account |
+
+#### Invitations
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/invitations/code.php` | Get invitation code and stats |
+| `POST` | `/api/invitations/code.php` | Apply invitation code |
 
 #### Media
 
@@ -166,6 +244,19 @@ curl -X POST https://yourdomain.com/api/workflows/execute.php \
 | `POST` | `/api/user/regenerate-api-key.php` | Regenerate API key |
 | `POST` | `/api/user/change-password.php` | Change password |
 
+#### Administration (Admin Only)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/admin/users.php` | List all users |
+| `POST` | `/api/admin/users.php` | Create user |
+| `PUT` | `/api/admin/users.php` | Update user |
+| `DELETE` | `/api/admin/users.php?id={id}` | Delete user |
+| `GET` | `/api/admin/settings.php` | Get site settings |
+| `POST` | `/api/admin/settings.php` | Update site settings |
+| `GET` | `/api/admin/credits.php` | Get credit requests |
+| `POST` | `/api/admin/credits.php` | Approve/reject request |
+
 ## Node Types
 
 ### Input Nodes
@@ -181,47 +272,103 @@ curl -X POST https://yourdomain.com/api/workflows/execute.php \
 
 | Node | Description | Inputs | Outputs |
 |------|-------------|--------|---------|
-| **Text to Image** | Generate images from prompts | Prompt | Image |
-| **Image to Video** | Animate static images | Image | Video |
-| **Text to Video** | Generate video from text | Prompt | Video |
-| **Text to Speech** | Convert text to audio | Text | Audio |
-| **Music Generation** | AI music creation (Suno) | Prompt | Audio |
-
-### Audio Nodes
-
-| Node | Description | Inputs | Outputs |
-|------|-------------|--------|---------|
-| **Audio Merge** | Combine audio tracks | Audio 1, Audio 2 | Audio |
-| **Audio Trim** | Cut audio clips | Audio | Audio |
-| **Voice Clone** | Clone voices | Sample, Text | Audio |
-| **Speech to Text** | Transcription | Audio | Text |
+| **Image to Video V1** | Animate static images (10-15s) | Image, Motion Prompt | Video |
 
 ### Editing Nodes
 
 | Node | Description | Inputs | Outputs |
 |------|-------------|--------|---------|
-| **Video Merge** | Combine videos | Video 1, Video 2 | Video |
-| **Video Trim** | Cut video clips | Video | Video |
-| **Add Audio** | Add audio to video | Video, Audio | Video |
-| **Add Subtitles** | Overlay captions | Video, Text | Video |
-| **Resize/Crop** | Change dimensions | Video | Video |
-| **Filters & Effects** | Visual effects | Video | Video |
+| **Video Merge** | Combine videos sequentially | Video 1, Video 2 | Video |
+| **Video Trim** | Cut video clips | Video, Start, End | Video |
+| **Video Crop** | Crop video dimensions | Video | Video |
+| **Video Overlay** | Overlay video on another | Background, Overlay | Video |
+| **Video Reverse** | Reverse video playback | Video | Video |
+| **Video Speed** | Change playback speed | Video, Speed | Video |
+| **Text Overlay** | Add text to video | Video, Text | Video |
+| **Audio Volume** | Adjust audio volume | Video, Volume | Video |
+| **Extract Audio** | Extract audio from video | Video | Audio |
 
-### Output Nodes
+### Social Media Nodes
 
-| Node | Description | Inputs |
-|------|-------------|--------|
-| **Video Output** | Export MP4 | Video |
-| **Image Output** | Export PNG/JPG | Image |
-| **Audio Output** | Export MP3/WAV | Audio |
+| Node | Description | Inputs | Outputs |
+|------|-------------|--------|---------|
+| **Social Post** | Publish to social media | Video/Image, Caption, Accounts | Post Result |
 
 ### Utility Nodes
 
 | Node | Description | Inputs | Outputs |
 |------|-------------|--------|---------|
+| **Entry** | Workflow entry point | - | Flow |
 | **Delay** | Wait timer | Any | Any |
-| **Condition** | If/else logic | Any | True, False |
-| **Loop** | Repeat nodes | Any | Any, Iteration |
+
+## Plugins
+
+AIKAFLOW uses a plugin system for extensibility. Plugins are located in the `plugins/` directory.
+
+### Core Plugins
+
+- **aflow-api** - API access modal
+- **aflow-credits** - Credit management and top-up
+- **aflow-credits-qris** - QRIS payment integration
+- **aflow-invitation** - Referral system
+- **aflow-share** - Workflow sharing
+- **aflow-social-post** - Social media integration
+- **aflow-i2v-v1** - Image to Video generation
+- **aflow-edit-*** - Video editing nodes (merge, trim, crop, overlay, etc.)
+- **aflow-input-*** - Input nodes (image, video, audio, text)
+
+### Creating a Plugin
+
+Create a new directory in `plugins/` with the following structure:
+
+```
+plugins/my-plugin/
+├── plugin.json       # Plugin metadata
+├── nodes.js          # Node definitions (optional)
+└── my-plugin.js      # Plugin logic (optional)
+```
+
+Example `plugin.json`:
+
+```json
+{
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "version": "1.0.0",
+  "description": "My custom plugin",
+  "author": "Your Name",
+  "scripts": ["nodes.js", "my-plugin.js"],
+  "styles": [],
+  "dependencies": []
+}
+```
+
+## Internationalization
+
+AIKAFLOW supports multiple languages:
+
+- **English** (default)
+- **Bahasa Indonesia**
+- **العربية (Arabic)** with RTL support
+
+### Language Files
+
+Translation files are located in `assets/lang/`:
+- `en.json` - English
+- `id.json` - Indonesian
+- `ar.json` - Arabic
+
+### Adding Translations
+
+1. Add translation keys to all language files
+2. Use `data-i18n` attribute in HTML:
+   ```html
+   <button data-i18n="common.save">Save</button>
+   ```
+3. Use `window.t()` function in JavaScript:
+   ```javascript
+   const label = window.t('common.save');
+   ```
 
 ## Keyboard Shortcuts
 
@@ -268,7 +415,7 @@ cat .env | grep DB_
 
 #### "External API error"
 
-- Verify API keys are correct in `.env`
+- Verify API keys in Administration → Integrations
 - Check API provider status pages
 - Review `logs/php_errors.log`
 - Test API connection:
@@ -316,7 +463,7 @@ tail -f logs/worker.log
 # Fix file permissions
 find . -type f -exec chmod 644 {} \;
 find . -type d -exec chmod 755 {} \;
-chmod 775 temp/ logs/
+chmod 775 temp/ logs/ uploads/
 chown -R www-data:www-data .
 ```
 
@@ -327,6 +474,7 @@ chown -R www-data:www-data .
 | PHP Errors | `logs/php_errors.log` | PHP runtime errors |
 | Worker | `logs/worker.log` | Background worker output |
 | Cron | `logs/cron.log` | Scheduled task output |
+| Database | `logs/database.log` | Database connection errors |
 | Apache/Nginx | `/var/log/apache2/` or `/var/log/nginx/` | Web server logs |
 
 ### Debug Mode
@@ -341,91 +489,61 @@ APP_DEBUG=true
 
 ## Development
 
-### Running Tests
-
-```bash
-# API tests
-php tests/test-api.php
-
-# Frontend tests (run in browser console on editor page)
-# Copy and paste contents of tests/test-nodes.js
-```
-
-### Adding New Node Types
-
-1. Add node definition to `assets/js/nodes.js`:
-
-```javascript
-'my-custom-node': {
-    type: 'my-custom-node',
-    category: 'editing', // input, generation, audio, editing, output, utility
-    name: 'My Custom Node',
-    description: 'Description of what it does',
-    icon: 'lucide-icon-name',
-    inputs: [
-        { id: 'input1', type: 'video', label: 'Input Video' }
-    ],
-    outputs: [
-        { id: 'output1', type: 'video', label: 'Output Video' }
-    ],
-    fields: [
-        {
-            id: 'setting1',
-            type: 'select', // text, textarea, number, select, checkbox, slider, color, file
-            label: 'Setting',
-            default: 'option1',
-            options: [
-                { value: 'option1', label: 'Option 1' },
-                { value: 'option2', label: 'Option 2' }
-            ]
-        }
-    ],
-    preview: {
-        type: 'video',
-        source: 'output'
-    },
-    defaultData: {
-        setting1: 'option1'
-    }
-}
-```
-
-2. Add node to sidebar in `index.php`
-
-3. Add execution logic to `worker.php`:
-
-```php
-case 'my-custom-node':
-    return callExternalApi('jsoncut', 'my-action', [
-        'input_url' => $inputData['input1'] ?? '',
-        'setting' => $inputData['setting1'] ?? 'option1'
-    ]);
-```
-
 ### Project Structure
 
 ```
 aikaflow/
 ├── api/                  # Backend API endpoints
+│   ├── admin/            # Admin endpoints
 │   ├── auth/             # Authentication endpoints
-│   ├── workflows/        # Workflow CRUD & execution
-│   ├── proxy/            # External API proxies
+│   ├── credits/          # Credit system endpoints
+│   ├── invitations/      # Invitation system
 │   ├── media/            # File upload/management
-│   └── user/             # User settings
+│   ├── payments/         # Payment processing
+│   ├── proxy/            # External API proxies
+│   ├── share/            # Workflow sharing
+│   ├── social/           # Social media integration
+│   ├── user/             # User settings
+│   └── workflows/        # Workflow CRUD & execution
 ├── assets/               # Frontend assets
 │   ├── css/              # Stylesheets
-│   └── js/               # JavaScript modules
+│   ├── js/               # JavaScript modules
+│   └── lang/             # Translation files
 ├── includes/             # PHP includes
+│   ├── ApiRateLimiter.php
+│   ├── auth.php          # Authentication
 │   ├── config.php        # Configuration
 │   ├── db.php            # Database connection
-│   └── auth.php          # Authentication
+│   ├── email.php         # Email utilities
+│   ├── LicenseVerifier.php
+│   └── PluginManager.php
+├── plugins/              # Plugin system
+│   ├── aflow-api/
+│   ├── aflow-credits/
+│   ├── aflow-edit-*/     # Editing nodes
+│   ├── aflow-i2v-v1/
+│   ├── aflow-input-*/    # Input nodes
+│   ├── aflow-invitation/
+│   ├── aflow-share/
+│   └── aflow-social-post/
+├── generated/            # Generated content
 ├── logs/                 # Application logs
 ├── temp/                 # Temporary files
-├── tests/                # Test scripts
+├── uploads/              # User uploads
+├── vendor/               # Composer dependencies
 ├── .env                  # Environment config
+├── .gitignore            # Git ignore rules
+├── composer.json         # PHP dependencies
+├── cron.php              # Scheduled tasks
+├── cron-worker.sh        # Worker management script
+├── database.sql          # Database schema
 ├── index.php             # Main editor
-├── worker.php            # Background worker
-└── cron.php              # Scheduled tasks
+├── install.php           # Installation wizard
+├── login.php             # Login page
+├── register.php          # Registration page
+├── supervisor.conf       # Supervisor config
+├── view.php              # Shared workflow viewer
+└── worker.php            # Background worker
 ```
 
 ### Code Style
@@ -448,6 +566,9 @@ aikaflow/
 - [ ] Set up log rotation
 - [ ] Regular security updates
 - [ ] Backup strategy in place
+- [ ] Configure `SESSION_SECURE=true` for HTTPS
+- [ ] Review and restrict file upload types
+- [ ] Set appropriate file permissions
 
 ### Security Headers
 
@@ -462,10 +583,19 @@ Referrer-Policy: strict-origin-when-cross-origin
 
 ### API Authentication
 
-All API endpoints (except `/api/ping.php` and `/api/status.php`) require authentication via:
+All API endpoints (except public endpoints) require authentication via:
 
 1. **Session Cookie** - For browser-based access
 2. **API Key Header** - `X-API-Key: your_key` for programmatic access
+
+### License Verification
+
+AIKAFLOW includes a license verification system that checks:
+- License validity
+- Domain matching
+- Expiration date
+
+License checks are performed locally (fast) with periodic server verification.
 
 ## Performance Optimization
 
@@ -475,7 +605,7 @@ Consider adding:
 
 - **OPcache** for PHP bytecode caching
 - **Redis/Memcached** for session and query caching
-- **CDN** for static assets
+- **CDN** for static assets (BunnyCDN recommended)
 
 ### Database
 
@@ -484,6 +614,7 @@ Consider adding:
 CREATE INDEX idx_workflows_user_updated ON workflows(user_id, updated_at);
 CREATE INDEX idx_executions_user_status ON workflow_executions(user_id, status);
 CREATE INDEX idx_tasks_execution_status ON node_tasks(execution_id, status);
+CREATE INDEX idx_credits_user_created ON credit_transactions(user_id, created_at);
 ```
 
 ### Worker Scaling
@@ -495,6 +626,19 @@ For high-traffic deployments, run multiple workers:
 [program:aikaflow-worker]
 numprocs=4
 process_name=%(program_name)s_%(process_num)02d
+```
+
+## Docker Deployment
+
+```bash
+# Build and run with Docker Compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop containers
+docker-compose down
 ```
 
 ## Contributing
@@ -512,6 +656,9 @@ process_name=%(program_name)s_%(process_num)02d
 git clone https://github.com/yourusername/aikaflow.git
 cd aikaflow
 
+# Install dependencies
+composer install
+
 # Copy development config
 cp .env.development .env
 
@@ -528,24 +675,30 @@ php worker.php
 
 ## Changelog
 
-### v1.0.0 (2024-XX-XX)
+### v1.0.0 (2026-01-XX)
 
 - Initial release
 - Visual node-based workflow editor
-- Support for RunningHub.ai, Kie.ai, JsonCut.com
-- BunnyCDN integration
+- Multi-language support (English, Indonesian, Arabic)
+- Credit system with multiple payment methods
+- Social media integration (9 platforms)
+- Plugin architecture
+- Workflow sharing
+- Invitation/referral system
+- Google OAuth integration
 - Background task processing
 - User authentication with API keys
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+This software requires a valid license for production use. Contact the administrator for licensing information.
 
 ## Credits
 
 - [Tailwind CSS](https://tailwindcss.com/) - Styling
 - [Lucide Icons](https://lucide.dev/) - Icons
 - [Inter Font](https://rsms.me/inter/) - Typography
+- [Postforme API](https://postforme.dev/) - Social media integration
 
 ## Support
 
