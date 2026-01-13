@@ -134,6 +134,14 @@ class Editor {
             // Store global reference
             window.editorInstance = this;
 
+            // Hide loading overlay
+            const loadingOverlay = document.getElementById('app-loading-overlay');
+            if (loadingOverlay) {
+                loadingOverlay.style.opacity = '0';
+                loadingOverlay.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => loadingOverlay.remove(), 300);
+            }
+
             // Show welcome toast with dynamic site title
             const siteTitle = window.AIKAFLOW_CONFIG?.siteTitle || 'AIKAFLOW';
             Toast.info(`Welcome to ${siteTitle}`, 'Drag nodes from the sidebar to get started');

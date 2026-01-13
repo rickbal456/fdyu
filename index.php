@@ -122,6 +122,19 @@ $invitationEnabled = ($siteSettings['invitation_enabled'] ?? '0') === '1';
 </head>
 
 <body class="bg-dark-950 text-gray-100 overflow-hidden">
+    <!-- Initial Loading Overlay -->
+    <div id="app-loading-overlay" class="fixed inset-0 bg-dark-950 z-[9999] flex items-center justify-center">
+        <div class="text-center">
+            <div class="relative w-16 h-16 mx-auto mb-4">
+                <div class="absolute inset-0 rounded-full border-4 border-dark-700"></div>
+                <div
+                    class="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin">
+                </div>
+            </div>
+            <p class="text-dark-400 text-sm">Loading...</p>
+        </div>
+    </div>
+
     <!-- App Container -->
     <div id="app" class="h-screen flex flex-col">
 

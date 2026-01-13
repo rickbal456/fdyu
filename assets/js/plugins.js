@@ -94,8 +94,9 @@ class PluginManager {
      */
     static getAiKey(provider) {
         // Use cached keys from the instance if available
-        if (window.PluginManager?.integrationKeys) {
-            return window.PluginManager.integrationKeys[provider] || '';
+        // Note: instance is window.pluginManager (lowercase 'p')
+        if (window.pluginManager?.integrationKeys) {
+            return window.pluginManager.integrationKeys[provider] || '';
         }
         return '';
     }
