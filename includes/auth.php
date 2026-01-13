@@ -348,7 +348,27 @@ class Auth
     public static function requireLogin(string $redirectTo = 'login.php'): void
     {
         if (!self::check()) {
-            $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
+            // Only save the redirect URL if it's not a static asset or API call
+            $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+            $excludedPatterns = [
+                '/favicon\.ico/i',
+                '/\.(js|css|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot)(\?|$)/i',
+                '/^\/api\//i',
+                '/\.php$/i'
+            ];
+
+            $shouldSaveRedirect = true;
+            foreach ($excludedPatterns as $pattern) {
+                if (preg_match($pattern, $requestUri)) {
+                    $shouldSaveRedirect = false;
+                    break;
+                }
+            }
+
+            if ($shouldSaveRedirect && !isset($_SESSION['redirect_after_login'])) {
+                $_SESSION['redirect_after_login'] = $requestUri;
+            }
+
             header('Location: ' . $redirectTo);
             exit;
         }
