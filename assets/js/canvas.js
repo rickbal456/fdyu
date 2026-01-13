@@ -1225,26 +1225,104 @@ class CanvasManager {
                         return;
                     }
 
-                    // Show loading state
-                    btn.classList.add('loading');
-                    const originalIcon = btn.innerHTML;
-                    btn.innerHTML = '<i data-lucide="loader" class="w-3 h-3 animate-spin"></i>';
-                    if (window.lucide) lucide.createIcons({ nodes: [btn] });
-
-                    try {
-                        const enhanced = await window.AIKAFLOWTextEnhance.enhance(text);
-                        if (textarea) {
-                            textarea.value = enhanced;
-                            textarea.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-                        Toast?.success('Text enhanced!');
-                    } catch (error) {
-                        Toast?.error('Enhancement failed: ' + error.message);
-                    } finally {
-                        btn.classList.remove('loading');
-                        btn.innerHTML = originalIcon;
-                        if (window.lucide) lucide.createIcons({ nodes: [btn] });
+                    // Check if dropdown already exists, remove it
+                    const existingDropdown = document.querySelector('.canvas-enhance-dropdown');
+                    if (existingDropdown) {
+                        existingDropdown.remove();
+                        return;
                     }
+
+                    // Fetch system prompts from server
+                    let prompts = [];
+                    try {
+                        const res = await fetch('./api/ai/prompts.php');
+                        const data = await res.json();
+                        if (data.success) {
+                            prompts = data.systemPrompts || [];
+                            if (!data.isConfigured) {
+                                Toast?.error('OpenRouter API key not configured');
+                                return;
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Failed to fetch prompts:', err);
+                    }
+
+                    // Create dropdown HTML
+                    let dropdownHtml = `
+                        <div class="enhance-dropdown-item" data-prompt-id="">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            <span>Default Enhancement</span>
+                        </div>
+                    `;
+
+                    if (prompts.length > 0) {
+                        dropdownHtml += '<div class="enhance-dropdown-divider"></div>';
+                        prompts.forEach(p => {
+                            dropdownHtml += `
+                                <div class="enhance-dropdown-item" data-prompt-id="${p.id}">
+                                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                                    <span>${p.name}</span>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    // Create dropdown element
+                    const dropdown = document.createElement('div');
+                    dropdown.className = 'canvas-enhance-dropdown enhance-dropdown';
+                    dropdown.innerHTML = dropdownHtml;
+
+                    // Position relative to button
+                    const btnRect = btn.getBoundingClientRect();
+                    dropdown.style.position = 'fixed';
+                    dropdown.style.left = `${btnRect.left}px`;
+                    dropdown.style.top = `${btnRect.bottom + 5}px`;
+                    dropdown.style.zIndex = '10000';
+                    document.body.appendChild(dropdown);
+
+                    // Initialize icons
+                    if (window.lucide) {
+                        lucide.createIcons({ root: dropdown });
+                    }
+
+                    // Handle item clicks
+                    dropdown.querySelectorAll('.enhance-dropdown-item').forEach(item => {
+                        item.addEventListener('click', async () => {
+                            const promptId = item.dataset.promptId || null;
+                            dropdown.remove();
+
+                            // Show loading state
+                            btn.classList.add('loading');
+                            const originalIcon = btn.innerHTML;
+                            btn.innerHTML = '<i data-lucide="loader" class="w-3 h-3 animate-spin"></i>';
+                            if (window.lucide) lucide.createIcons({ nodes: [btn] });
+
+                            try {
+                                const enhanced = await window.AIKAFLOWTextEnhance.enhance(text, promptId);
+                                if (textarea) {
+                                    textarea.value = enhanced;
+                                    textarea.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                                Toast?.success('Text enhanced!');
+                            } catch (error) {
+                                Toast?.error('Enhancement failed: ' + error.message);
+                            } finally {
+                                btn.classList.remove('loading');
+                                btn.innerHTML = originalIcon;
+                                if (window.lucide) lucide.createIcons({ nodes: [btn] });
+                            }
+                        });
+                    });
+
+                    // Close dropdown on outside click
+                    const closeDropdown = (evt) => {
+                        if (!dropdown.contains(evt.target) && evt.target !== btn) {
+                            dropdown.remove();
+                            document.removeEventListener('click', closeDropdown);
+                        }
+                    };
+                    setTimeout(() => document.addEventListener('click', closeDropdown), 10);
                 }
             });
 
@@ -1364,8 +1442,8 @@ class CanvasManager {
         const source = node.data?.source || 'upload';
 
         if (source === 'upload' && node.data?.file) {
-            // For uploaded files, use dataUrl or previewUrl
-            return node.data.file.dataUrl || node.data.file.previewUrl || node.data.file.url;
+            // For uploaded files, prefer server URL over dataUrl (to avoid loading large base64)
+            return node.data.file.url || node.data.file.previewUrl || node.data.file.dataUrl;
         } else if (source === 'url' && node.data?.url) {
             // For URL input
             return node.data.url;

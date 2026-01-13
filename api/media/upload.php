@@ -43,7 +43,7 @@ if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
 $file = $_FILES['file'];
 $folder = sanitizeString($_POST['folder'] ?? 'uploads', 50);
 
-// Check if BunnyCDN is configured (constants or plugin)
+// Check if BunnyCDN is configured (constants, plugin handler, or site_settings)
 $hasCDN = false;
 $bunnyConfig = null;
 
@@ -61,12 +61,48 @@ if (
     ];
 }
 
-// Then check plugin handler
-if (!$hasCDN && class_exists('BunnyCDNStorageHandler')) {
-    $config = BunnyCDNStorageHandler::getConfig();
-    if (!empty($config['storageZone']) && !empty($config['accessKey'])) {
-        $hasCDN = true;
-        $bunnyConfig = $config;
+// Try to load plugin handler
+if (!$hasCDN) {
+    $handlerPath = __DIR__ . '/../../plugins/aflow-storage-bunnycdn/handler.php';
+    if (file_exists($handlerPath)) {
+        require_once $handlerPath;
+    }
+
+    if (class_exists('BunnyCDNStorageHandler')) {
+        $config = BunnyCDNStorageHandler::getConfig();
+        if (!empty($config['storageZone']) && !empty($config['accessKey']) && !empty($config['cdnUrl'])) {
+            $hasCDN = true;
+            $bunnyConfig = $config;
+        }
+    }
+}
+
+// Check integration_keys for BunnyCDN settings (format: bunnycdn_storageZone, bunnycdn_accessKey, etc.)
+if (!$hasCDN) {
+    try {
+        $result = Database::fetchOne(
+            "SELECT setting_value FROM site_settings WHERE setting_key = 'integration_keys'"
+        );
+        if ($result && $result['setting_value']) {
+            $keys = json_decode($result['setting_value'], true);
+            // Check for bunnycdn_* format
+            $storageZone = $keys['bunnycdn_storageZone'] ?? '';
+            $accessKey = $keys['bunnycdn_accessKey'] ?? '';
+            $cdnUrl = $keys['bunnycdn_cdnUrl'] ?? '';
+            $storageUrl = $keys['bunnycdn_storageUrl'] ?? 'https://storage.bunnycdn.com';
+
+            if (!empty($storageZone) && !empty($accessKey) && !empty($cdnUrl)) {
+                $hasCDN = true;
+                $bunnyConfig = [
+                    'storageZone' => $storageZone,
+                    'accessKey' => $accessKey,
+                    'storageUrl' => $storageUrl,
+                    'cdnUrl' => $cdnUrl
+                ];
+            }
+        }
+    } catch (Exception $e) {
+        error_log('BunnyCDN config check failed: ' . $e->getMessage());
     }
 }
 

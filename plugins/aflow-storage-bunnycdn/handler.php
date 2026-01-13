@@ -12,17 +12,52 @@ class BunnyCDNStorageHandler
 
     /**
      * Get plugin configuration
+     * Checks: 1) integration_keys (admin integrations tab), 2) constants (fallback)
      */
     public static function getConfig()
     {
         if (self::$config === null) {
-            // Try to load from plugin settings or fall back to constants
             self::$config = [
-                'storageZone' => defined('BUNNY_STORAGE_ZONE') ? BUNNY_STORAGE_ZONE : '',
-                'accessKey' => defined('BUNNY_ACCESS_KEY') ? BUNNY_ACCESS_KEY : '',
-                'storageUrl' => defined('BUNNY_STORAGE_URL') ? BUNNY_STORAGE_URL : 'https://storage.bunnycdn.com',
-                'cdnUrl' => defined('BUNNY_CDN_URL') ? BUNNY_CDN_URL : ''
+                'storageZone' => '',
+                'accessKey' => '',
+                'storageUrl' => 'https://storage.bunnycdn.com',
+                'cdnUrl' => ''
             ];
+
+            // 1. Try to load from integration_keys in site_settings (admin integrations tab)
+            if (class_exists('Database')) {
+                try {
+                    $result = Database::fetchOne(
+                        "SELECT setting_value FROM site_settings WHERE setting_key = 'integration_keys'"
+                    );
+                    if ($result && $result['setting_value']) {
+                        $keys = json_decode($result['setting_value'], true);
+                        if (is_array($keys)) {
+                            // Check for bunnycdn_* format (how admin saves it in integrations tab)
+                            self::$config['storageZone'] = $keys['bunnycdn_storageZone'] ?? '';
+                            self::$config['accessKey'] = $keys['bunnycdn_accessKey'] ?? '';
+                            self::$config['cdnUrl'] = $keys['bunnycdn_cdnUrl'] ?? '';
+                            self::$config['storageUrl'] = $keys['bunnycdn_storageUrl'] ?? 'https://storage.bunnycdn.com';
+                        }
+                    }
+                } catch (Exception $e) {
+                    error_log('BunnyCDN config load error: ' . $e->getMessage());
+                }
+            }
+
+            // 2. Fall back to constants if not set in database
+            if (empty(self::$config['storageZone']) && defined('BUNNY_STORAGE_ZONE')) {
+                self::$config['storageZone'] = BUNNY_STORAGE_ZONE;
+            }
+            if (empty(self::$config['accessKey']) && defined('BUNNY_ACCESS_KEY')) {
+                self::$config['accessKey'] = BUNNY_ACCESS_KEY;
+            }
+            if (empty(self::$config['cdnUrl']) && defined('BUNNY_CDN_URL')) {
+                self::$config['cdnUrl'] = BUNNY_CDN_URL;
+            }
+            if (self::$config['storageUrl'] === 'https://storage.bunnycdn.com' && defined('BUNNY_STORAGE_URL')) {
+                self::$config['storageUrl'] = BUNNY_STORAGE_URL;
+            }
         }
         return self::$config;
     }

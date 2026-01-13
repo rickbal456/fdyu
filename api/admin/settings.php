@@ -112,7 +112,9 @@ switch ($method) {
             // Integration Keys (API keys for external services - stored as JSON string)
             'integration_keys',
             // OpenRouter settings (model, system prompts - stored as JSON string)
-            'openrouter_settings'
+            'openrouter_settings',
+            // BunnyCDN storage settings (stored as JSON string)
+            'bunnycdn_settings'
         ];
         $updated = [];
 

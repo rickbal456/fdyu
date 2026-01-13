@@ -1098,16 +1098,14 @@ class PropertiesPanel {
                 throw new Error(result.error || 'Upload failed');
             }
 
-            // Store file data with server URL
+            // Store file data with server URL (no base64 to save memory)
             const fileData = {
                 name: file.name,
                 type: file.type,
                 size: file.size,
                 url: result.url, // Server URL (CDN or local)
                 mediaId: result.mediaId,
-                storageMode: result.storageMode,
-                // Keep dataUrl for preview (read locally for instant preview)
-                dataUrl: await Utils.readFileAsDataURL(file)
+                storageMode: result.storageMode
             };
 
             this.updateNodeField(nodeId, fieldId, fileData);
