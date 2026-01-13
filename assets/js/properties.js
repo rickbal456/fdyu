@@ -1072,27 +1072,54 @@ class PropertiesPanel {
     }
 
     /**
-     * Handle file upload
-     */
+ * Handle file upload - uploads to server (BunnyCDN or local folder)
+ */
     async handleFileUpload(nodeId, fieldId, file) {
         try {
-            // Read file as data URL for preview
-            const dataUrl = await Utils.readFileAsDataURL(file);
+            // Show loading state
+            if (window.Toast) {
+                Toast.info('Uploading...', file.name);
+            }
 
+            // Create FormData for upload
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('folder', 'workflow-inputs');
+
+            // Upload to server
+            const response = await fetch('./api/media/upload.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.error || 'Upload failed');
+            }
+
+            // Store file data with server URL
             const fileData = {
                 name: file.name,
                 type: file.type,
                 size: file.size,
-                dataUrl: dataUrl,
-                file: file // Keep reference for actual upload
+                url: result.url, // Server URL (CDN or local)
+                mediaId: result.mediaId,
+                storageMode: result.storageMode,
+                // Keep dataUrl for preview (read locally for instant preview)
+                dataUrl: await Utils.readFileAsDataURL(file)
             };
 
             this.updateNodeField(nodeId, fieldId, fileData);
             this.refreshFields();
 
-            // Show toast
+            // Show success toast
             if (window.Toast) {
-                Toast.success('File uploaded', file.name);
+                if (result.storageMode === 'cdn') {
+                    Toast.success('Uploaded to CDN', file.name);
+                } else {
+                    Toast.success('Uploaded', file.name);
+                }
             }
         } catch (error) {
             console.error('File upload error:', error);
