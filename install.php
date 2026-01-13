@@ -645,7 +645,7 @@ $steps = [
                             formData.append('action', 'verify_license');
                             formData.append('license_key', key);
 
-                            const response = await fetch('install.php', {
+                            const response = await fetch(window.location.href.split('?')[0], {
                                 method: 'POST',
                                 body: formData
                             });
@@ -795,7 +795,7 @@ $steps = [
                         statusEl.classList.remove('hidden');
 
                         try {
-                            const response = await fetch('install.php', { method: 'POST', body: formData });
+                            const response = await fetch(window.location.href.split('?')[0], { method: 'POST', body: formData });
                             const data = await response.json();
 
                             statusEl.textContent = data.success ? '✓ ' + data.message : '✗ ' + data.message;
