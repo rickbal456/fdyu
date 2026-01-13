@@ -487,7 +487,7 @@ CREATE TABLE IF NOT EXISTS workflow_autosaves (
     workflow_id INT UNSIGNED NULL,
     json_data JSON NOT NULL,
     saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY idx_user_workflow (user_id, COALESCE(workflow_id, 0)),
+    INDEX idx_user_workflow (user_id, workflow_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
