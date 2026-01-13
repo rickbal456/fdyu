@@ -26,24 +26,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 try {
-    // Get user's integration keys preference
+    // Get user's integration keys from user_settings table
+    // This is the same table and format used by preferences.php
     $userKeys = [];
 
-    // Try user_preferences table first
-    try {
-        $altPref = Database::fetchOne(
-            "SELECT value FROM user_preferences WHERE user_id = ? AND `key` = 'integration_keys'",
-            [$user['id']]
-        );
-        if ($altPref && isset($altPref['value']) && $altPref['value']) {
-            $decoded = json_decode($altPref['value'], true);
-            if (is_array($decoded)) {
-                $userKeys = $decoded;
-            }
+    $result = Database::fetchOne(
+        "SELECT setting_value FROM user_settings WHERE user_id = ? AND setting_key = 'integration_keys'",
+        [$user['id']]
+    );
+
+    if ($result && isset($result['setting_value']) && $result['setting_value']) {
+        $decoded = json_decode($result['setting_value'], true);
+        if (is_array($decoded)) {
+            $userKeys = $decoded;
         }
-    } catch (Exception $e) {
-        // Table might not exist, continue
-        error_log('user_preferences table error: ' . $e->getMessage());
     }
 
     // Build status map - only return whether each key is configured, NOT the actual value

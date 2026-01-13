@@ -108,29 +108,15 @@ class PluginManager
      */
     private static function loadAdminApiKey($provider, $userId = null)
     {
-        // Try to load integration keys from user's preferences
+        // Try to load integration keys from user_settings table
         if ($userId && class_exists('Database')) {
             try {
-                // First try user_preferences table
-                $pref = Database::fetchOne(
-                    "SELECT value FROM user_preferences WHERE user_id = ? AND `key` = 'integration_keys'",
-                    [$userId]
-                );
-
-                if ($pref && $pref['value']) {
-                    $keys = json_decode($pref['value'], true);
-                    if (is_array($keys) && !empty($keys[$provider])) {
-                        return $keys[$provider];
-                    }
-                }
-
-                // Then try user_settings table
                 $setting = Database::fetchOne(
                     "SELECT setting_value FROM user_settings WHERE user_id = ? AND setting_key = 'integration_keys'",
                     [$userId]
                 );
 
-                if ($setting && $setting['setting_value']) {
+                if ($setting && isset($setting['setting_value']) && $setting['setting_value']) {
                     $keys = json_decode($setting['setting_value'], true);
                     if (is_array($keys) && !empty($keys[$provider])) {
                         return $keys[$provider];
