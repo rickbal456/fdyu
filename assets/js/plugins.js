@@ -42,6 +42,11 @@ class PluginManager {
 
             this.isInitialized = true;
 
+            // Expose global function for admin.js to call when integrations tab opens
+            window.loadIntegrationKeys = async () => {
+                await this.renderIntegrationKeys();
+            };
+
         } catch (error) {
             console.error('Plugin Manager initialization error:', error);
         }
@@ -85,7 +90,7 @@ class PluginManager {
      */
     async saveIntegrationKey(provider, value) {
         try {
-            const keys = await this.loadIntegrationKeys();
+            const keys = await this.loadUserIntegrationKeys();
             keys[provider] = value;
             await API.savePreference('integration_keys', keys);
         } catch (error) {
@@ -193,7 +198,7 @@ class PluginManager {
                 </div>
             `;
         } else {
-            const savedKeys = await this.loadIntegrationKeys();
+            const savedKeys = await this.loadUserIntegrationKeys();
 
             // Pre-load OpenRouter settings if needed
             let openRouterSettings = { model: 'openai/gpt-4o-mini', systemPrompts: [] };
