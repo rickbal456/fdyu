@@ -25,8 +25,11 @@ class PluginManager {
         this.appBase = appPath;
 
         try {
-            // Load integration keys from database and cache for sync access
-            this.integrationKeys = await this.loadIntegrationKeys();
+            // Load integration status from database (NOT actual keys - keys stay server-side for security)
+            this.integrationStatus = await this.loadIntegrationStatus();
+
+            // Load actual keys for admin editing (only values the user owns, not shared admin keys)
+            this.integrationKeys = await this.loadUserIntegrationKeys();
 
             // Load installed plugins
             await this.loadPlugins();
@@ -45,9 +48,27 @@ class PluginManager {
     }
 
     /**
-     * Load integration keys from database
+     * Load integration STATUS (true/false for each provider) - does NOT expose actual keys
+     * This is safe to call from the browser
      */
-    async loadIntegrationKeys() {
+    async loadIntegrationStatus() {
+        try {
+            const response = await fetch('./api/user/integration-status.php');
+            const data = await response.json();
+            if (data.success && data.configured) {
+                return data.configured;
+            }
+        } catch (error) {
+            console.error('Failed to load integration status:', error);
+        }
+        return {};
+    }
+
+    /**
+     * Load user's own integration keys for editing in settings
+     * (These are keys the user has entered themselves, not admin-shared keys)
+     */
+    async loadUserIntegrationKeys() {
         try {
             const response = await API.getPreference('integration_keys');
             if (response.success && response.value) {
@@ -73,24 +94,22 @@ class PluginManager {
     }
 
     /**
-     * Get a specific integration key (async version)
-     * Note: For backward compatibility, also check instance cached keys
+     * Check if an integration has an API key configured
+     * Returns true/false only - does NOT expose the actual key value (for security)
+     * The actual key is used server-side during workflow execution
      */
-    static async getAiKeyAsync(provider) {
-        try {
-            const response = await API.getPreference('integration_keys');
-            if (response.success && response.value) {
-                return response.value[provider] || '';
-            }
-        } catch (error) {
-            console.error('Failed to get integration key:', error);
+    static hasApiKey(provider) {
+        // Check integration status (loaded from secure endpoint)
+        if (window.pluginManager?.integrationStatus) {
+            return window.pluginManager.integrationStatus[provider] === true;
         }
-        return '';
+        return false;
     }
 
     /**
-     * Get a specific integration key (sync version - uses cached data)
-     * Deprecated: Use getAiKeyAsync for database-backed storage
+     * Get a specific integration key (sync version - uses cached USER keys only)
+     * This returns keys the USER has entered themselves, not admin-shared keys
+     * For checking if admin has configured a key, use hasApiKey() instead
      */
     static getAiKey(provider) {
         // Use cached keys from the instance if available

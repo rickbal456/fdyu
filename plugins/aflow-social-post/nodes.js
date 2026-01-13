@@ -25,22 +25,28 @@
     };
 
     /**
-     * Get the Postforme API key from settings
+     * Check if Postforme API key is configured (either plugin-specific or main)
+     * This checks STATUS only, not the actual key value (for security)
+     * @returns {boolean}
      */
-    function getPostformeApiKey() {
-        // First check plugin-specific key
-        const pluginKey = PluginManager.getAiKey(`plugin_${PLUGIN_ID}`);
-        if (pluginKey) return pluginKey;
+    function hasPostformeApiKey() {
+        // First check plugin-specific key status
+        if (PluginManager.hasApiKey(`plugin_${PLUGIN_ID}`)) return true;
 
-        // Then check main Postforme key
-        return PluginManager.getAiKey('postforme');
+        // Then check main Postforme key status
+        return PluginManager.hasApiKey('postforme');
     }
 
     /**
-     * Check if Postforme API key is configured
+     * Get user's own API key from settings (if they entered one themselves)
+     * This is for users who bring their own key
      */
-    function hasPostformeApiKey() {
-        return getPostformeApiKey() !== '';
+    function getUserApiKey() {
+        // Check user's own keys (not admin-shared)
+        const pluginKey = PluginManager.getAiKey(`plugin_${PLUGIN_ID}`);
+        if (pluginKey) return pluginKey;
+
+        return PluginManager.getAiKey('postforme');
     }
 
     /**
@@ -59,19 +65,18 @@
         return [];
     }
 
-    // Build fields array
-    const fields = [];
-
-    // Only add API key field if not already configured
-    if (!hasPostformeApiKey()) {
-        fields.push({
+    // Build fields array - API key field is always included but hidden when configured
+    const fields = [
+        {
             id: 'apiKey',
             type: 'text',
             label: 'API Key',
             placeholder: 'Your Postforme API key',
-            description: 'Or configure in Settings → Integrations'
-        });
-    }
+            description: 'Or configure in Settings → Integrations',
+            // Hide this field if API key is already configured in admin settings
+            showIf: () => !hasPostformeApiKey()
+        }
+    ];
 
     // Add main fields
     fields.push(
@@ -218,10 +223,14 @@
             // Use connected text input or fall back to node's caption field
             const finalCaption = textInput.trim() || caption;
 
-            // Get API key
-            const finalApiKey = apiKey || getPostformeApiKey();
+            // Determine API key source:
+            // 1. User provided key in node field
+            // 2. User's own saved key in their settings
+            // 3. Admin-configured key (checked on server-side, not exposed here)
+            const userProvidedKey = apiKey || getUserApiKey();
+            const adminHasKey = hasPostformeApiKey();
 
-            if (!finalApiKey) {
+            if (!userProvidedKey && !adminHasKey) {
                 throw new Error('Postforme API Key is required. Set it in Settings → Integrations or in the node field.');
             }
 
@@ -243,8 +252,10 @@
             }
 
             // Build the API payload
+            // Note: If userProvidedKey is empty, the server will use the admin-configured key
             const payload = {
-                apiKey: finalApiKey,
+                apiKey: userProvidedKey, // Empty string signals server to use admin key
+                useAdminKey: !userProvidedKey && adminHasKey, // Flag for server
                 caption: finalCaption,
                 social_accounts: accounts,
                 media: media

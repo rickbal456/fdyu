@@ -13,24 +13,28 @@
     const PLUGIN_ID = 'aflow-i2v-v1';
 
     /**
-     * Get the RunningHub API key from settings
-     * Checks both the main RunningHub key and plugin-specific key
+     * Check if RunningHub API key is configured (either plugin-specific or main)
+     * This checks STATUS only, not the actual key value (for security)
+     * @returns {boolean}
      */
-    function getRunningHubApiKey() {
-        // First check plugin-specific key
-        const pluginKey = PluginManager.getAiKey(`plugin_${PLUGIN_ID}`);
-        if (pluginKey) return pluginKey;
+    function hasRunningHubApiKey() {
+        // First check plugin-specific key status
+        if (PluginManager.hasApiKey(`plugin_${PLUGIN_ID}`)) return true;
 
-        // Then check main RunningHub key
-        return PluginManager.getAiKey('runninghub');
+        // Then check main RunningHub key status
+        return PluginManager.hasApiKey('runninghub');
     }
 
     /**
-     * Check if RunningHub API key is configured in settings
-     * This is called at render time, not at load time
+     * Get user's own API key from node field (if they entered one)
+     * This is for users who bring their own key
      */
-    function hasRunningHubApiKey() {
-        return getRunningHubApiKey() !== '';
+    function getUserApiKey() {
+        // Check user's own keys (not admin-shared)
+        const pluginKey = PluginManager.getAiKey(`plugin_${PLUGIN_ID}`);
+        if (pluginKey) return pluginKey;
+
+        return PluginManager.getAiKey('runninghub');
     }
 
     // Build fields - API key field is always included but hidden when configured
@@ -111,10 +115,14 @@
             // Use connected text input or fall back to node's prompt field
             const finalPrompt = (inputs.text && inputs.text.trim()) ? inputs.text.trim() : prompt;
 
-            // Get API key - use node field or fall back to settings
-            const finalApiKey = apiKey || getRunningHubApiKey();
+            // Determine API key source:
+            // 1. User provided key in node field
+            // 2. User's own saved key in their settings
+            // 3. Admin-configured key (checked on server-side, not exposed here)
+            const userProvidedKey = apiKey || getUserApiKey();
+            const adminHasKey = hasRunningHubApiKey();
 
-            if (!finalApiKey) {
+            if (!userProvidedKey && !adminHasKey) {
                 throw new Error(window.t ? window.t('generation.api_key_required') : 'RunningHub API Key is required. Set it in Settings → Integrations or in the node field.');
             }
 
@@ -122,10 +130,12 @@
                 throw new Error(window.t ? window.t('generation.prompt_required') : 'Motion prompt is required. Either connect a Text Input node or enter a prompt manually.');
             }
 
-            // Build the API payload with hardcoded webapp ID
+            // Build the API payload
+            // Note: If userProvidedKey is empty, the server will use the admin-configured key
             const payload = {
                 webappId: WEBAPP_ID,
-                apiKey: finalApiKey,
+                apiKey: userProvidedKey, // Empty string signals server to use admin key
+                useAdminKey: !userProvidedKey && adminHasKey, // Flag for server
                 nodeInfoList: [
                     {
                         nodeId: '2',

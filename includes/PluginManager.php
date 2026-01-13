@@ -102,6 +102,48 @@ class PluginManager
         return self::$nodeDefinitions;
     }
 
+    /**
+     * Load admin-configured API key from database
+     * This is called server-side only - keys are never exposed to the browser
+     */
+    private static function loadAdminApiKey($provider, $userId = null)
+    {
+        // Try to load integration keys from user's preferences
+        if ($userId && class_exists('Database')) {
+            try {
+                // First try user_preferences table
+                $pref = Database::fetchOne(
+                    "SELECT value FROM user_preferences WHERE user_id = ? AND `key` = 'integration_keys'",
+                    [$userId]
+                );
+
+                if ($pref && $pref['value']) {
+                    $keys = json_decode($pref['value'], true);
+                    if (is_array($keys) && !empty($keys[$provider])) {
+                        return $keys[$provider];
+                    }
+                }
+
+                // Then try user_settings table
+                $setting = Database::fetchOne(
+                    "SELECT setting_value FROM user_settings WHERE user_id = ? AND setting_key = 'integration_keys'",
+                    [$userId]
+                );
+
+                if ($setting && $setting['setting_value']) {
+                    $keys = json_decode($setting['setting_value'], true);
+                    if (is_array($keys) && !empty($keys[$provider])) {
+                        return $keys[$provider];
+                    }
+                }
+            } catch (Exception $e) {
+                error_log('Failed to load admin API key: ' . $e->getMessage());
+            }
+        }
+
+        return '';
+    }
+
 
     /**
      * Execute a plugin node
@@ -189,8 +231,16 @@ class PluginManager
         $mapping = $definition['apiMapping'];
         $provider = $apiConfig['provider'] ?? 'custom';
 
-        // Get API key for rate limiting check
+        // Get API key - either from user input or from admin configuration
         $apiKey = $inputData['apiKey'] ?? '';
+
+        // If useAdminKey flag is set and no user-provided key, load from database
+        if (empty($apiKey) && !empty($inputData['useAdminKey'])) {
+            $apiKey = self::loadAdminApiKey($provider, $inputData['_user_id'] ?? null);
+        }
+
+        // Update inputData with the resolved API key
+        $inputData['apiKey'] = $apiKey;
 
         // Check rate limit if ApiRateLimiter is available and we have an API key
         if (!empty($apiKey) && class_exists('ApiRateLimiter')) {
@@ -213,9 +263,6 @@ class PluginManager
                 ];
             }
         }
-
-        // Note: API keys are provided via Integration tab or node settings
-        // No system-level API key fallback
 
         // Inject webhook URL
         if (!isset($inputData['webhook_url'])) {
