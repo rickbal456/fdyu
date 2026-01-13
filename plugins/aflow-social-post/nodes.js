@@ -48,7 +48,7 @@
      */
     async function fetchSocialAccounts() {
         try {
-            const response = await fetch('/aikaflow/api/social/accounts.php');
+            const response = await fetch('./api/social/accounts.php');
             const data = await response.json();
             if (data.success && data.accounts) {
                 return data.accounts;

@@ -134,8 +134,9 @@ class Editor {
             // Store global reference
             window.editorInstance = this;
 
-            // Show welcome toast
-            Toast.info('Welcome to AIKAFLOW', 'Drag nodes from the sidebar to get started');
+            // Show welcome toast with dynamic site title
+            const siteTitle = window.AIKAFLOW_CONFIG?.siteTitle || 'AIKAFLOW';
+            Toast.info(`Welcome to ${siteTitle}`, 'Drag nodes from the sidebar to get started');
 
             // Check for any running executions and resume polling
             this.workflowManager?.resumeRunningExecutions();

@@ -124,7 +124,7 @@
         if (window.lucide) lucide.createIcons({ root: container });
 
         try {
-            const response = await fetch('/aikaflow/api/social/accounts.php');
+            const response = await fetch('./api/social/accounts.php');
             const data = await response.json();
 
             if (data.success && data.accounts && data.accounts.length > 0) {
@@ -296,7 +296,7 @@
         try {
             Toast.show(`Connecting to ${PLATFORMS[platform]?.name || platform}...`, 'info');
 
-            const response = await fetch('/aikaflow/api/social/connect.php', {
+            const response = await fetch('./api/social/connect.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ platform })
@@ -356,7 +356,7 @@
         if (!confirmed) return;
 
         try {
-            const response = await fetch(`/aikaflow/api/social/accounts.php?id=${accountId}`, {
+            const response = await fetch(`./api/social/accounts.php?id=${accountId}`, {
                 method: 'DELETE'
             });
 

@@ -25,7 +25,7 @@ xQZ3LZ0FpDsKEVE0PI5F4T3E8JqwoxGvY7ELqMnB9H7vPkM8EGCTQxzkv4S3LqXE
 KEY);
 
 // License server URL for periodic verification
-define('LICENSE_VERIFY_URL', 'http://localhost/aikaflow/license_server/api/verify.php');
+define('LICENSE_VERIFY_URL', 'https://flow.aikademi.id/api/verify.php');
 
 // How often to verify with server (in seconds)
 define('LICENSE_CHECK_INTERVAL', 86400); // 24 hours

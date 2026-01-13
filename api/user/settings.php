@@ -22,9 +22,16 @@ $user = requireAuth();
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Get site config values needed by frontend
     $maxRepeatCount = 100; // Default
-    $maxRepeatSetting = Database::fetchOne("SELECT setting_value FROM site_settings WHERE setting_key = 'max_repeat_count'");
-    if ($maxRepeatSetting && $maxRepeatSetting['setting_value']) {
-        $maxRepeatCount = (int) $maxRepeatSetting['setting_value'];
+    $siteTitle = 'AIKAFLOW'; // Default
+
+    $siteSettings = Database::fetchAll("SELECT setting_key, setting_value FROM site_settings WHERE setting_key IN ('max_repeat_count', 'site_title')");
+    foreach ($siteSettings as $setting) {
+        if ($setting['setting_key'] === 'max_repeat_count' && $setting['setting_value']) {
+            $maxRepeatCount = (int) $setting['setting_value'];
+        }
+        if ($setting['setting_key'] === 'site_title' && $setting['setting_value']) {
+            $siteTitle = $setting['setting_value'];
+        }
     }
 
     // Return user settings with site config
@@ -38,7 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'lastLogin' => $user['last_login']
         ],
         'siteConfig' => [
-            'maxRepeatCount' => $maxRepeatCount
+            'maxRepeatCount' => $maxRepeatCount,
+            'siteTitle' => $siteTitle
         ]
     ]);
 
