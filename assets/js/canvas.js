@@ -1053,9 +1053,26 @@ class CanvasManager {
         }
 
         // Add compact fields (only show first 2 important fields in node)
-        const compactFields = definition.fields.filter(f =>
-            ['text', 'textarea', 'select'].includes(f.type)
-        ).slice(0, 2);
+        // Also respect showIf conditions (both object and function)
+        const compactFields = definition.fields.filter(f => {
+            // Only show text, textarea, select fields
+            if (!['text', 'textarea', 'select'].includes(f.type)) return false;
+
+            // Check showIf condition
+            if (f.showIf) {
+                // If showIf is a function, call it
+                if (typeof f.showIf === 'function') {
+                    try {
+                        return f.showIf(node.data);
+                    } catch (e) {
+                        console.warn('showIf function error:', e);
+                        return true; // Show field on error
+                    }
+                }
+                // If showIf is an object, check it later (handled by updateCompactFieldVisibility)
+            }
+            return true;
+        }).slice(0, 2);
 
         if (compactFields.length > 0) {
             html += '<div class="node-fields">';

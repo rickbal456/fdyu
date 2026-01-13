@@ -6,10 +6,8 @@
  * Form data: file, folder?
  * 
  * Upload behavior:
- * - If BunnyCDN is configured: Upload to CDN and return URL
- * - If no CDN: 
- *   - Images: Return base64 data URL (for sending to API providers)
- *   - Video/Audio: Reject upload (too large for base64)
+ * - If BunnyCDN is configured (plugin or constants): Upload to CDN and return URL
+ * - If no CDN: Save to local uploads folder (NOT base64 to prevent database bloat)
  */
 
 declare(strict_types=1);
@@ -45,16 +43,38 @@ if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
 $file = $_FILES['file'];
 $folder = sanitizeString($_POST['folder'] ?? 'uploads', 50);
 
-// Check if BunnyCDN is configured
-$hasCDN = defined('BUNNY_STORAGE_ZONE') && BUNNY_STORAGE_ZONE &&
-    defined('BUNNY_ACCESS_KEY') && BUNNY_ACCESS_KEY;
+// Check if BunnyCDN is configured (constants or plugin)
+$hasCDN = false;
+$bunnyConfig = null;
+
+// First check constants
+if (
+    defined('BUNNY_STORAGE_ZONE') && BUNNY_STORAGE_ZONE &&
+    defined('BUNNY_ACCESS_KEY') && BUNNY_ACCESS_KEY
+) {
+    $hasCDN = true;
+    $bunnyConfig = [
+        'storageZone' => BUNNY_STORAGE_ZONE,
+        'accessKey' => BUNNY_ACCESS_KEY,
+        'storageUrl' => defined('BUNNY_STORAGE_URL') ? BUNNY_STORAGE_URL : 'https://storage.bunnycdn.com',
+        'cdnUrl' => defined('BUNNY_CDN_URL') ? BUNNY_CDN_URL : ''
+    ];
+}
+
+// Then check plugin handler
+if (!$hasCDN && class_exists('BunnyCDNStorageHandler')) {
+    $config = BunnyCDNStorageHandler::getConfig();
+    if (!empty($config['storageZone']) && !empty($config['accessKey'])) {
+        $hasCDN = true;
+        $bunnyConfig = $config;
+    }
+}
 
 // Validate file size
 if ($file['size'] > MAX_UPLOAD_SIZE) {
     $maxSizeMB = round(MAX_UPLOAD_SIZE / 1024 / 1024, 1);
     errorResponse('File exceeds maximum size of ' . $maxSizeMB . ' MB');
 }
-
 
 // Validate file type
 $finfo = new finfo(FILEINFO_MIME_TYPE);
@@ -80,23 +100,15 @@ if (in_array($mimeType, ALLOWED_IMAGE_TYPES)) {
     $fileType = 'audio';
 }
 
-// If no CDN and trying to upload video/audio, reject
-if (!$hasCDN && in_array($fileType, ['video', 'audio'])) {
-    errorResponse(
-        'Video and audio uploads require BunnyCDN storage. ' .
-        'Please configure your BunnyCDN API key in Settings → Storage, or provide a URL instead.',
-        400
-    );
-}
-
 try {
     // Generate unique filename
     $extension = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'bin';
-    $filename = $user['id'] . '/' . $folder . '/' . bin2hex(random_bytes(16)) . '.' . $extension;
+    $uniqueName = bin2hex(random_bytes(16)) . '.' . $extension;
+    $relativePath = $user['id'] . '/' . $folder . '/' . $uniqueName;
 
-    if ($hasCDN) {
+    if ($hasCDN && $bunnyConfig) {
         // Upload to BunnyCDN
-        $uploadUrl = BUNNY_STORAGE_URL . '/' . BUNNY_STORAGE_ZONE . '/' . $filename;
+        $uploadUrl = rtrim($bunnyConfig['storageUrl'], '/') . '/' . $bunnyConfig['storageZone'] . '/' . $relativePath;
 
         $ch = curl_init();
         curl_setopt_array($ch, [
@@ -105,7 +117,7 @@ try {
             CURLOPT_POSTFIELDS => file_get_contents($file['tmp_name']),
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => [
-                'AccessKey: ' . BUNNY_ACCESS_KEY,
+                'AccessKey: ' . $bunnyConfig['accessKey'],
                 'Content-Type: ' . $mimeType
             ]
         ]);
@@ -118,56 +130,49 @@ try {
             throw new Exception('BunnyCDN upload failed: ' . $response);
         }
 
-        $cdnUrl = BUNNY_CDN_URL . '/' . $filename;
+        $cdnUrl = rtrim($bunnyConfig['cdnUrl'], '/') . '/' . $relativePath;
         $storageMode = 'cdn';
 
     } else {
-        // No CDN - handle based on file type
-        if ($fileType === 'image') {
-            // For images without CDN: Convert to base64
-            $imageData = file_get_contents($file['tmp_name']);
-            $base64 = base64_encode($imageData);
-            $cdnUrl = 'data:' . $mimeType . ';base64,' . $base64;
-            $storageMode = 'base64';
+        // No CDN - save to local uploads folder (NOT base64!)
+        $uploadsDir = defined('PUBLIC_PATH') ? PUBLIC_PATH . '/uploads' : __DIR__ . '/../../uploads';
+        $localDir = $uploadsDir . '/' . $user['id'] . '/' . $folder;
 
-            // Also save locally for preview
-            $localPath = TEMP_PATH . '/' . $filename;
-            $localDir = dirname($localPath);
-
-            if (!is_dir($localDir)) {
-                mkdir($localDir, 0755, true);
-            }
-
-            move_uploaded_file($file['tmp_name'], $localPath);
-            $previewUrl = APP_URL . '/temp/' . $filename;
-
-        } else {
-            // This shouldn't happen due to earlier check, but just in case
-            throw new Exception('File type not supported without CDN storage');
+        if (!is_dir($localDir)) {
+            mkdir($localDir, 0755, true);
         }
+
+        $localPath = $localDir . '/' . $uniqueName;
+
+        if (!move_uploaded_file($file['tmp_name'], $localPath)) {
+            throw new Exception('Failed to save file to uploads folder');
+        }
+
+        // Build URL to the uploaded file
+        $cdnUrl = (defined('APP_URL') ? APP_URL : '') . '/uploads/' . $relativePath;
+        $storageMode = 'local';
     }
 
     // Save to database
     $mediaId = Database::insert('media_assets', [
         'user_id' => $user['id'],
-        'filename' => $filename,
+        'filename' => $uniqueName,
         'original_filename' => $file['name'],
         'file_type' => $fileType,
         'file_size' => $file['size'],
-        'cdn_url' => $storageMode === 'cdn' ? $cdnUrl : ($previewUrl ?? null),
-        'cdn_path' => $filename,
+        'cdn_url' => $cdnUrl,
+        'cdn_path' => $relativePath,
         'metadata' => json_encode([
             'mime_type' => $mimeType,
             'original_name' => $file['name'],
-            'storage_mode' => $storageMode,
-            'base64_url' => $storageMode === 'base64' ? $cdnUrl : null
+            'storage_mode' => $storageMode
         ])
     ]);
 
     // Build response
     $responseData = [
         'mediaId' => $mediaId,
-        'url' => $storageMode === 'cdn' ? $cdnUrl : ($previewUrl ?? $cdnUrl),
+        'url' => $cdnUrl,
         'filename' => $file['name'],
         'fileType' => $fileType,
         'fileSize' => $file['size'],
@@ -175,11 +180,9 @@ try {
         'storageMode' => $storageMode
     ];
 
-    // Include base64 for API usage if no CDN
-    if ($storageMode === 'base64') {
-        $responseData['base64Url'] = $cdnUrl;
-        $responseData['previewUrl'] = $previewUrl ?? null;
-        $responseData['warning'] = 'No CDN configured. Image will be sent as base64 to API providers.';
+    // Add a note if using local storage
+    if ($storageMode === 'local') {
+        $responseData['note'] = 'File saved to local storage. Configure BunnyCDN for better performance.';
     }
 
     successResponse($responseData);

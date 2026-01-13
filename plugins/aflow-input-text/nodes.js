@@ -2,26 +2,30 @@
  * AIKAFLOW Plugin - Text/Prompt Input with AI Enhancement
  * 
  * Provides text input for prompts with optional AI enhancement via OpenRouter.
- * OpenRouter integration is built directly into this plugin.
+ * The actual API call is proxied through the server to keep API keys secure.
  */
 
 (function () {
     'use strict';
 
     /**
-     * Get OpenRouter settings from localStorage
+     * Get OpenRouter settings from the server
+     * The API key is stored server-side, never exposed to browser
      */
-    function getOpenRouterSettings() {
+    async function getOpenRouterSettings() {
         try {
-            const keys = JSON.parse(localStorage.getItem('aikaflow-integration-keys') || '{}');
+            // Check if OpenRouter is configured (status only, not the actual key)
+            const configured = window.pluginManager?.integrationStatus?.openrouter === true;
+
+            // Get model and system prompts from localStorage (these are not sensitive)
             const openRouterSettings = JSON.parse(localStorage.getItem('aikaflow-openrouter-settings') || '{}');
             return {
-                apiKey: keys.openrouter || '',
+                isConfigured: configured,
                 model: openRouterSettings.model || 'openai/gpt-4o-mini',
                 systemPrompts: openRouterSettings.systemPrompts || []
             };
         } catch (e) {
-            return { apiKey: '', model: 'openai/gpt-4o-mini', systemPrompts: [] };
+            return { isConfigured: false, model: 'openai/gpt-4o-mini', systemPrompts: [] };
         }
     }
 
@@ -37,50 +41,36 @@
     }
 
     /**
-     * Enhance text using OpenRouter API
+     * Enhance text using server-side OpenRouter API proxy
+     * API key is never exposed to browser
      */
     async function enhanceText(text, systemPromptId) {
-        const settings = getOpenRouterSettings();
+        // Check if configured (sync check from cached status)
+        const isConfigured = window.pluginManager?.integrationStatus?.openrouter === true;
 
-        if (!settings.apiKey) {
-            throw new Error('OpenRouter API key not configured.');
+        if (!isConfigured) {
+            throw new Error('OpenRouter API key not configured. Please configure it in Administration → Integrations.');
         }
 
-        // Find the system prompt
-        let systemPrompt = 'You are a helpful assistant that enhances and improves text prompts for AI image and video generation. Make the prompt more descriptive, detailed, and effective while maintaining the original intent. Return only the enhanced prompt without any explanation.';
-
-        if (systemPromptId && settings.systemPrompts) {
-            const selectedPrompt = settings.systemPrompts.find(p => p.id === systemPromptId);
-            if (selectedPrompt) {
-                systemPrompt = selectedPrompt.content;
-            }
-        }
-
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        // Call server-side endpoint
+        const response = await fetch('./api/ai/enhance.php', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${settings.apiKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': window.location.origin,
-                'X-Title': 'AIKAFLOW'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: settings.model,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: text }
-                ],
-                max_tokens: 1000
+                text: text,
+                systemPromptId: systemPromptId
             })
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || 'Failed to enhance text');
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to enhance text');
         }
 
-        const data = await response.json();
-        return data.choices[0]?.message?.content || text;
+        return data.enhanced;
     }
 
     const nodeDefinitions = {

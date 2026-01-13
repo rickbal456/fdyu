@@ -110,7 +110,9 @@ switch ($method) {
             'paypal_secret_key',
             'paypal_usd_rate',
             // Integration Keys (API keys for external services - stored as JSON string)
-            'integration_keys'
+            'integration_keys',
+            // OpenRouter settings (model, system prompts - stored as JSON string)
+            'openrouter_settings'
         ];
         $updated = [];
 
