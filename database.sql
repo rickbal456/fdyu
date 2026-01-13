@@ -207,7 +207,7 @@ CREATE TABLE IF NOT EXISTS workflow_shares (
     workflow_data JSON NOT NULL,
     is_public TINYINT(1) DEFAULT 1,
     views INT UNSIGNED DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
 -- Site settings table (admin-configurable)
