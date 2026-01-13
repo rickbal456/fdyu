@@ -246,7 +246,9 @@ INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES
 ('email_forgot_password_body', 'Hello {{username}},\n\nWe received a request to reset your password. Click the link below to set a new password:\n\n{{reset_link}}\n\nThis link will expire in 1 hour.\n\nIf you did not request this, please ignore this email.\n\nBest regards,\nAIKAFLOW Team'),
 -- Terms and Privacy
 ('terms_of_service', '# Terms of Service\n\nBy using AIKAFLOW, you agree to these terms.'),
-('privacy_policy', '# Privacy Policy\n\nYour privacy is important to us.');
+('privacy_policy', '# Privacy Policy\n\nYour privacy is important to us.'),
+-- Integration API Keys (stored as JSON string)
+('integration_keys', '{}');
 
 -- Password reset tokens table
 CREATE TABLE IF NOT EXISTS password_reset_tokens (

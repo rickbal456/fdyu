@@ -151,12 +151,11 @@ class PluginManager {
         const providers = new Map();
 
         // Known provider metadata
+        // Note: BunnyCDN is configured as a storage plugin, not here
         const providerMeta = {
             'runninghub': { name: 'RunningHub', icon: 'cpu', color: 'purple', placeholder: 'Enter your RunningHub API key' },
-            'kie': { name: 'Kie.ai (Suno)', icon: 'music', color: 'green', placeholder: 'Enter your Kie.ai API key' },
             'jsoncut': { name: 'JsonCut', icon: 'scissors', color: 'blue', placeholder: 'Enter your JsonCut API key' },
             'openrouter': { name: 'OpenRouter (LLM)', icon: 'bot', color: 'pink', placeholder: 'Enter your OpenRouter API key' },
-            'bunnycdn': { name: 'BunnyCDN Storage', icon: 'cloud', color: 'orange', placeholder: 'Enter your BunnyCDN Access Key' },
             'postforme': { name: 'Postforme (Social Media)', icon: 'share-2', color: 'pink', placeholder: 'Enter your Postforme API key' }
         };
 

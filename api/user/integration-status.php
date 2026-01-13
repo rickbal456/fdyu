@@ -44,8 +44,9 @@ try {
     }
 
     // Build status map - only return whether each key is configured, NOT the actual value
+    // These are the API providers that use integration keys (not storage plugins)
     $status = [];
-    $providers = ['runninghub', 'kie', 'jsoncut', 'openrouter', 'bunnycdn', 'postforme'];
+    $providers = ['runninghub', 'jsoncut', 'openrouter', 'postforme'];
 
     foreach ($providers as $provider) {
         $status[$provider] = !empty($siteKeys[$provider]);
