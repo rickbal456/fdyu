@@ -1125,6 +1125,12 @@ class PropertiesPanel {
      * Check conditional visibility
      */
     checkCondition(condition, data) {
+        // Support function callbacks for dynamic conditions
+        if (typeof condition === 'function') {
+            return condition(data);
+        }
+
+        // Object-based condition checking
         for (const [field, expected] of Object.entries(condition)) {
             const actual = data[field];
 

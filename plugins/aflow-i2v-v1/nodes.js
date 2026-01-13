@@ -27,27 +27,23 @@
 
     /**
      * Check if RunningHub API key is configured in settings
+     * This is called at render time, not at load time
      */
     function hasRunningHubApiKey() {
         return getRunningHubApiKey() !== '';
     }
 
-    // Build fields - API key is shown only if not configured in settings
-    const fields = [];
-
-    // Only add API key field if not already configured
-    if (!hasRunningHubApiKey()) {
-        fields.push({
+    // Build fields - API key field is always included but hidden when configured
+    const fields = [
+        {
             id: 'apiKey',
             type: 'text',
             label: window.t ? window.t('generation.api_key') : 'API Key',
             placeholder: window.t ? window.t('generation.your_api_key') : 'Your RunningHub API key',
-            description: window.t ? window.t('generation.configure_in_settings') : 'Or configure in Settings → Integrations'
-        });
-    }
-
-    // Always add these fields
-    fields.push(
+            description: window.t ? window.t('generation.configure_in_settings') : 'Or configure in Settings → Integrations',
+            // Hide this field if API key is already configured in admin settings
+            showIf: () => !hasRunningHubApiKey()
+        },
         {
             id: 'model',
             type: 'select',
@@ -79,7 +75,7 @@
                 { value: '15', label: window.t ? window.t('generation.15_seconds') : '15 seconds' }
             ]
         }
-    );
+    ];
 
     // Register custom node: Image to Video V1
     PluginManager.registerNode({
