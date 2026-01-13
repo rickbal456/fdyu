@@ -28,30 +28,22 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 try {
     // Get user's integration keys preference
     $userKeys = [];
-    $userPref = Database::fetchOne(
-        "SELECT setting_value FROM user_settings WHERE user_id = ? AND setting_key = 'integration_keys'",
-        [$user['id']]
-    );
 
-    if ($userPref && $userPref['setting_value']) {
-        $decoded = json_decode($userPref['setting_value'], true);
-        if (is_array($decoded)) {
-            $userKeys = $decoded;
-        }
-    }
-
-    // Try alternative storage location
-    if (empty($userKeys)) {
+    // Try user_preferences table first
+    try {
         $altPref = Database::fetchOne(
             "SELECT value FROM user_preferences WHERE user_id = ? AND `key` = 'integration_keys'",
             [$user['id']]
         );
-        if ($altPref && $altPref['value']) {
+        if ($altPref && isset($altPref['value']) && $altPref['value']) {
             $decoded = json_decode($altPref['value'], true);
             if (is_array($decoded)) {
                 $userKeys = $decoded;
             }
         }
+    } catch (Exception $e) {
+        // Table might not exist, continue
+        error_log('user_preferences table error: ' . $e->getMessage());
     }
 
     // Build status map - only return whether each key is configured, NOT the actual value
@@ -62,9 +54,9 @@ try {
         $status[$provider] = !empty($userKeys[$provider]);
     }
 
-    // Also check for plugin-specific keys
+    // Also check for plugin-specific keys (PHP 7 compatible)
     foreach ($userKeys as $key => $value) {
-        if (str_starts_with($key, 'plugin_') && !empty($value)) {
+        if (strpos($key, 'plugin_') === 0 && !empty($value)) {
             $status[$key] = true;
         }
     }
