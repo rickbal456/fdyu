@@ -105,15 +105,15 @@ class PluginManager
     /**
      * Load admin-configured API key from database
      * This is called server-side only - keys are never exposed to the browser
+     * Integration keys are stored at the SITE level in site_settings table
      */
     private static function loadAdminApiKey($provider, $userId = null)
     {
-        // Try to load integration keys from user_settings table
-        if ($userId && class_exists('Database')) {
+        // Load from site_settings table (site-level config by admin)
+        if (class_exists('Database')) {
             try {
                 $setting = Database::fetchOne(
-                    "SELECT setting_value FROM user_settings WHERE user_id = ? AND setting_key = 'integration_keys'",
-                    [$userId]
+                    "SELECT setting_value FROM site_settings WHERE setting_key = 'integration_keys'"
                 );
 
                 if ($setting && isset($setting['setting_value']) && $setting['setting_value']) {

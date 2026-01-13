@@ -70,14 +70,20 @@ class PluginManager {
     }
 
     /**
-     * Load user's own integration keys for editing in settings
-     * (These are keys the user has entered themselves, not admin-shared keys)
+     * Load SITE-LEVEL integration keys for editing in admin settings
+     * These are stored in site_settings, not per-user
      */
     async loadUserIntegrationKeys() {
         try {
-            const response = await API.getPreference('integration_keys');
-            if (response.success && response.value) {
-                return response.value;
+            // Fetch from admin settings endpoint
+            const response = await fetch('./api/admin/settings.php');
+            const data = await response.json();
+            if (data.success && data.settings && data.settings.integration_keys) {
+                // integration_keys is stored as JSON string in site_settings
+                const keys = typeof data.settings.integration_keys === 'string'
+                    ? JSON.parse(data.settings.integration_keys)
+                    : data.settings.integration_keys;
+                return keys || {};
             }
         } catch (error) {
             console.error('Failed to load integration keys:', error);
@@ -86,13 +92,22 @@ class PluginManager {
     }
 
     /**
-     * Save integration key to database
+     * Save integration key to database (site-level)
      */
     async saveIntegrationKey(provider, value) {
         try {
             const keys = await this.loadUserIntegrationKeys();
             keys[provider] = value;
-            await API.savePreference('integration_keys', keys);
+
+            // Save to admin settings (site_settings table)
+            await fetch('./api/admin/settings.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ integration_keys: JSON.stringify(keys) })
+            });
+
+            // Also update integration status cache
+            this.integrationStatus = await this.loadIntegrationStatus();
         } catch (error) {
             console.error('Failed to save integration key:', error);
         }

@@ -108,7 +108,9 @@ switch ($method) {
             'paypal_sandbox',
             'paypal_client_id',
             'paypal_secret_key',
-            'paypal_usd_rate'
+            'paypal_usd_rate',
+            // Integration Keys (API keys for external services - stored as JSON string)
+            'integration_keys'
         ];
         $updated = [];
 

@@ -5,6 +5,8 @@
  * Returns which integrations have API keys configured WITHOUT exposing the actual keys.
  * This is safe to call from the browser.
  * 
+ * Integration keys are stored at the SITE level (by admin), not per-user.
+ * 
  * GET /api/user/integration-status.php
  */
 
@@ -26,19 +28,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 try {
-    // Get user's integration keys from user_settings table
-    // This is the same table and format used by preferences.php
-    $userKeys = [];
+    // Get SITE-LEVEL integration keys from site_settings table
+    // These are configured by the admin, not per-user
+    $siteKeys = [];
 
     $result = Database::fetchOne(
-        "SELECT setting_value FROM user_settings WHERE user_id = ? AND setting_key = 'integration_keys'",
-        [$user['id']]
+        "SELECT setting_value FROM site_settings WHERE setting_key = 'integration_keys'"
     );
 
     if ($result && isset($result['setting_value']) && $result['setting_value']) {
         $decoded = json_decode($result['setting_value'], true);
         if (is_array($decoded)) {
-            $userKeys = $decoded;
+            $siteKeys = $decoded;
         }
     }
 
@@ -47,11 +48,11 @@ try {
     $providers = ['runninghub', 'kie', 'jsoncut', 'openrouter', 'bunnycdn', 'postforme'];
 
     foreach ($providers as $provider) {
-        $status[$provider] = !empty($userKeys[$provider]);
+        $status[$provider] = !empty($siteKeys[$provider]);
     }
 
     // Also check for plugin-specific keys (PHP 7 compatible)
-    foreach ($userKeys as $key => $value) {
+    foreach ($siteKeys as $key => $value) {
         if (strpos($key, 'plugin_') === 0 && !empty($value)) {
             $status[$key] = true;
         }
