@@ -1,0 +1,14 @@
+{
+    "id": "aflow-input-video",
+    "name": "Video Input",
+    "version": "1.0.0",
+    "description": "Upload a video or provide a URL",
+    "author": "AIKAFLOW",
+    "category": "input",
+    "enabled": true,
+    "icon": "video",
+    "nodeTypes": [
+        "video-input"
+    ],
+    "executionType": "local"
+}

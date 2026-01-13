@@ -1,0 +1,21 @@
+{
+    "id": "aflow-share",
+    "name": "Workflow Sharing",
+    "description": "Share workflows via public links. Others can view your workflows in read-only mode.",
+    "version": "1.0.0",
+    "author": "AIKAFLOW",
+    "icon": "share-2",
+    "color": "green",
+    "category": "utility",
+    "enabled": true,
+    "homepage": "https:\/\/aikaflow.com",
+    "requires": {
+        "aikaflow": ">=1.0.0"
+    },
+    "nodeTypes": [],
+    "type": "feature",
+    "injectUI": true,
+    "scripts": [
+        "share.js"
+    ]
+}

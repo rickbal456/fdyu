@@ -1,0 +1,21 @@
+{
+    "id": "aflow-invitation",
+    "name": "Invitation Code System",
+    "description": "Referral system allowing users to share invitation codes. Both referrer and new user receive credit rewards when codes are used during registration.",
+    "version": "1.0.0",
+    "author": "AIKAFLOW",
+    "icon": "gift",
+    "color": "green",
+    "category": "marketing",
+    "enabled": true,
+    "homepage": "https://aikaflow.com",
+    "requires": {
+        "aikaflow": ">=1.0.0"
+    },
+    "nodeTypes": [],
+    "type": "feature",
+    "injectUI": true,
+    "scripts": [
+        "invitation.js"
+    ]
+}

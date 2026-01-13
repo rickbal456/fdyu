@@ -1,0 +1,18 @@
+{
+    "id": "aflow-edit-extract-audio",
+    "name": "Extract Audio",
+    "version": "1.0.0",
+    "description": "Extract audio from video",
+    "author": "AIKAFLOW",
+    "category": "editing",
+    "enabled": true,
+    "icon": "music",
+    "nodeTypes": [
+        "extract-audio"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "jsoncut",
+        "operation": "extract-audio"
+    }
+}

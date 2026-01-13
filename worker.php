@@ -1,0 +1,788 @@
+<?php
+/**
+ * AIKAFLOW - Background Task Worker
+ * 
+ * Processes queued tasks for workflow execution.
+ * Run via cron or supervisor:
+ *   php worker.php
+ * 
+ * Or as daemon:
+ *   php worker.php --daemon
+ */
+
+declare(strict_types=1);
+
+define('AIKAFLOW', true);
+
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/api/helpers.php';
+require_once __DIR__ . '/includes/PluginManager.php';
+
+// Configuration
+$workerConfig = [
+    'sleep_interval' => 2,        // Seconds between checks
+    'max_execution_time' => 300,  // Max time per task (seconds)
+    'batch_size' => 5,            // Tasks to process per cycle
+    'lock_timeout' => 600,        // Lock timeout (seconds)
+    'worker_id' => gethostname() . '_' . getmypid()
+];
+
+$isDaemon = in_array('--daemon', $argv ?? []);
+$running = true;
+
+// Signal handling for graceful shutdown
+if (function_exists('pcntl_signal')) {
+    pcntl_signal(SIGTERM, function () use (&$running) {
+        echo "[" . date('Y-m-d H:i:s') . "] Received SIGTERM, shutting down...\n";
+        $running = false;
+    });
+    pcntl_signal(SIGINT, function () use (&$running) {
+        echo "[" . date('Y-m-d H:i:s') . "] Received SIGINT, shutting down...\n";
+        $running = false;
+    });
+}
+
+echo "[" . date('Y-m-d H:i:s') . "] Worker started (ID: {$workerConfig['worker_id']})\n";
+
+// Main loop
+do {
+    if (function_exists('pcntl_signal_dispatch')) {
+        pcntl_signal_dispatch();
+    }
+
+    try {
+        // Clean up stale locks
+        cleanupStaleLocks($workerConfig['lock_timeout']);
+
+        // Fetch pending tasks
+        $tasks = fetchPendingTasks($workerConfig['batch_size'], $workerConfig['worker_id']);
+
+        if (empty($tasks)) {
+            if ($isDaemon) {
+                sleep($workerConfig['sleep_interval']);
+                continue;
+            } else {
+                echo "[" . date('Y-m-d H:i:s') . "] No pending tasks\n";
+                break;
+            }
+        }
+
+        foreach ($tasks as $task) {
+            if (!$running)
+                break;
+
+            echo "[" . date('Y-m-d H:i:s') . "] Processing task #{$task['id']}: {$task['task_type']}\n";
+
+            try {
+                processTask($task);
+                markTaskCompleted($task['id']);
+                echo "[" . date('Y-m-d H:i:s') . "] Task #{$task['id']} completed\n";
+
+            } catch (Exception $e) {
+                echo "[" . date('Y-m-d H:i:s') . "] Task #{$task['id']} failed: {$e->getMessage()}\n";
+                markTaskFailed($task['id'], $e->getMessage());
+            }
+        }
+
+    } catch (Exception $e) {
+        echo "[" . date('Y-m-d H:i:s') . "] Worker error: {$e->getMessage()}\n";
+        error_log('Worker error: ' . $e->getMessage());
+        sleep($workerConfig['sleep_interval']);
+    }
+
+} while ($isDaemon && $running);
+
+echo "[" . date('Y-m-d H:i:s') . "] Worker stopped\n";
+
+// ============================================
+// Worker Functions
+// ============================================
+
+/**
+ * Fetch pending tasks and lock them
+ */
+function fetchPendingTasks(int $limit, string $workerId): array
+{
+    $now = date('Y-m-d H:i:s');
+
+    // Lock tasks atomically
+    Database::query(
+        "UPDATE task_queue 
+         SET status = 'processing', locked_at = ?, locked_by = ?
+         WHERE status = 'pending' AND scheduled_at <= ?
+         ORDER BY priority DESC, created_at ASC
+         LIMIT ?",
+        [$now, $workerId, $now, $limit]
+    );
+
+    // Fetch locked tasks
+    return Database::fetchAll(
+        "SELECT * FROM task_queue WHERE status = 'processing' AND locked_by = ?",
+        [$workerId]
+    );
+}
+
+/**
+ * Clean up stale locks
+ */
+function cleanupStaleLocks(int $timeout): void
+{
+    $threshold = date('Y-m-d H:i:s', time() - $timeout);
+
+    // Reset stale tasks
+    Database::query(
+        "UPDATE task_queue 
+         SET status = 'pending', locked_at = NULL, locked_by = NULL, attempts = attempts + 1
+         WHERE status = 'processing' AND locked_at < ?",
+        [$threshold]
+    );
+
+    // Mark tasks that exceeded max attempts as failed
+    Database::query(
+        "UPDATE task_queue SET status = 'failed' WHERE attempts >= max_attempts AND status = 'pending'"
+    );
+}
+
+/**
+ * Process a task
+ */
+function processTask(array $task): void
+{
+    $payload = json_decode($task['payload'], true);
+
+    switch ($task['task_type']) {
+        case 'node_execution':
+            processNodeExecution($payload);
+            break;
+
+        default:
+            throw new Exception("Unknown task type: {$task['task_type']}");
+    }
+}
+
+/**
+ * Process node execution task
+ */
+function processNodeExecution(array $payload): void
+{
+    $executionId = $payload['execution_id'];
+    $taskId = $payload['task_id'];
+    $nodeId = $payload['node_id'];
+    $nodeType = $payload['node_type'];
+
+    // Get node task
+    $nodeTask = Database::fetchOne(
+        "SELECT * FROM node_tasks WHERE id = ?",
+        [$taskId]
+    );
+
+    if (!$nodeTask) {
+        throw new Exception("Node task not found: {$taskId}");
+    }
+
+    // Update status to processing
+    Database::update(
+        'node_tasks',
+        ['status' => 'processing', 'started_at' => date('Y-m-d H:i:s')],
+        'id = :id',
+        ['id' => $taskId]
+    );
+
+    // Get input data
+    $inputData = json_decode($nodeTask['input_data'], true) ?: [];
+
+    // Get inputs from connected nodes
+    $connectedInputs = getNodeInputs($executionId, $nodeId);
+    $inputData = array_merge($inputData, $connectedInputs);
+
+    // Credit Deduction
+    $cost = (float) Database::fetchColumn("SELECT cost_per_call FROM node_costs WHERE node_type = ?", [$nodeType]);
+
+    if ($cost > 0) {
+        $execution = Database::fetchOne("SELECT user_id FROM workflow_executions WHERE id = ?", [$executionId]);
+        $userId = $execution['user_id'];
+
+        // Check balance
+        $balance = (float) Database::fetchColumn(
+            "SELECT COALESCE(SUM(remaining), 0) FROM credit_ledger 
+             WHERE user_id = ? AND remaining > 0 
+             AND (expires_at IS NULL OR expires_at >= CURDATE())",
+            [$userId]
+        );
+
+        if ($balance < $cost) {
+            throw new Exception("Insufficient credits. Cost: {$cost}, Available: {$balance}");
+        }
+
+        // Deduct credits (FIFO)
+        $remainingToDeduct = $cost;
+        $ledgers = Database::fetchAll(
+            "SELECT * FROM credit_ledger 
+             WHERE user_id = ? AND remaining > 0 
+             AND (expires_at IS NULL OR expires_at >= CURDATE())
+             ORDER BY expires_at ASC, id ASC",
+            [$userId]
+        );
+
+        foreach ($ledgers as $ledger) {
+            if ($remainingToDeduct <= 0)
+                break;
+
+            $deduct = min($remainingToDeduct, $ledger['remaining']);
+
+            Database::query(
+                "UPDATE credit_ledger SET remaining = remaining - ? WHERE id = ?",
+                [$deduct, $ledger['id']]
+            );
+
+            $remainingToDeduct -= $deduct;
+        }
+
+        // Log transaction
+        $newBalance = $balance - $cost;
+        Database::insert('credit_transactions', [
+            'user_id' => $userId,
+            'type' => 'usage',
+            'amount' => -$cost,
+            'balance_after' => $newBalance,
+            'description' => "Node execution: {$nodeType}",
+            'reference_id' => "task_{$taskId}"
+        ]);
+    }
+
+    // Execute node based on type
+    $result = executeNode($nodeType, $inputData);
+
+    if ($result['success']) {
+        // Update node task with result
+        Database::update(
+            'node_tasks',
+            [
+                'status' => 'completed',
+                'external_task_id' => $result['taskId'] ?? null,
+                'result_url' => $result['resultUrl'] ?? null,
+                'output_data' => json_encode($result['output'] ?? []),
+                'completed_at' => date('Y-m-d H:i:s')
+            ],
+            'id = :id',
+            ['id' => $taskId]
+        );
+
+        // If async task, wait for webhook
+        if (isset($result['taskId']) && !isset($result['resultUrl'])) {
+            // Task is async - will be completed via webhook
+            Database::update(
+                'node_tasks',
+                ['status' => 'processing'],
+                'id = :id',
+                ['id' => $taskId]
+            );
+            return;
+        }
+
+        // Queue next task
+        queueNextPendingTask($executionId);
+
+    } else {
+        throw new Exception($result['error'] ?? 'Node execution failed');
+    }
+}
+
+/**
+ * Get inputs from connected nodes
+ */
+function getNodeInputs(int $executionId, string $nodeId): array
+{
+    // Get workflow data to find connections
+    $execution = Database::fetchOne(
+        "SELECT we.*, w.json_data 
+         FROM workflow_executions we
+         LEFT JOIN workflows w ON w.id = we.workflow_id
+         WHERE we.id = ?",
+        [$executionId]
+    );
+
+    if (!$execution || !$execution['json_data']) {
+        return [];
+    }
+
+    $workflowData = json_decode($execution['json_data'], true);
+    $connections = $workflowData['connections'] ?? [];
+
+    $inputs = [];
+
+    foreach ($connections as $conn) {
+        if ($conn['to']['nodeId'] === $nodeId) {
+            // Get output from source node
+            $sourceTask = Database::fetchOne(
+                "SELECT result_url, output_data FROM node_tasks 
+                 WHERE execution_id = ? AND node_id = ? AND status = 'completed'",
+                [$executionId, $conn['from']['nodeId']]
+            );
+
+            if ($sourceTask) {
+                $inputKey = $conn['to']['portId'];
+
+                if ($sourceTask['result_url']) {
+                    $inputs[$inputKey] = $sourceTask['result_url'];
+                } elseif ($sourceTask['output_data']) {
+                    $outputData = json_decode($sourceTask['output_data'], true);
+                    $inputs[$inputKey] = $outputData[$conn['from']['portId']] ?? null;
+                }
+            }
+        }
+    }
+
+    return $inputs;
+}
+
+/**
+ * Execute a node
+ */
+function executeNode(string $nodeType, array $inputData): array
+{
+    // Try Plugin Manager first
+    $pluginResult = PluginManager::executeNode($nodeType, $inputData);
+
+    if ($pluginResult['success']) {
+        return $pluginResult;
+    }
+
+    // If error is NOT "Unknown node type", it means plugin execution failed, so return error
+    if (isset($pluginResult['error']) && strpos($pluginResult['error'], 'Unknown node type') === false) {
+        return $pluginResult;
+    }
+
+    // Internal/Utility nodes
+    switch ($nodeType) {
+        // Utility nodes
+        case 'delay':
+            $duration = (int) ($inputData['duration'] ?? 5);
+            sleep(min($duration, 60)); // Max 60 seconds
+            return [
+                'success' => true,
+                'output' => $inputData
+            ];
+
+        case 'condition':
+            $input = $inputData['input'] ?? null;
+            $condition = $inputData['condition'] ?? 'exists';
+            $value = $inputData['value'] ?? '';
+
+            $result = false;
+            switch ($condition) {
+                case 'exists':
+                    $result = !empty($input);
+                    break;
+                case 'empty':
+                    $result = empty($input);
+                    break;
+                case 'contains':
+                    $result = is_string($input) && str_contains($input, $value);
+                    break;
+                case 'equals':
+                    $result = $input == $value;
+                    break;
+                default:
+                    $result = !empty($input);
+            }
+
+            return [
+                'success' => true,
+                'output' => [
+                    'true' => $result ? $input : null,
+                    'false' => !$result ? $input : null,
+                    'result' => $result
+                ]
+            ];
+
+        default:
+            return [
+                'success' => false,
+                'error' => "Unknown node type: {$nodeType}"
+            ];
+    }
+}
+
+/**
+ * Upload data URL to CDN or local storage
+ * Priority: BunnyCDN plugin -> Constants-based CDN -> Local filesystem
+ */
+function uploadDataUrlToCDN(string $dataUrl, string $filename): ?string
+{
+    // Try using the BunnyCDN storage handler plugin
+    if (class_exists('BunnyCDNStorageHandler') && BunnyCDNStorageHandler::isConfigured()) {
+        $result = BunnyCDNStorageHandler::uploadDataUrl($dataUrl, $filename);
+        if ($result)
+            return $result;
+    }
+
+    // Parse data URL first (needed for all fallbacks)
+    if (!preg_match('/^data:([^;]+);base64,(.+)$/', $dataUrl, $matches)) {
+        return null;
+    }
+
+    $mimeType = $matches[1];
+    $data = base64_decode($matches[2]);
+
+    if (!$data) {
+        return null;
+    }
+
+    // Generate file extension
+    $extension = pathinfo($filename, PATHINFO_EXTENSION) ?: 'bin';
+    if (!$extension || $extension === 'bin') {
+        $mimeTypes = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+            'video/mp4' => 'mp4',
+            'video/webm' => 'webm',
+            'audio/mpeg' => 'mp3',
+            'audio/wav' => 'wav'
+        ];
+        if (isset($mimeTypes[$mimeType])) {
+            $extension = $mimeTypes[$mimeType];
+        }
+    }
+
+    $uniqueName = bin2hex(random_bytes(16)) . '.' . $extension;
+    $datePath = date('Y/m/d');
+
+    // Try constants-based BunnyCDN approach
+    if (defined('BUNNY_STORAGE_ZONE') && BUNNY_STORAGE_ZONE && defined('BUNNY_ACCESS_KEY') && BUNNY_ACCESS_KEY) {
+        $path = 'uploads/' . $datePath . '/' . $uniqueName;
+        $storageUrl = defined('BUNNY_STORAGE_URL') ? BUNNY_STORAGE_URL : 'https://storage.bunnycdn.com';
+        $url = rtrim($storageUrl, '/') . '/' . BUNNY_STORAGE_ZONE . '/' . $path;
+
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST => 'PUT',
+            CURLOPT_POSTFIELDS => $data,
+            CURLOPT_HTTPHEADER => [
+                'AccessKey: ' . BUNNY_ACCESS_KEY,
+                'Content-Type: ' . $mimeType,
+                'Content-Length: ' . strlen($data)
+            ]
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 200 && $httpCode < 300) {
+            $cdnUrl = defined('BUNNY_CDN_URL') ? BUNNY_CDN_URL : '';
+            return rtrim($cdnUrl, '/') . '/' . $path;
+        }
+    }
+
+    // Fallback to local filesystem storage
+    $uploadDir = __DIR__ . '/uploads/' . $datePath;
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    $localPath = $uploadDir . '/' . $uniqueName;
+    if (file_put_contents($localPath, $data) !== false) {
+        // Return URL to the uploaded file
+        $appUrl = defined('APP_URL') ? APP_URL : '';
+        return rtrim($appUrl, '/') . '/uploads/' . $datePath . '/' . $uniqueName;
+    }
+
+    return null;
+}
+
+
+/**
+ * Queue next pending task
+ */
+function queueNextPendingTask(int $executionId): void
+{
+    // Find next pending task
+    $task = Database::fetchOne(
+        "SELECT * FROM node_tasks WHERE execution_id = ? AND status = 'pending' ORDER BY id ASC LIMIT 1",
+        [$executionId]
+    );
+
+    if (!$task) {
+        // Check if all tasks are complete
+        $incomplete = Database::fetchColumn(
+            "SELECT COUNT(*) FROM node_tasks WHERE execution_id = ? AND status NOT IN ('completed', 'failed')",
+            [$executionId]
+        );
+
+        if ($incomplete == 0) {
+            // Finalize execution
+            finalizeExecution($executionId);
+        }
+        return;
+    }
+
+    // Add to queue
+    Database::insert('task_queue', [
+        'task_type' => 'node_execution',
+        'payload' => json_encode([
+            'execution_id' => $executionId,
+            'task_id' => $task['id'],
+            'node_id' => $task['node_id'],
+            'node_type' => $task['node_type']
+        ]),
+        'priority' => 1,
+        'status' => 'pending'
+    ]);
+
+    // Update task status
+    Database::update(
+        'node_tasks',
+        ['status' => 'queued'],
+        'id = :id',
+        ['id' => $task['id']]
+    );
+}
+
+/**
+ * Finalize execution (or start next iteration)
+ */
+function finalizeExecution(int $executionId): void
+{
+    // Get execution details including repeat info
+    $execution = Database::fetchOne(
+        "SELECT * FROM workflow_executions WHERE id = ?",
+        [$executionId]
+    );
+
+    if (!$execution) {
+        echo "[" . date('Y-m-d H:i:s') . "] Execution not found: {$executionId}\n";
+        return;
+    }
+
+    $repeatCount = (int) ($execution['repeat_count'] ?? 1);
+    $currentIteration = (int) ($execution['current_iteration'] ?? 1);
+    $iterationOutputs = json_decode($execution['iteration_outputs'] ?? '[]', true) ?: [];
+
+    $tasks = Database::fetchAll(
+        "SELECT * FROM node_tasks WHERE execution_id = ? ORDER BY id DESC",
+        [$executionId]
+    );
+
+    $allCompleted = true;
+    $finalResultUrl = null;
+    $outputs = [];
+
+    // Check if CDN is configured
+    $hasCDN = defined('BUNNY_STORAGE_ZONE') && BUNNY_STORAGE_ZONE &&
+        defined('BUNNY_ACCESS_KEY') && BUNNY_ACCESS_KEY;
+
+    foreach ($tasks as $task) {
+        if ($task['status'] !== 'completed') {
+            $allCompleted = false;
+        }
+
+        if ($task['result_url']) {
+            $finalResultUrl = $task['result_url'];
+        }
+
+        $outputs[$task['node_id']] = [
+            'status' => $task['status'],
+            'resultUrl' => $task['result_url']
+        ];
+    }
+
+    // Store this iteration's output
+    $iterationOutputs[] = [
+        'iteration' => $currentIteration,
+        'result_url' => $finalResultUrl,
+        'outputs' => $outputs,
+        'completed_at' => date('Y-m-d H:i:s')
+    ];
+
+    // Check if we need more iterations
+    if ($allCompleted && $currentIteration < $repeatCount) {
+        // More iterations needed - start next iteration
+        echo "[" . date('Y-m-d H:i:s') . "] Iteration {$currentIteration}/{$repeatCount} complete, starting next...\n";
+
+        // Update execution with new iteration number and accumulated outputs
+        Database::update(
+            'workflow_executions',
+            [
+                'current_iteration' => $currentIteration + 1,
+                'iteration_outputs' => json_encode($iterationOutputs),
+                'status' => 'running'
+            ],
+            'id = :id',
+            ['id' => $executionId]
+        );
+
+        // Clone node_tasks for next iteration (reset status to pending)
+        foreach ($tasks as $task) {
+            // Get original input data (node config data, not computed inputs)
+            $inputData = json_decode($task['input_data'], true) ?: [];
+
+            Database::insert('node_tasks', [
+                'execution_id' => $executionId,
+                'node_id' => $task['node_id'],
+                'node_type' => $task['node_type'],
+                'status' => 'pending',
+                'input_data' => json_encode($inputData)
+            ]);
+        }
+
+        // Delete old completed tasks to avoid confusion
+        Database::delete('node_tasks', 'execution_id = ? AND status IN (\'completed\', \'failed\')', [$executionId]);
+
+        // Queue next task
+        queueNextPendingTask($executionId);
+
+        return;
+    }
+
+    // All iterations complete - finalize
+    echo "[" . date('Y-m-d H:i:s') . "] All {$repeatCount} iteration(s) complete\n";
+
+    // Prepare result metadata
+    $resultMetadata = [
+        'storage_mode' => $hasCDN ? 'cdn' : 'direct',
+        'is_temporary' => !$hasCDN,
+        'total_iterations' => $repeatCount,
+        'completed_iterations' => count($iterationOutputs)
+    ];
+
+    // Add warning for temporary files
+    if (!$hasCDN && $finalResultUrl) {
+        $resultMetadata['warning'] = 'This result is stored on the API provider\'s temporary storage and may be deleted. Please download immediately.';
+        $resultMetadata['download_urgency'] = 'high';
+    }
+
+    // Collect all result URLs for easy access
+    $allResultUrls = [];
+    foreach ($iterationOutputs as $io) {
+        if (!empty($io['result_url'])) {
+            $allResultUrls[] = $io['result_url'];
+        }
+    }
+
+    Database::update(
+        'workflow_executions',
+        [
+            'status' => $allCompleted ? 'completed' : 'failed',
+            'result_url' => $finalResultUrl, // Last result URL for backward compatibility
+            'output_data' => json_encode([
+                'nodes' => $outputs,
+                'metadata' => $resultMetadata,
+                'all_results' => $allResultUrls
+            ]),
+            'iteration_outputs' => json_encode($iterationOutputs),
+            'completed_at' => date('Y-m-d H:i:s')
+        ],
+        'id = :id',
+        ['id' => $executionId]
+    );
+
+    // Add all outputs to user gallery
+    if (!empty($allResultUrls) && $execution['user_id']) {
+        foreach ($iterationOutputs as $io) {
+            if (!empty($io['result_url'])) {
+                try {
+                    // Determine item type from URL
+                    $itemType = 'video'; // Default
+                    $url = $io['result_url'];
+                    if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $url)) {
+                        $itemType = 'image';
+                    } elseif (preg_match('/\.(mp3|wav|ogg|m4a)$/i', $url)) {
+                        $itemType = 'audio';
+                    }
+
+                    Database::insert('user_gallery', [
+                        'user_id' => $execution['user_id'],
+                        'workflow_id' => $execution['workflow_id'],
+                        'item_type' => $itemType,
+                        'url' => $io['result_url'],
+                        'metadata' => json_encode([
+                            'execution_id' => $executionId,
+                            'iteration' => $io['iteration']
+                        ])
+                    ]);
+                } catch (Exception $e) {
+                    // Silently fail gallery insert
+                    error_log('Gallery insert failed: ' . $e->getMessage());
+                }
+            }
+        }
+    }
+}
+
+
+/**
+ * Mark queue task as completed
+ */
+function markTaskCompleted(int $taskId): void
+{
+    Database::update(
+        'task_queue',
+        ['status' => 'completed', 'locked_at' => null, 'locked_by' => null],
+        'id = :id',
+        ['id' => $taskId]
+    );
+}
+
+/**
+ * Mark queue task as failed
+ */
+function markTaskFailed(int $taskId, string $error): void
+{
+    $task = Database::fetchOne("SELECT * FROM task_queue WHERE id = ?", [$taskId]);
+
+    if ($task && $task['attempts'] < $task['max_attempts']) {
+        // Retry
+        Database::update(
+            'task_queue',
+            [
+                'status' => 'pending',
+                'locked_at' => null,
+                'locked_by' => null,
+                'scheduled_at' => date('Y-m-d H:i:s', time() + 30) // Retry in 30 seconds
+            ],
+            'id = :id',
+            ['id' => $taskId]
+        );
+    } else {
+        // Max attempts reached
+        Database::update(
+            'task_queue',
+            ['status' => 'failed', 'locked_at' => null, 'locked_by' => null],
+            'id = :id',
+            ['id' => $taskId]
+        );
+
+        // Mark node task as failed
+        $payload = json_decode($task['payload'], true);
+        if (isset($payload['task_id'])) {
+            Database::update(
+                'node_tasks',
+                [
+                    'status' => 'failed',
+                    'error_message' => $error,
+                    'completed_at' => date('Y-m-d H:i:s')
+                ],
+                'id = :id',
+                ['id' => $payload['task_id']]
+            );
+
+            // Mark execution as failed
+            Database::update(
+                'workflow_executions',
+                [
+                    'status' => 'failed',
+                    'error_message' => $error,
+                    'completed_at' => date('Y-m-d H:i:s')
+                ],
+                'id = :id',
+                ['id' => $payload['execution_id']]
+            );
+        }
+    }
+}

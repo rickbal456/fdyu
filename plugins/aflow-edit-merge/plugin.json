@@ -1,0 +1,33 @@
+{
+    "id": "aflow-edit-merge",
+    "name": "Video Merge",
+    "version": "1.0.0",
+    "description": "Merge multiple videos into one",
+    "author": "AIKAFLOW",
+    "category": "editing",
+    "enabled": true,
+    "icon": "layers",
+    "nodeTypes": [
+        "video-merge"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "jsoncut",
+        "operation": "merge"
+    },
+    "apiMapping": {
+        "request": {
+            "video1_url": "{{inputs.video1}}",
+            "video2_url": "{{inputs.video2}}",
+            "transition": "{{data.transition}}",
+            "transition_duration": "{{data.transitionDuration}}"
+        },
+        "response": {
+            "taskId": "$.task_id",
+            "status": "$.status"
+        },
+        "result": {
+            "resultUrl": "$.output_url"
+        }
+    }
+}

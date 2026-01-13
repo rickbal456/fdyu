@@ -1,0 +1,18 @@
+{
+    "id": "aflow-edit-text-overlay",
+    "name": "Text Overlay",
+    "version": "1.0.0",
+    "description": "Add text overlay to video",
+    "author": "AIKAFLOW",
+    "category": "editing",
+    "enabled": true,
+    "icon": "type",
+    "nodeTypes": [
+        "text-overlay"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "jsoncut",
+        "operation": "text-overlay"
+    }
+}

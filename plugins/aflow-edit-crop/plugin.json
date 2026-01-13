@@ -1,0 +1,18 @@
+{
+    "id": "aflow-edit-crop",
+    "name": "Video Crop",
+    "version": "1.0.0",
+    "description": "Crop video to specific dimensions",
+    "author": "AIKAFLOW",
+    "category": "editing",
+    "enabled": true,
+    "icon": "crop",
+    "nodeTypes": [
+        "video-crop"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "jsoncut",
+        "operation": "crop"
+    }
+}

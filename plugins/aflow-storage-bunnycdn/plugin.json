@@ -1,0 +1,58 @@
+{
+    "id": "aflow-storage-bunnycdn",
+    "name": "BunnyCDN Storage",
+    "description": "Cloud storage and CDN delivery for media files",
+    "version": "1.0.0",
+    "author": "AIKAFLOW",
+    "icon": "cloud",
+    "color": "orange",
+    "category": "storage",
+    "type": "storage",
+    "enabled": true,
+    "homepage": "https://bunny.net",
+    "requires": {
+        "aikaflow": ">=1.0.0"
+    },
+    "settings": {
+        "storageZone": "",
+        "accessKey": "",
+        "cdnUrl": "",
+        "storageUrl": ""
+    },
+    "capabilities": [
+        "upload",
+        "download",
+        "delete",
+        "list"
+    ],
+    "configFields": [
+        {
+            "id": "storageZone",
+            "type": "text",
+            "label": "Storage Zone Name",
+            "placeholder": "Your storage zone name",
+            "required": true
+        },
+        {
+            "id": "accessKey",
+            "type": "password",
+            "label": "Storage Access Key",
+            "placeholder": "Your BunnyCDN storage access key",
+            "required": true
+        },
+        {
+            "id": "storageUrl",
+            "type": "text",
+            "label": "Storage URL",
+            "placeholder": "https://storage.bunnycdn.com",
+            "default": "https://storage.bunnycdn.com"
+        },
+        {
+            "id": "cdnUrl",
+            "type": "text",
+            "label": "CDN Pull Zone URL",
+            "placeholder": "https://your-zone.b-cdn.net",
+            "required": true
+        }
+    ]
+}

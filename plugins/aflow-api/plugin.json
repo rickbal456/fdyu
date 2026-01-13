@@ -1,0 +1,21 @@
+{
+    "id": "aflow-api",
+    "name": "Workflow API",
+    "description": "Run workflows programmatically via REST API. Generate code samples, view input/output schema, and monitor API executions.",
+    "version": "1.0.0",
+    "author": "AIKAFLOW",
+    "icon": "terminal",
+    "color": "purple",
+    "category": "utility",
+    "enabled": true,
+    "homepage": "https://aikaflow.com",
+    "requires": {
+        "aikaflow": ">=1.0.0"
+    },
+    "nodeTypes": [],
+    "type": "feature",
+    "injectUI": true,
+    "scripts": [
+        "api.js"
+    ]
+}

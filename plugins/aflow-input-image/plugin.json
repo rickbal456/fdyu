@@ -1,0 +1,14 @@
+{
+    "id": "aflow-input-image",
+    "name": "Image Input",
+    "version": "1.0.0",
+    "description": "Upload an image or provide a URL",
+    "author": "AIKAFLOW",
+    "category": "input",
+    "enabled": true,
+    "icon": "image",
+    "nodeTypes": [
+        "image-input"
+    ],
+    "executionType": "local"
+}

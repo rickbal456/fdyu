@@ -1,0 +1,457 @@
+<?php
+
+class PluginManager
+{
+    private static $plugins = [];
+    private static $nodeDefinitions = [];
+    private static $storagePlugins = [];
+
+    /**
+     * Load all plugins and their node definitions
+     */
+    public static function loadPlugins()
+    {
+        if (!empty(self::$plugins))
+            return;
+
+        $pluginDir = __DIR__ . '/../plugins';
+        if (!is_dir($pluginDir))
+            return;
+
+        $dirs = glob($pluginDir . '/*', GLOB_ONLYDIR);
+        foreach ($dirs as $dir) {
+            $jsonFile = $dir . '/plugin.json';
+            if (file_exists($jsonFile)) {
+                $pluginData = json_decode(file_get_contents($jsonFile), true);
+                if ($pluginData && isset($pluginData['enabled']) && $pluginData['enabled']) {
+                    self::$plugins[$pluginData['id']] = $pluginData;
+
+                    // Load node types for node plugins
+                    if (isset($pluginData['nodeTypes'])) {
+                        foreach ($pluginData['nodeTypes'] as $nodeType) {
+                            self::$nodeDefinitions[$nodeType] = $pluginData;
+                        }
+                    }
+
+                    // Load storage plugins
+                    if (($pluginData['type'] ?? 'node') === 'storage') {
+                        $handlerFile = $dir . '/handler.php';
+                        if (file_exists($handlerFile)) {
+                            require_once $handlerFile;
+                        }
+                        self::$storagePlugins[$pluginData['id']] = $pluginData;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if a plugin is enabled
+     */
+    public static function isPluginEnabled($pluginId)
+    {
+        self::loadPlugins();
+        return isset(self::$plugins[$pluginId]);
+    }
+
+    /**
+     * Get all enabled plugins
+     * @return array
+     */
+    public static function getEnabledPlugins(): array
+    {
+        self::loadPlugins();
+        return self::$plugins;
+    }
+
+    /**
+     * Get storage plugin by ID
+     */
+    public static function getStoragePlugin($pluginId)
+    {
+        self::loadPlugins();
+        return self::$storagePlugins[$pluginId] ?? null;
+    }
+
+    /**
+     * Get all storage plugins
+     */
+    public static function getStoragePlugins()
+    {
+        self::loadPlugins();
+        return self::$storagePlugins;
+    }
+
+
+    /**
+     * Get definition for a node type
+     */
+    public static function getNodeDefinition($nodeType)
+    {
+        self::loadPlugins();
+        return self::$nodeDefinitions[$nodeType] ?? null;
+    }
+
+    /**
+     * Get all node definitions
+     */
+    public static function getAllNodeDefinitions()
+    {
+        self::loadPlugins();
+        return self::$nodeDefinitions;
+    }
+
+
+    /**
+     * Execute a plugin node
+     */
+    public static function executeNode($nodeType, $inputData)
+    {
+        $definition = self::getNodeDefinition($nodeType);
+        if (!$definition) {
+            return ['success' => false, 'error' => "Unknown node type: $nodeType"];
+        }
+
+        if ($definition['executionType'] === 'local') {
+            // Local execution usually handled via passing inputs to outputs
+            // For input nodes, we might need to handle file uploads here if passed as base64
+            // But for now, let's assume local execution is simple pass-through or handled specially
+            return self::executeLocalNode($nodeType, $inputData, $definition);
+        } elseif ($definition['executionType'] === 'api') {
+            return self::executeApiNode($nodeType, $inputData, $definition);
+        }
+
+        return ['success' => false, 'error' => "Unsupported execution type"];
+    }
+
+    /**
+     * Execute local node logic
+     */
+    private static function executeLocalNode($nodeType, $inputData, $definition)
+    {
+        // Handle input nodes common logic
+        if (in_array($nodeType, ['image-input', 'video-input', 'audio-input'])) {
+            $url = $inputData['url'] ?? null;
+            $isBase64 = false;
+
+            if (($inputData['source'] ?? '') === 'upload' && isset($inputData['file']['dataUrl'])) {
+                // Needs external function or helper to upload
+                if (function_exists('uploadDataUrlToCDN')) {
+                    $url = uploadDataUrlToCDN($inputData['file']['dataUrl'], $inputData['file']['name'] ?? 'file');
+                }
+
+                // Fallback for image input to base64 if upload fails/not available
+                if (!$url && $nodeType === 'image-input') {
+                    $url = $inputData['file']['dataUrl'];
+                    $isBase64 = true;
+                } elseif (!$url) {
+                    return [
+                        'success' => false,
+                        'error' => 'Upload failed. Please configure CDN or provide a URL.'
+                    ];
+                }
+            }
+
+            // Map output key based on type
+            $outputKey = str_replace('-input', '', $nodeType);
+
+            return [
+                'success' => true,
+                'resultUrl' => $url,
+                'output' => [
+                    $outputKey => $url,
+                    'isBase64' => $isBase64
+                ]
+            ];
+        }
+
+        if ($nodeType === 'text-input') {
+            return [
+                'success' => true,
+                'output' => ['text' => $inputData['text'] ?? '']
+            ];
+        }
+
+        return ['success' => true, 'output' => $inputData];
+    }
+
+    /**
+     * Execute API node using mapping
+     */
+    private static function executeApiNode($nodeType, $inputData, $definition)
+    {
+        if (!isset($definition['apiConfig']) || !isset($definition['apiMapping'])) {
+            return ['success' => false, 'error' => "Missing API configuration for $nodeType"];
+        }
+
+        $apiConfig = $definition['apiConfig'];
+        $mapping = $definition['apiMapping'];
+        $provider = $apiConfig['provider'] ?? 'custom';
+
+        // Get API key for rate limiting check
+        $apiKey = $inputData['apiKey'] ?? '';
+
+        // Check rate limit if ApiRateLimiter is available and we have an API key
+        if (!empty($apiKey) && class_exists('ApiRateLimiter')) {
+            if (!ApiRateLimiter::canProceed($provider, $apiKey)) {
+                // At rate limit - queue the request
+                $queueId = ApiRateLimiter::enqueue(
+                    $provider,
+                    $apiKey,
+                    $inputData['_workflow_run_id'] ?? null,
+                    $inputData['_node_id'] ?? '',
+                    $nodeType,
+                    $inputData
+                );
+
+                return [
+                    'success' => true,
+                    'status' => 'queued',
+                    'queueId' => $queueId,
+                    'message' => 'Request queued due to API rate limits. It will be processed automatically when a slot becomes available.'
+                ];
+            }
+        }
+
+        // Note: API keys are provided via Integration tab or node settings
+        // No system-level API key fallback
+
+        // Inject webhook URL
+        if (!isset($inputData['webhook_url'])) {
+            $inputData['webhook_url'] = defined('APP_URL') ? APP_URL . '/api/webhook.php?source=' . $provider : '';
+        }
+
+        // Prepare request body using mapping
+        $requestBody = self::mapData($mapping['request'], $inputData);
+        $requestBody = self::processSpecialValues($requestBody);
+
+        // Acquire rate limit slot before making the API call
+        $taskId = null;
+        if (!empty($apiKey) && class_exists('ApiRateLimiter')) {
+            // Generate a temporary task ID (will be replaced by actual task ID from API response)
+            $taskId = 'pending_' . uniqid();
+            ApiRateLimiter::acquireSlot(
+                $provider,
+                $apiKey,
+                $taskId,
+                $inputData['_workflow_run_id'] ?? null,
+                $inputData['_node_id'] ?? null
+            );
+        }
+
+        // Call generic API
+        $response = self::callGenericApi($apiConfig, $requestBody);
+
+        if (!$response['success']) {
+            // Release slot on failure
+            if ($taskId && class_exists('ApiRateLimiter')) {
+                ApiRateLimiter::releaseSlot($provider, $taskId);
+            }
+            return $response;
+        }
+
+        $apiResponse = $response['data'];
+
+        // Map response
+        $result = [];
+        if (isset($mapping['response'])) {
+            $result = self::mapResponse($mapping['response'], $apiResponse);
+        }
+
+        $output = [];
+        if (isset($mapping['result'])) {
+            $output = self::mapResponse($mapping['result'], $apiResponse);
+        }
+
+        // Update the rate limit slot with the actual task ID from API response
+        $actualTaskId = $result['taskId'] ?? null;
+        if ($taskId && $actualTaskId && class_exists('ApiRateLimiter')) {
+            // Release the temporary slot and create one with the real task ID
+            ApiRateLimiter::releaseSlot($provider, $taskId);
+            ApiRateLimiter::acquireSlot(
+                $provider,
+                $apiKey,
+                $actualTaskId,
+                $inputData['_workflow_run_id'] ?? null,
+                $inputData['_node_id'] ?? null
+            );
+        }
+
+        return [
+            'success' => true,
+            'taskId' => $actualTaskId,
+            'resultUrl' => $output['resultUrl'] ?? null,
+            'output' => $output
+        ];
+    }
+
+    /**
+     * Process special values in request body
+     */
+    private static function processSpecialValues($data)
+    {
+        if (!is_array($data))
+            return $data;
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $data[$key] = self::processSpecialValues($value);
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * Call generic API based on config
+     */
+    private static function callGenericApi($apiConfig, $data)
+    {
+        $provider = $apiConfig['provider'];
+
+        // Resolve credentials and base URL
+        $baseUrl = '';
+        $apiKey = '';
+        $headerName = 'Authorization';
+        $headerValuePrefix = 'Bearer ';
+
+        switch ($provider) {
+            case 'jsoncut':
+                $baseUrl = defined('JSONCUT_API_URL') ? JSONCUT_API_URL : 'https://api.jsoncut.com';
+                break;
+            case 'runninghub':
+                $baseUrl = defined('RUNNINGHUB_API_URL') ? RUNNINGHUB_API_URL : 'https://api.runninghub.ai';
+                break;
+            case 'kie':
+                $baseUrl = defined('KIE_API_URL') ? KIE_API_URL : 'https://api.kie.ai';
+                break;
+            case 'postforme':
+                $baseUrl = defined('POSTFORME_API_URL') ? POSTFORME_API_URL : 'https://api.postforme.dev';
+                break;
+            default:
+                return ['success' => false, 'error' => "Unknown provider: $provider"];
+        }
+
+        // API key must be provided via node configuration (inputData['apiKey'])
+        $apiKey = $data['apiKey'] ?? '';
+        if (empty($apiKey)) {
+            return ['success' => false, 'error' => "API key not provided. Please configure it in the Integration tab or node settings."];
+        }
+
+        $endpoint = $apiConfig['endpoint'] ?? '';
+
+        // Fallback or legacy operation to endpoint mapping
+        if (empty($endpoint) && isset($apiConfig['operation'])) {
+            // Basic mapping for known operations if endpoint is missing
+            $endpoint = '/v1/' . $apiConfig['operation'];
+        }
+
+        // Handle absolute URL in endpoint
+        if (preg_match('/^https?:\/\//', $endpoint)) {
+            $url = $endpoint;
+        } else {
+            $url = rtrim($baseUrl, '/') . '/' . ltrim($endpoint, '/');
+        }
+
+        // Add webhook URL if not present
+        if (!isset($data['webhook_url'])) {
+            $data['webhook_url'] = APP_URL . '/api/webhook.php?source=' . $provider;
+        }
+
+        // Use httpRequest helper if available
+        if (function_exists('httpRequest')) {
+            return httpRequest($url, [
+                'method' => 'POST',
+                'headers' => [
+                    $headerName => $headerValuePrefix . $apiKey,
+                    'Content-Type' => 'application/json'
+                ],
+                'body' => $data,
+                'timeout' => 120
+            ]);
+        }
+
+        return ['success' => false, 'error' => 'HTTP client not available'];
+    }
+
+
+    /**
+     * Map data using Mustache-like syntax {{var}} or JSONPath-like $.var
+     */
+    private static function mapData($template, $data)
+    {
+        $result = [];
+        foreach ($template as $key => $value) {
+            if (is_array($value)) {
+                $result[$key] = self::mapData($value, $data);
+            } else {
+                // Check for {{variable}} syntax
+                if (preg_match('/\{\{(.*?)\}\}/', $value, $matches)) {
+                    $path = trim($matches[1]);
+                    $val = self::getValueByPath($data, $path);
+                    // If the value is the only thing, use the type, otherwise replace string
+                    if ($value === $matches[0]) {
+                        $result[$key] = $val;
+                    } else {
+                        $result[$key] = str_replace($matches[0], $val, $value);
+                    }
+                } else {
+                    $result[$key] = $value;
+                }
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Map response using JSONPath-like syntax $.var
+     */
+    private static function mapResponse($template, $data)
+    {
+        $result = [];
+        foreach ($template as $key => $value) {
+            if (is_array($value)) {
+                $result[$key] = self::mapResponse($value, $data);
+            } else {
+                if (strpos($value, '$.') === 0) {
+                    $path = substr($value, 2); // Remove $.
+                    $result[$key] = self::getValueByPath($data, $path);
+                } else {
+                    $result[$key] = $value;
+                }
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Get value from array using dot notation
+     * Supports inputs.var and data.var inputs
+     */
+    private static function getValueByPath($data, $path)
+    {
+        // Handle special prefixes for inputs mapping
+        // inputs.x -> $data['x']  (legacy/simplification)
+        // data.x -> $data['x']
+
+        // But actually the inputData passed to executeNode usually has flattened structure or specific keys
+        // Let's assume inputData contains merged inputs and data
+
+        $parts = explode('.', $path);
+
+        // If first part is 'inputs' or 'data', skip it if the root data is merged
+        if ($parts[0] === 'inputs' || $parts[0] === 'data') {
+            array_shift($parts);
+        }
+
+        $current = $data;
+        foreach ($parts as $part) {
+            if (is_array($current) && isset($current[$part])) {
+                $current = $current[$part];
+            } else {
+                return null; // Or empty string?
+            }
+        }
+
+        return $current;
+    }
+}

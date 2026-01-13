@@ -1,0 +1,19 @@
+{
+    "id": "aflow-auth-google",
+    "name": "Google OAuth Login",
+    "description": "Enable login and registration using Google accounts. Requires Google OAuth 2.0 credentials from Google Cloud Console.",
+    "version": "1.0.0",
+    "author": "AIKAFLOW",
+    "icon": "chrome",
+    "color": "red",
+    "category": "authentication",
+    "enabled": true,
+    "homepage": "https://aikaflow.com",
+    "requires": {
+        "aikaflow": ">=1.0.0"
+    },
+    "nodeTypes": [],
+    "type": "feature",
+    "injectUI": false,
+    "scripts": []
+}

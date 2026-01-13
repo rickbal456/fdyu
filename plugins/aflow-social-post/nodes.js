@@ -1,0 +1,268 @@
+/**
+ * AIKAFLOW - Social Media Post Plugin
+ * 
+ * This file defines the Social Post node for publishing content to social media platforms.
+ * Uses Postforme API with async webhook-based execution.
+ */
+
+(function () {
+    'use strict';
+
+    const PLUGIN_ID = 'aflow-social-post';
+    const POSTFORME_API_BASE = 'https://api.postforme.dev/v1';
+
+    // Platform configurations with icons and colors
+    const PLATFORMS = {
+        instagram: { name: 'Instagram', icon: 'instagram', color: 'pink' },
+        tiktok: { name: 'TikTok', icon: 'music', color: 'cyan' },
+        facebook: { name: 'Facebook', icon: 'facebook', color: 'blue' },
+        youtube: { name: 'YouTube', icon: 'youtube', color: 'red' },
+        x: { name: 'X (Twitter)', icon: 'twitter', color: 'gray' },
+        linkedin: { name: 'LinkedIn', icon: 'linkedin', color: 'blue' },
+        pinterest: { name: 'Pinterest', icon: 'image', color: 'red' },
+        bluesky: { name: 'Bluesky', icon: 'cloud', color: 'blue' },
+        threads: { name: 'Threads', icon: 'at-sign', color: 'gray' }
+    };
+
+    /**
+     * Get the Postforme API key from settings
+     */
+    function getPostformeApiKey() {
+        // First check plugin-specific key
+        const pluginKey = PluginManager.getAiKey(`plugin_${PLUGIN_ID}`);
+        if (pluginKey) return pluginKey;
+
+        // Then check main Postforme key
+        return PluginManager.getAiKey('postforme');
+    }
+
+    /**
+     * Check if Postforme API key is configured
+     */
+    function hasPostformeApiKey() {
+        return getPostformeApiKey() !== '';
+    }
+
+    /**
+     * Fetch connected social accounts from API
+     */
+    async function fetchSocialAccounts() {
+        try {
+            const response = await fetch('/aikaflow/api/social/accounts.php');
+            const data = await response.json();
+            if (data.success && data.accounts) {
+                return data.accounts;
+            }
+        } catch (error) {
+            console.error('Failed to fetch social accounts:', error);
+        }
+        return [];
+    }
+
+    // Build fields array
+    const fields = [];
+
+    // Only add API key field if not already configured
+    if (!hasPostformeApiKey()) {
+        fields.push({
+            id: 'apiKey',
+            type: 'text',
+            label: 'API Key',
+            placeholder: 'Your Postforme API key',
+            description: 'Or configure in Settings → Integrations'
+        });
+    }
+
+    // Add main fields
+    fields.push(
+        {
+            id: 'accounts',
+            type: 'multiselect',
+            label: 'Post To',
+            placeholder: 'Select social accounts...',
+            description: 'Select one or more connected accounts',
+            options: [] // Will be populated by onRender callback
+        },
+        {
+            id: 'caption',
+            type: 'textarea',
+            label: 'Caption',
+            placeholder: 'Write your post caption here...\n\nSupports hashtags and mentions.',
+            rows: 4,
+            // This field will be disabled when 'text' input port is connected
+            disabledWhenConnected: 'text'
+        },
+        {
+            id: 'scheduleType',
+            type: 'select',
+            label: 'Publish Time',
+            default: 'now',
+            options: [
+                { value: 'now', label: 'Publish Immediately' },
+                { value: 'scheduled', label: 'Schedule for Later' }
+            ]
+        },
+        {
+            id: 'scheduledAt',
+            type: 'datetime',
+            label: 'Scheduled Date/Time',
+            showIf: { scheduleType: 'scheduled' }
+        }
+    );
+
+    /**
+     * Load social accounts and update multiselect options
+     */
+    async function loadAccountsIntoMultiselect(container, currentAccounts) {
+        const multiselectContainer = container.querySelector('.multiselect-container');
+        if (!multiselectContainer) return;
+
+        // Show loading state
+        multiselectContainer.innerHTML = `
+            <div class="text-sm text-dark-400 py-2 text-center">
+                <i data-lucide="loader" class="w-4 h-4 inline mr-1 animate-spin"></i>
+                Loading accounts...
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons({ root: multiselectContainer });
+
+        try {
+            const accounts = await fetchSocialAccounts();
+
+            if (accounts.length === 0) {
+                multiselectContainer.innerHTML = `
+                    <div class="text-sm text-dark-400 py-3 text-center">
+                        <i data-lucide="user-x" class="w-5 h-5 mx-auto mb-2 opacity-50"></i>
+                        <p>No accounts connected</p>
+                        <p class="text-xs mt-1">Go to Settings → Social Accounts</p>
+                    </div>
+                `;
+            } else {
+                const selectedValues = Array.isArray(currentAccounts) ? currentAccounts : [];
+                let html = '';
+                accounts.forEach(acc => {
+                    const isChecked = selectedValues.includes(acc.id);
+                    const platformIcon = PLATFORMS[acc.platform]?.icon || 'user';
+                    html += `
+                        <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-dark-700/50 cursor-pointer ${isChecked ? 'bg-dark-700/30' : ''}">
+                            <input type="checkbox" 
+                                   class="form-checkbox multiselect-option" 
+                                   data-field-id="accounts"
+                                   data-option-value="${acc.id}"
+                                   ${isChecked ? 'checked' : ''}>
+                            <i data-lucide="${platformIcon}" class="w-4 h-4 opacity-60"></i>
+                            <span class="text-sm text-dark-200">${Utils.escapeHtml(acc.username)} (${PLATFORMS[acc.platform]?.name || acc.platform})</span>
+                        </label>
+                    `;
+                });
+                multiselectContainer.innerHTML = html;
+            }
+
+            if (window.lucide) lucide.createIcons({ root: multiselectContainer });
+        } catch (error) {
+            console.error('Failed to load social accounts:', error);
+            multiselectContainer.innerHTML = `
+                <div class="text-sm text-red-400 py-2 text-center">
+                    <i data-lucide="alert-circle" class="w-4 h-4 inline mr-1"></i>
+                    Failed to load accounts
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons({ root: multiselectContainer });
+        }
+    }
+
+    // Register the Social Post node
+    PluginManager.registerNode({
+        type: 'social-post',
+        category: 'output',
+        name: 'Social Post',
+        description: 'Publish content to social media platforms',
+        icon: 'share-2',
+        inputs: [
+            { id: 'flow', type: 'flow', label: 'Wait For' },
+            { id: 'video', type: 'video', label: 'Video (Optional)', optional: true },
+            { id: 'image', type: 'image', label: 'Image (Optional)', optional: true },
+            { id: 'text', type: 'text', label: 'Caption (Optional)', optional: true }
+        ],
+        outputs: [
+            { id: 'result', type: 'object', label: 'Result' }
+        ],
+        fields: fields,
+        preview: {
+            type: 'status',
+            source: 'output'
+        },
+        defaultData: {
+            apiKey: '',
+            accounts: [],
+            caption: '',
+            scheduleType: 'now',
+            scheduledAt: null
+        },
+
+        // Called when properties panel renders this node
+        onRender: (container, nodeData) => {
+            // Load social accounts into multiselect
+            loadAccountsIntoMultiselect(container, nodeData.accounts || []);
+        },
+
+        // Custom execution handler
+        execute: async function (node, inputs, context) {
+            const { apiKey, accounts, caption, scheduleType, scheduledAt } = node.data;
+
+            // Get connected inputs
+            const videoUrl = inputs.video || null;
+            const imageUrl = inputs.image || null;
+            const textInput = inputs.text || '';
+
+            // Use connected text input or fall back to node's caption field
+            const finalCaption = textInput.trim() || caption;
+
+            // Get API key
+            const finalApiKey = apiKey || getPostformeApiKey();
+
+            if (!finalApiKey) {
+                throw new Error('Postforme API Key is required. Set it in Settings → Integrations or in the node field.');
+            }
+
+            if (!accounts || accounts.length === 0) {
+                throw new Error('Please select at least one social account to post to.');
+            }
+
+            if (!finalCaption && !videoUrl && !imageUrl) {
+                throw new Error('Please provide caption text or media (image/video) to post.');
+            }
+
+            // Build media array
+            const media = [];
+            if (videoUrl) {
+                media.push({ url: videoUrl, type: 'video' });
+            }
+            if (imageUrl) {
+                media.push({ url: imageUrl, type: 'image' });
+            }
+
+            // Build the API payload
+            const payload = {
+                apiKey: finalApiKey,
+                caption: finalCaption,
+                social_accounts: accounts,
+                media: media
+            };
+
+            // Add scheduling if configured
+            if (scheduleType === 'scheduled' && scheduledAt) {
+                payload.scheduled_at = new Date(scheduledAt).toISOString();
+            }
+
+            // Return the payload for server-side execution
+            // The worker will handle the actual API call and return taskId
+            return {
+                action: 'social-post',
+                payload: payload,
+                endpoint: POSTFORME_API_BASE + '/social-posts'
+            };
+        }
+    });
+
+})();

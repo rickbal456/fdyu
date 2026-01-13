@@ -1,0 +1,32 @@
+{
+    "id": "aflow-edit-trim",
+    "name": "Video Trim",
+    "version": "1.0.0",
+    "description": "Trim video to specific duration",
+    "author": "AIKAFLOW",
+    "category": "editing",
+    "enabled": true,
+    "icon": "scissors",
+    "nodeTypes": [
+        "video-trim"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "jsoncut",
+        "operation": "trim"
+    },
+    "apiMapping": {
+        "request": {
+            "video_url": "{{inputs.video}}",
+            "start_time": "{{data.startTime}}",
+            "end_time": "{{data.endTime}}"
+        },
+        "response": {
+            "taskId": "$.task_id",
+            "status": "$.status"
+        },
+        "result": {
+            "resultUrl": "$.output_url"
+        }
+    }
+}

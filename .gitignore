@@ -1,0 +1,10 @@
+.env
+.env.development
+.env.production
+database.sql
+.gemini/
+temp/
+vendor/
+license_server/
+uploads/
+logs/

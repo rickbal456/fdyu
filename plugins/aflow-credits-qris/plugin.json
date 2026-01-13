@@ -1,0 +1,14 @@
+{
+    "id": "aflow-credits-qris",
+    "name": "QRIS Payment",
+    "version": "1.0.0",
+    "description": "Enable QRIS payment option for credit top-ups",
+    "author": "AIKAFLOW",
+    "type": "payment",
+    "scripts": [
+        "qris.js"
+    ],
+    "styles": [],
+    "dependencies": [],
+    "enabled": true
+}

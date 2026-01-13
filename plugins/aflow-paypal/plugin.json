@@ -1,0 +1,17 @@
+{
+    "id": "aflow-paypal",
+    "name": "PayPal Payment Gateway",
+    "description": "Accept payments via PayPal for credit top-ups. Supports both sandbox and production modes.",
+    "version": "1.0.0",
+    "author": "AIKAFLOW",
+    "icon": "credit-card",
+    "color": "blue",
+    "category": "payment",
+    "enabled": true,
+    "homepage": "https://aikaflow.com",
+    "requires": {
+        "aikaflow": ">=1.0.0"
+    },
+    "nodeTypes": [],
+    "type": "feature"
+}

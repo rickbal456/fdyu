@@ -1,0 +1,20 @@
+{
+    "id": "aflow-input-text",
+    "name": "Text/Prompt Input",
+    "version": "1.1.0",
+    "description": "Text input for prompts with AI enhancement",
+    "author": "AIKAFLOW",
+    "category": "input",
+    "enabled": true,
+    "icon": "type",
+    "nodeTypes": [
+        "text-input"
+    ],
+    "executionType": "local",
+    "optionalProviders": [
+        "openrouter"
+    ],
+    "features": [
+        "text-enhancement"
+    ]
+}

@@ -1,0 +1,63 @@
+{
+    "id": "aflow-i2v-v1",
+    "name": "Image to Video V1",
+    "description": "Generate Video from Image 10-15s",
+    "version": "1.0.0",
+    "author": "AIKAFLOW Developer",
+    "icon": "clapperboard",
+    "color": "purple",
+    "category": "generation",
+    "enabled": true,
+    "homepage": "https:\/\/aikademi.id",
+    "requires": {
+        "aikaflow": ">=1.0.0"
+    },
+    "nodeTypes": [
+        "aflow-i2v-v1"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "runninghub",
+        "endpoint": "https:\/\/www.runninghub.ai\/task\/openapi\/ai-app\/run"
+    },
+    "apiMapping": {
+        "request": {
+            "webappId": "1973555366057390081",
+            "apiKey": "{{apiKey}}",
+            "webhookUrl": "{{webhook_url}}",
+            "nodeInfoList": [
+                {
+                    "nodeId": "2",
+                    "fieldName": "image",
+                    "fieldValue": "{{image}}",
+                    "description": "Upload image (input of real person images is not supported)"
+                },
+                {
+                    "nodeId": "1",
+                    "fieldName": "model",
+                    "fieldValue": "{{model}}",
+                    "description": "Horizontal and vertical mode"
+                },
+                {
+                    "nodeId": "1",
+                    "fieldName": "prompt",
+                    "fieldValue": "{{prompt}}",
+                    "description": "Input text"
+                },
+                {
+                    "nodeId": "1",
+                    "fieldName": "duration_seconds",
+                    "fieldValue": "{{duration_seconds}}",
+                    "description": "Duration (seconds)"
+                }
+            ]
+        },
+        "response": {
+            "taskId": "$.data.taskId"
+        }
+    },
+    "settings": {
+        "apiKey": "",
+        "webappId": "1973555366057390081"
+    }
+}

@@ -1,0 +1,5 @@
+# Protect generated directory
+Options -Indexes
+<FilesMatch "\.(php|php5|phtml|cgi|pl|py)$">
+    Deny from all
+</FilesMatch>

@@ -1,0 +1,18 @@
+{
+    "id": "aflow-edit-speed",
+    "name": "Video Speed",
+    "version": "1.0.0",
+    "description": "Change video playback speed",
+    "author": "AIKAFLOW",
+    "category": "editing",
+    "enabled": true,
+    "icon": "gauge",
+    "nodeTypes": [
+        "video-speed"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "jsoncut",
+        "operation": "speed"
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "id": "aflow-credits",
+    "name": "Credit System",
+    "description": "Credit-based billing system for API node usage. Includes balance tracking, top-up requests, coupon codes, and admin management.",
+    "version": "1.0.0",
+    "author": "AIKAFLOW",
+    "icon": "coins",
+    "color": "yellow",
+    "category": "billing",
+    "enabled": true,
+    "homepage": "https://aikaflow.com",
+    "requires": {
+        "aikaflow": ">=1.0.0"
+    },
+    "nodeTypes": [],
+    "type": "feature",
+    "injectUI": true,
+    "scripts": [
+        "credits.js"
+    ]
+}

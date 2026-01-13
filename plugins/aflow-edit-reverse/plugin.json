@@ -1,0 +1,18 @@
+{
+    "id": "aflow-edit-reverse",
+    "name": "Reverse Video",
+    "version": "1.0.0",
+    "description": "Reverse video playback",
+    "author": "AIKAFLOW",
+    "category": "editing",
+    "enabled": true,
+    "icon": "rewind",
+    "nodeTypes": [
+        "reverse-video"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "jsoncut",
+        "operation": "reverse"
+    }
+}

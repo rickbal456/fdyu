@@ -1,0 +1,18 @@
+{
+    "id": "aflow-edit-audio-volume",
+    "name": "Audio Volume",
+    "version": "1.0.0",
+    "description": "Modify audio volume in video",
+    "author": "AIKAFLOW",
+    "category": "editing",
+    "enabled": true,
+    "icon": "volume-2",
+    "nodeTypes": [
+        "audio-volume"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "jsoncut",
+        "operation": "audio-volume"
+    }
+}

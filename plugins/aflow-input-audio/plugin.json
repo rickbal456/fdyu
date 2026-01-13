@@ -1,0 +1,14 @@
+{
+    "id": "aflow-input-audio",
+    "name": "Audio Input",
+    "version": "1.0.0",
+    "description": "Upload an audio file or provide a URL",
+    "author": "AIKAFLOW",
+    "category": "input",
+    "enabled": true,
+    "icon": "music",
+    "nodeTypes": [
+        "audio-input"
+    ],
+    "executionType": "local"
+}

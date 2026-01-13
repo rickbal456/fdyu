@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - ./logs:/var/www/html/logs
+      - ./temp:/var/www/html/temp
+    environment:
+      - APP_URL=http://localhost:8080
+      - APP_DEBUG=true
+      - DB_HOST=db
+      - DB_NAME=aikaflow
+      - DB_USER=aikaflow
+      - DB_PASS=aikaflow_password
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=aikaflow
+      - MYSQL_USER=aikaflow
+      - MYSQL_PASSWORD=aikaflow_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: php /var/www/html/worker.php --daemon
+    volumes:
+      - ./logs:/var/www/html/logs
+      - ./temp:/var/www/html/temp
+    environment:
+      - APP_URL=http://app:80
+      - DB_HOST=db
+      - DB_NAME=aikaflow
+      - DB_USER=aikaflow
+      - DB_PASS=aikaflow_password
+    depends_on:
+      - db
+      - app
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

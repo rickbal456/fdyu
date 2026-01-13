@@ -1,0 +1,18 @@
+{
+    "id": "aflow-edit-overlay",
+    "name": "Video Overlay",
+    "version": "1.0.0",
+    "description": "Overlay one video on top of another",
+    "author": "AIKAFLOW",
+    "category": "editing",
+    "enabled": true,
+    "icon": "layers",
+    "nodeTypes": [
+        "video-overlay"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "jsoncut",
+        "operation": "overlay"
+    }
+}
