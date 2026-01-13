@@ -86,7 +86,7 @@ $error = '';
 $success = '';
 
 // License server URL - UPDATE THIS TO YOUR LICENSE SERVER
-define('LICENSE_SERVER_URL', 'http://localhost/aikaflow/license_server/api/verify.php');
+define('LICENSE_SERVER_URL', 'https://flow.aikademi.id/api/verify.php');
 
 /**
  * Verify license with server
