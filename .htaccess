@@ -8,9 +8,16 @@ RewriteEngine On
 # NOTE: RewriteBase MUST match your installation path
 # Examples:
 #   - Root: RewriteBase /
-#   - Subdirectory: RewriteBase /aikaflow/
+#   - Subdirectory: RewriteBase /aikaflow/ 
 #   - Custom: RewriteBase /your-folder/
-RewriteBase /aikaflow/
+RewriteBase /
+
+# Disable ModSecurity for install.php (temporary - remove after installation)
+<IfModule mod_security.c>
+    <Files "install.php">
+        SecRuleEngine Off
+    </Files>
+</IfModule>
 
 # Security headers
 <IfModule mod_headers.c>
