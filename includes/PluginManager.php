@@ -284,6 +284,15 @@ class PluginManager
         }
         @file_put_contents($debugLog, "[$ts] [executeApiNode] Webhook URL: " . ($inputData['webhook_url'] ?? 'none') . "\n", FILE_APPEND);
 
+        // Map common input port names to expected field names
+        // This handles cases where:
+        // - Connection uses 'text' port -> maps to 'prompt' field
+        // - Connection uses 'image' port -> already matches 'image' field
+        if (isset($inputData['text']) && !isset($inputData['prompt'])) {
+            $inputData['prompt'] = $inputData['text'];
+            @file_put_contents($debugLog, "[$ts] [executeApiNode] Mapped 'text' input to 'prompt' field\n", FILE_APPEND);
+        }
+
         // Prepare request body using mapping
         $requestBody = self::mapData($mapping['request'], $inputData);
         $requestBody = self::processSpecialValues($requestBody);
@@ -505,13 +514,31 @@ class PluginManager
             } else {
                 if (strpos($value, '$.') === 0) {
                     $path = substr($value, 2); // Remove $.
-                    $result[$key] = self::getValueByPath($data, $path);
+                    // Use simple path traversal without stripping prefixes
+                    $result[$key] = self::getValueByPathSimple($data, $path);
                 } else {
                     $result[$key] = $value;
                 }
             }
         }
         return $result;
+    }
+
+    /**
+     * Simple dot-notation path traversal (no prefix stripping)
+     */
+    private static function getValueByPathSimple($data, $path)
+    {
+        $parts = explode('.', $path);
+        $current = $data;
+        foreach ($parts as $part) {
+            if (is_array($current) && isset($current[$part])) {
+                $current = $current[$part];
+            } else {
+                return null;
+            }
+        }
+        return $current;
     }
 
     /**
