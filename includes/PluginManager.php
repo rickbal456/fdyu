@@ -220,9 +220,12 @@ class PluginManager
         // Get API key - either from user input or from admin configuration
         $apiKey = $inputData['apiKey'] ?? '';
 
-        // If useAdminKey flag is set and no user-provided key, load from database
-        if (empty($apiKey) && !empty($inputData['useAdminKey'])) {
-            $apiKey = self::loadAdminApiKey($provider, $inputData['_user_id'] ?? null);
+        // Fallback to Admin Key if user key is empty
+        if (empty($apiKey)) {
+            $adminKey = self::loadAdminApiKey($provider, $inputData['_user_id'] ?? null);
+            if ($adminKey) {
+                $apiKey = $adminKey;
+            }
         }
 
         // Update inputData with the resolved API key

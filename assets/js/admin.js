@@ -1077,10 +1077,12 @@
                     listEl.innerHTML = '<div class="text-center py-6 text-dark-500 text-sm">No node costs configured yet</div>';
                     return;
                 }
-                listEl.innerHTML = data.node_costs.map(nc => `
+                listEl.innerHTML = data.node_costs.map(nc => {
+                    const nodeName = window.NodeDefinitions?.[nc.node_type]?.name || nc.node_type;
+                    return `
                     <div class="flex gap-3 items-center p-3 bg-dark-800/50 rounded-lg border border-dark-700 group">
                         <div class="flex-1">
-                            <div class="text-sm font-medium text-dark-100">${nc.node_type}</div>
+                            <div class="text-sm font-medium text-dark-100">${nodeName}</div>
                             <div class="text-xs text-dark-500">${nc.description || 'API Node'}</div>
                         </div>
                         <div class="flex items-center gap-2">
@@ -1093,7 +1095,8 @@
                             </button>
                         </div>
                     </div>
-                `).join('');
+                    `;
+                }).join('');
                 lucide?.createIcons();
             }
         } catch (error) {

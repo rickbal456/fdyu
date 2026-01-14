@@ -1460,6 +1460,7 @@ class Editor {
         const def = this.nodeManager?.getNodeDefinition(node.type);
         const colors = Utils.getCategoryColor(def?.category);
         const icon = Utils.getNodeIcon(node.type);
+        const displayName = (node.name && node.name !== node.type) ? node.name : (def?.name || node.type);
 
         return `
             <div class="execution-node-item pending" data-node-id="${node.id}">
@@ -1467,7 +1468,7 @@ class Editor {
                     <i data-lucide="${icon}" class="w-4 h-4"></i>
                 </div>
                 <div class="execution-node-info">
-                    <div class="execution-node-name">${Utils.escapeHtml(node.name)}</div>
+                    <div class="execution-node-name">${Utils.escapeHtml(displayName)}</div>
                     <div class="execution-node-status">Pending</div>
                 </div>
                 <div class="execution-node-progress">
