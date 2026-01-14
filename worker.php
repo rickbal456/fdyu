@@ -196,6 +196,13 @@ function processNodeExecution(array $payload): void
     $connectedInputs = getNodeInputs($executionId, $nodeId);
     $inputData = array_merge($inputData, $connectedInputs);
 
+    // Debug logging
+    $debugLog = __DIR__ . '/logs/worker_debug.log';
+    $ts = date('Y-m-d H:i:s');
+    @file_put_contents($debugLog, "[$ts] [processNodeExecution] Node: $nodeId ($nodeType)\n", FILE_APPEND);
+    @file_put_contents($debugLog, "[$ts] [processNodeExecution] Connected inputs: " . json_encode($connectedInputs) . "\n", FILE_APPEND);
+    @file_put_contents($debugLog, "[$ts] [processNodeExecution] Merged inputData keys: " . implode(', ', array_keys($inputData)) . "\n", FILE_APPEND);
+
     // Credit Deduction
     $cost = (float) Database::fetchColumn("SELECT cost_per_call FROM node_costs WHERE node_type = ?", [$nodeType]);
 
