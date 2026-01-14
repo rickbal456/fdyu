@@ -53,28 +53,53 @@ try {
             // Check for AI App format (eventData)
             if (isset($payload['eventData'])) {
                 $taskId = $payload['taskId'] ?? null;
-                $status = ($payload['event'] ?? '') === 'TASK_END' ? 'completed' : 'processing';
 
                 // Parse eventData string
                 $eventData = is_string($payload['eventData']) ? json_decode($payload['eventData'], true) : $payload['eventData'];
 
-                if (isset($eventData['data']) && is_array($eventData['data']) && !empty($eventData['data'])) {
-                    // Look for video file in data array
-                    foreach ($eventData['data'] as $item) {
-                        if (isset($item['fileUrl']) && ($item['fileType'] ?? '') === 'mp4') {
-                            $resultUrl = $item['fileUrl'];
-                            break;
-                        }
-                    }
-                    if (!$resultUrl && isset($eventData['data'][0]['fileUrl'])) {
-                        // Fallback to first file
-                        $resultUrl = $eventData['data'][0]['fileUrl'];
-                    }
-                }
+                // Check for error in eventData (code != 0 means error)
+                if (isset($eventData['code']) && $eventData['code'] != 0) {
+                    $status = 'failed';
+                    $error = $eventData['msg'] ?? 'Task failed';
 
-                if (($payload['event'] ?? '') === 'TASK_FAIL') {
+                    // Try to extract more specific error from failedReason
+                    if (isset($eventData['data']['failedReason']['exception_message'])) {
+                        $error = $eventData['data']['failedReason']['exception_message'];
+                    }
+
+                    error_log("[Webhook] RunningHub task failed: code={$eventData['code']}, msg={$error}");
+                }
+                // Check for TASK_FAIL event
+                elseif (($payload['event'] ?? '') === 'TASK_FAIL') {
                     $status = 'failed';
                     $error = $payload['msg'] ?? 'Task failed';
+                }
+                // Success case - TASK_END with code 0 or no code
+                elseif (($payload['event'] ?? '') === 'TASK_END') {
+                    $status = 'completed';
+
+                    // Look for video file in data array
+                    if (isset($eventData['data']) && is_array($eventData['data'])) {
+                        foreach ($eventData['data'] as $item) {
+                            if (is_array($item) && isset($item['fileUrl'])) {
+                                if (($item['fileType'] ?? '') === 'mp4') {
+                                    $resultUrl = $item['fileUrl'];
+                                    break;
+                                }
+                            }
+                        }
+                        // Fallback to first file with fileUrl
+                        if (!$resultUrl) {
+                            foreach ($eventData['data'] as $item) {
+                                if (is_array($item) && isset($item['fileUrl'])) {
+                                    $resultUrl = $item['fileUrl'];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    $status = 'processing';
                 }
 
             } else {
@@ -152,6 +177,8 @@ try {
     }
 
     if ($taskId) {
+        error_log("[Webhook] Looking for node_task with external_task_id: $taskId");
+
         // Find matching node task
         $nodeTask = Database::fetchOne(
             "SELECT * FROM node_tasks WHERE external_task_id = ?",
@@ -159,6 +186,8 @@ try {
         );
 
         if ($nodeTask) {
+            error_log("[Webhook] Found node_task id={$nodeTask['id']}, current status={$nodeTask['status']}");
+
             // Map external status to internal status
             $internalStatus = 'processing';
             if (in_array($status, ['completed', 'success', 'done'])) {
@@ -231,6 +260,8 @@ try {
                     ['id' => $nodeTask['execution_id']]
                 );
             }
+        } else {
+            error_log("[Webhook] No node_task found for external_task_id: $taskId");
         }
     }
 
