@@ -14,30 +14,28 @@
      */
     async function getOpenRouterSettings() {
         try {
-            // Check if OpenRouter is configured (status only, not the actual key)
-            const configured = window.pluginManager?.integrationStatus?.openrouter === true;
-
-            // Get model and system prompts from localStorage (these are not sensitive)
-            const openRouterSettings = JSON.parse(localStorage.getItem('aikaflow-openrouter-settings') || '{}');
-            return {
-                isConfigured: configured,
-                model: openRouterSettings.model || 'openai/gpt-4o-mini',
-                systemPrompts: openRouterSettings.systemPrompts || []
-            };
+            // Fetch from public settings endpoint (safe for all users)
+            const response = await fetch('./api/ai/prompts.php');
+            const data = await response.json();
+            if (data.success) {
+                return {
+                    isConfigured: data.isConfigured === true,
+                    model: data.model || 'openai/gpt-4o-mini',
+                    systemPrompts: data.systemPrompts || []
+                };
+            }
         } catch (e) {
-            return { isConfigured: false, model: 'openai/gpt-4o-mini', systemPrompts: [] };
+            console.log('Could not load OpenRouter settings:', e);
         }
+        return { isConfigured: false, model: 'openai/gpt-4o-mini', systemPrompts: [] };
     }
 
     /**
-     * Save OpenRouter settings to localStorage
+     * Save OpenRouter settings - not used for regular users (admin only via plugins.js)
      */
     function saveOpenRouterSettings(settings) {
-        try {
-            localStorage.setItem('aikaflow-openrouter-settings', JSON.stringify(settings));
-        } catch (e) {
-            console.error('Failed to save OpenRouter settings:', e);
-        }
+        // Settings are saved by admin through plugins.js, not here
+        console.log('OpenRouter settings are managed by admin');
     }
 
     /**

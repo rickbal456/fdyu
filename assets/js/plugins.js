@@ -71,12 +71,19 @@ class PluginManager {
 
     /**
      * Load SITE-LEVEL integration keys for editing in admin settings
-     * These are stored in site_settings, not per-user
+     * Admin gets full keys, regular users only get this if they're in integrations tab (which they shouldn't be)
      */
     async loadUserIntegrationKeys() {
         try {
-            // Fetch from admin settings endpoint
+            // Try admin endpoint first
             const response = await fetch('./api/admin/settings.php');
+
+            // If forbidden (403), user is not admin - this is expected for regular users
+            if (response.status === 403) {
+                console.log('User is not admin, integration keys editing not available');
+                return {};
+            }
+
             const data = await response.json();
             if (data.success && data.settings && data.settings.integration_keys) {
                 // integration_keys is stored as JSON string in site_settings
@@ -86,7 +93,8 @@ class PluginManager {
                 return keys || {};
             }
         } catch (error) {
-            console.error('Failed to load integration keys:', error);
+            // Don't log as error if user is just not admin
+            console.log('Could not load integration keys (user may not be admin)');
         }
         return {};
     }
@@ -429,26 +437,47 @@ class PluginManager {
     }
 
     /**
-     * Load OpenRouter settings from database
+     * Load OpenRouter settings from site_settings (global, set by admin)
+     * Tries admin endpoint first, falls back to public endpoint for regular users
      */
     async loadOpenRouterSettings() {
         try {
-            const response = await API.getPreference('openrouter_settings');
-            if (response.success && response.value) {
-                return response.value;
+            // Try admin endpoint first
+            const response = await fetch('./api/admin/settings.php');
+
+            // If admin access works
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.settings && data.settings.openrouter_settings) {
+                    const settings = typeof data.settings.openrouter_settings === 'string'
+                        ? JSON.parse(data.settings.openrouter_settings)
+                        : data.settings.openrouter_settings;
+                    return settings || { model: 'openai/gpt-4o-mini', systemPrompts: [] };
+                }
+            }
+
+            // Fall back to public settings endpoint for regular users
+            const publicResponse = await fetch('./api/user/public-settings.php');
+            const publicData = await publicResponse.json();
+            if (publicData.success && publicData.settings && publicData.settings.openrouter_settings) {
+                return publicData.settings.openrouter_settings;
             }
         } catch (e) {
-            console.error('Failed to load OpenRouter settings:', e);
+            console.log('Could not load OpenRouter settings:', e);
         }
         return { model: 'openai/gpt-4o-mini', systemPrompts: [] };
     }
 
     /**
-     * Save OpenRouter settings to database
+     * Save OpenRouter settings to site_settings (global, admin only)
      */
     async saveOpenRouterSettings(settings) {
         try {
-            await API.savePreference('openrouter_settings', settings);
+            await fetch('./api/admin/settings.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ openrouter_settings: JSON.stringify(settings) })
+            });
         } catch (e) {
             console.error('Failed to save OpenRouter settings:', e);
         }
