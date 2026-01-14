@@ -288,9 +288,10 @@ class PluginManager
         // This handles cases where:
         // - Connection uses 'text' port -> maps to 'prompt' field
         // - Connection uses 'image' port -> already matches 'image' field
-        if (isset($inputData['text']) && !isset($inputData['prompt'])) {
+        // Note: Use empty() not !isset() because the field may exist but be empty string
+        if (!empty($inputData['text']) && empty($inputData['prompt'])) {
             $inputData['prompt'] = $inputData['text'];
-            @file_put_contents($debugLog, "[$ts] [executeApiNode] Mapped 'text' input to 'prompt' field\n", FILE_APPEND);
+            @file_put_contents($debugLog, "[$ts] [executeApiNode] Mapped 'text' input to 'prompt' field: " . substr($inputData['prompt'], 0, 50) . "...\n", FILE_APPEND);
         }
 
         // Prepare request body using mapping
