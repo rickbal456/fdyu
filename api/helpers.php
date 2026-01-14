@@ -250,6 +250,8 @@ function checkRateLimit(int $userId, int $limit = 100, int $windowSeconds = 60):
  */
 function httpRequest(string $url, array $options = []): array
 {
+    error_log("[httpRequest] Calling: $url");
+
     $method = strtoupper($options['method'] ?? 'GET');
     $headers = $options['headers'] ?? [];
     $body = $options['body'] ?? null;
@@ -264,10 +266,10 @@ function httpRequest(string $url, array $options = []): array
         CURLOPT_TIMEOUT => $timeout,
         CURLOPT_CUSTOMREQUEST => $method,
         CURLOPT_HTTPHEADER => array_map(
-                fn($k, $v) => "$k: $v",
-                array_keys($headers),
-                array_values($headers)
-            ),
+            fn($k, $v) => "$k: $v",
+            array_keys($headers),
+            array_values($headers)
+        ),
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2
     ]);
@@ -285,6 +287,8 @@ function httpRequest(string $url, array $options = []): array
     $error = curl_error($ch);
 
     curl_close($ch);
+
+    error_log("[httpRequest] Response: HTTP $httpCode, curl_error: " . ($error ?: 'none'));
 
     if ($error) {
         return [

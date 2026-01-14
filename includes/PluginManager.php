@@ -209,7 +209,10 @@ class PluginManager
      */
     private static function executeApiNode($nodeType, $inputData, $definition)
     {
+        error_log("[PluginManager] executeApiNode called for: $nodeType");
+
         if (!isset($definition['apiConfig']) || !isset($definition['apiMapping'])) {
+            error_log("[PluginManager] Missing API configuration for $nodeType");
             return ['success' => false, 'error' => "Missing API configuration for $nodeType"];
         }
 
@@ -219,10 +222,12 @@ class PluginManager
 
         // Get API key - either from user input or from admin configuration
         $apiKey = $inputData['apiKey'] ?? '';
+        error_log("[PluginManager] Initial apiKey from inputData: " . (empty($apiKey) ? '(empty)' : '(set)'));
 
         // Fallback to Admin Key if user key is empty
         if (empty($apiKey)) {
             $adminKey = self::loadAdminApiKey($provider, $inputData['_user_id'] ?? null);
+            error_log("[PluginManager] Admin key lookup for provider '$provider': " . (empty($adminKey) ? '(not found)' : '(found)'));
             if ($adminKey) {
                 $apiKey = $adminKey;
             }
@@ -230,6 +235,7 @@ class PluginManager
 
         // Update inputData with the resolved API key
         $inputData['apiKey'] = $apiKey;
+        error_log("[PluginManager] Final apiKey: " . (empty($apiKey) ? '(empty - will fail)' : '(set)'));
 
         // Check rate limit if ApiRateLimiter is available and we have an API key
         if (!empty($apiKey) && class_exists('ApiRateLimiter')) {
@@ -277,7 +283,9 @@ class PluginManager
         }
 
         // Call generic API
+        error_log("[PluginManager] Calling API endpoint: " . ($apiConfig['endpoint'] ?? 'unknown'));
         $response = self::callGenericApi($apiConfig, $requestBody);
+        error_log("[PluginManager] API Response success: " . ($response['success'] ? 'true' : 'false') . ", error: " . ($response['error'] ?? 'none'));
 
         if (!$response['success']) {
             // Release slot on failure
