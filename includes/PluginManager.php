@@ -172,7 +172,12 @@ class PluginManager
             $url = $inputData['url'] ?? null;
             $isBase64 = false;
 
-            if (($inputData['source'] ?? '') === 'upload' && isset($inputData['file']['dataUrl'])) {
+            // Check for uploaded file with existing URL (already uploaded to CDN)
+            if (($inputData['source'] ?? '') === 'upload' && isset($inputData['file']['url']) && !empty($inputData['file']['url'])) {
+                $url = $inputData['file']['url'];
+            }
+            // Check for dataUrl that needs uploading
+            elseif (($inputData['source'] ?? '') === 'upload' && isset($inputData['file']['dataUrl'])) {
                 // Needs external function or helper to upload
                 if (function_exists('uploadDataUrlToCDN')) {
                     $url = uploadDataUrlToCDN($inputData['file']['dataUrl'], $inputData['file']['name'] ?? 'file');
@@ -424,7 +429,7 @@ class PluginManager
 
         // Use httpRequest helper if available
         if (function_exists('httpRequest')) {
-            return httpRequest($url, [
+            $response = httpRequest($url, [
                 'method' => 'POST',
                 'headers' => [
                     $headerName => $headerValuePrefix . $apiKey,
@@ -433,6 +438,27 @@ class PluginManager
                 'body' => $data,
                 'timeout' => 120
             ]);
+
+            // Check for API-level errors (provider-specific)
+            if ($response['success'] && isset($response['data'])) {
+                $apiData = $response['data'];
+
+                // RunningHub returns code != 0 on error
+                if ($provider === 'runninghub' && isset($apiData['code']) && $apiData['code'] != 0) {
+                    $errorMsg = $apiData['msg'] ?? 'API error';
+                    // Try to extract a cleaner error message
+                    if (is_string($errorMsg) && strpos($errorMsg, 'required_input_missing') !== false) {
+                        $errorMsg = 'Required input is missing. Please check all inputs are connected.';
+                    }
+                    return [
+                        'success' => false,
+                        'error' => "RunningHub API error (code {$apiData['code']}): $errorMsg",
+                        'data' => $apiData
+                    ];
+                }
+            }
+
+            return $response;
         }
 
         return ['success' => false, 'error' => 'HTTP client not available'];
