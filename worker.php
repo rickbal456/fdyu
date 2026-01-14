@@ -397,6 +397,14 @@ function executeNode(string $nodeType, array $inputData): array
                 ]
             ];
 
+        case 'start-flow':
+        case 'manual-trigger':
+        case 'flow-merge':
+            return [
+                'success' => true,
+                'output' => $inputData
+            ];
+
         default:
             return [
                 'success' => false,
