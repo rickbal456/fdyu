@@ -71,20 +71,23 @@ class PluginManager {
 
     /**
      * Load SITE-LEVEL integration keys for editing in admin settings
-     * Admin gets full keys, regular users only get this if they're in integrations tab (which they shouldn't be)
+     * Admin gets full keys, regular users get nothing (avoids 403 error)
      */
     async loadUserIntegrationKeys() {
         try {
-            // Try admin endpoint first
-            const response = await fetch('./api/admin/settings.php');
+            // First check if user is admin via public settings (avoids 403 network error)
+            const publicRes = await fetch('./api/user/public-settings.php');
+            const publicData = await publicRes.json();
 
-            // If forbidden (403), user is not admin - this is expected for regular users
-            if (response.status === 403) {
-                console.log('User is not admin, integration keys editing not available');
+            if (!publicData.isAdmin) {
+                // User is not admin, don't even try to hit admin endpoint
                 return {};
             }
 
+            // User is admin, safe to call admin endpoint
+            const response = await fetch('./api/admin/settings.php');
             const data = await response.json();
+
             if (data.success && data.settings && data.settings.integration_keys) {
                 // integration_keys is stored as JSON string in site_settings
                 const keys = typeof data.settings.integration_keys === 'string'
@@ -93,8 +96,7 @@ class PluginManager {
                 return keys || {};
             }
         } catch (error) {
-            // Don't log as error if user is just not admin
-            console.log('Could not load integration keys (user may not be admin)');
+            console.log('Could not load integration keys:', error);
         }
         return {};
     }
@@ -437,30 +439,16 @@ class PluginManager {
     }
 
     /**
-     * Load OpenRouter settings from site_settings (global, set by admin)
-     * Tries admin endpoint first, falls back to public endpoint for regular users
+     * Load OpenRouter settings (model and system prompts)
+     * Uses public endpoint which is safe for all users
      */
     async loadOpenRouterSettings() {
         try {
-            // Try admin endpoint first
-            const response = await fetch('./api/admin/settings.php');
+            const response = await fetch('./api/user/public-settings.php');
+            const data = await response.json();
 
-            // If admin access works
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.settings && data.settings.openrouter_settings) {
-                    const settings = typeof data.settings.openrouter_settings === 'string'
-                        ? JSON.parse(data.settings.openrouter_settings)
-                        : data.settings.openrouter_settings;
-                    return settings || { model: 'openai/gpt-4o-mini', systemPrompts: [] };
-                }
-            }
-
-            // Fall back to public settings endpoint for regular users
-            const publicResponse = await fetch('./api/user/public-settings.php');
-            const publicData = await publicResponse.json();
-            if (publicData.success && publicData.settings && publicData.settings.openrouter_settings) {
-                return publicData.settings.openrouter_settings;
+            if (data.success && data.settings && data.settings.openrouter_settings) {
+                return data.settings.openrouter_settings;
             }
         } catch (e) {
             console.log('Could not load OpenRouter settings:', e);

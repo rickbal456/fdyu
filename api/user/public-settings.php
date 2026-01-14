@@ -53,8 +53,12 @@ try {
         }
     }
 
+    // Check if user is admin (ID 1 is always admin)
+    $isAdmin = ((int) $user['id'] === 1) || (isset($user['role']) && $user['role'] === 'admin');
+
     successResponse([
-        'settings' => $settings
+        'settings' => $settings,
+        'isAdmin' => $isAdmin
     ]);
 
 } catch (Exception $e) {

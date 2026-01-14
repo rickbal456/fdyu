@@ -13,7 +13,7 @@
             description: 'Upload an image or provide a URL',
             icon: 'image',
             inputs: [
-                { id: 'flow', type: 'flow', label: 'Wait For' }
+                { id: 'flow', type: 'flow', label: 'Wait For', optional: true }
             ],
             outputs: [
                 { id: 'image', type: 'image', label: 'Image' }

@@ -1000,7 +1000,7 @@ class WorkflowManager {
 
     loadFromLocalStorage() {
         // This is now async, callers should use loadFromDatabase instead
-        console.warn('[WorkflowManager] loadFromLocalStorage is deprecated, use loadFromDatabase instead');
+        // console.warn('[WorkflowManager] loadFromLocalStorage is deprecated, use loadFromDatabase instead');
         return null;
     }
 

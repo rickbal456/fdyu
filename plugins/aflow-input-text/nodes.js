@@ -79,7 +79,7 @@
             description: 'Enter text for prompts with AI enhancement',
             icon: 'type',
             inputs: [
-                { id: 'flow', type: 'flow', label: 'Wait For' }
+                { id: 'flow', type: 'flow', label: 'Wait For', optional: true }
             ],
             outputs: [
                 { id: 'text', type: 'text', label: 'Text' }
