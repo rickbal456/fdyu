@@ -20,6 +20,47 @@ require_once __DIR__ . '/helpers.php';
 // Load plugins (including storage handlers)
 PluginManager::loadPlugins();
 
+/**
+ * Sanitize error messages for user display
+ * - Removes provider-specific information
+ * - Removes non-English text (Chinese, etc.)
+ * - Returns generic user-friendly message
+ */
+function sanitizeErrorMessage(string $rawError): string
+{
+    // Log raw error for admin debugging
+    // (already done before calling this function)
+
+    // Check for common error patterns and return user-friendly messages
+    $patterns = [
+        // Network/SSL errors
+        '/SSL|SSLError|HTTPS|ConnectionPool|Max retries/i' => 'Connection error. Please try again later.',
+        // Rate limiting
+        '/rate limit|too many requests|throttl/i' => 'Service busy. Please try again in a few minutes.',
+        // Image loading errors
+        '/Failed to fetch|load image|LoadImageFromUrl/i' => 'Failed to load input media. Please check your file and try again.',
+        // Model/API errors with Chinese text
+        '/[\x{4e00}-\x{9fff}]/u' => 'Generation service temporarily unavailable. Please try again later.',
+        // Content policy
+        '/content policy|moderation|nsfw|inappropriate/i' => 'Content could not be processed. Please adjust your input.',
+        // GPU/resource errors
+        '/GPU|out of memory|resource|CUDA/i' => 'Service is experiencing high demand. Please try again later.',
+        // Timeout
+        '/timeout|timed out/i' => 'Request timed out. Please try again.',
+        // Generic API errors
+        '/APIKEY|API.?KEY/i' => 'Service configuration error. Please contact support.',
+    ];
+
+    foreach ($patterns as $pattern => $message) {
+        if (preg_match($pattern, $rawError)) {
+            return $message;
+        }
+    }
+
+    // Default generic message
+    return 'Generation failed. Please try again later.';
+}
+
 // Log all webhook requests
 $rawInput = file_get_contents('php://input');
 $source = $_GET['source'] ?? 'unknown';
@@ -60,19 +101,23 @@ try {
                 // Check for error in eventData (code != 0 means error)
                 if (isset($eventData['code']) && $eventData['code'] != 0) {
                     $status = 'failed';
-                    $error = $eventData['msg'] ?? 'Task failed';
+                    $rawError = $eventData['msg'] ?? 'Task failed';
 
                     // Try to extract more specific error from failedReason
                     if (isset($eventData['data']['failedReason']['exception_message'])) {
-                        $error = $eventData['data']['failedReason']['exception_message'];
+                        $rawError = $eventData['data']['failedReason']['exception_message'];
                     }
 
-                    error_log("[Webhook] RunningHub task failed: code={$eventData['code']}, msg={$error}");
+                    // Log raw error for debugging but sanitize for user display
+                    error_log("[Webhook] RunningHub task failed: code={$eventData['code']}, raw_msg={$rawError}");
+                    $error = sanitizeErrorMessage($rawError);
                 }
                 // Check for TASK_FAIL event
                 elseif (($payload['event'] ?? '') === 'TASK_FAIL') {
                     $status = 'failed';
-                    $error = $payload['msg'] ?? 'Task failed';
+                    $rawError = $payload['msg'] ?? 'Task failed';
+                    error_log("[Webhook] RunningHub TASK_FAIL: raw_msg={$rawError}");
+                    $error = sanitizeErrorMessage($rawError);
                 }
                 // Success case - TASK_END with code 0 or no code
                 elseif (($payload['event'] ?? '') === 'TASK_END') {
@@ -245,6 +290,38 @@ try {
                     $queuedItem = ApiRateLimiter::processQueue($source, $apiKeyHash);
                     if ($queuedItem) {
                         processQueuedApiCall($queuedItem);
+                    }
+                }
+
+                // Refund credits for failed generation
+                $execution = Database::fetchOne(
+                    "SELECT user_id FROM workflow_executions WHERE id = ?",
+                    [$nodeTask['execution_id']]
+                );
+
+                if ($execution) {
+                    $userId = $execution['user_id'];
+                    $nodeType = $nodeTask['node_type'];
+
+                    // Get cost for this node type
+                    $cost = (float) Database::fetchColumn(
+                        "SELECT cost_per_call FROM node_costs WHERE node_type = ?",
+                        [$nodeType]
+                    );
+
+                    if ($cost > 0) {
+                        // Add refund to credit ledger
+                        Database::insert('credit_ledger', [
+                            'user_id' => $userId,
+                            'amount' => $cost,
+                            'remaining' => $cost,
+                            'type' => 'refund',
+                            'description' => 'Refund for failed generation: ' . $nodeType,
+                            'source' => 'webhook_failure',
+                            'source_id' => $nodeTask['id']
+                        ]);
+
+                        error_log("[Webhook] Refunded {$cost} credits to user {$userId} for failed node {$nodeType}");
                     }
                 }
 
