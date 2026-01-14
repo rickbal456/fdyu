@@ -314,11 +314,13 @@ class PluginManager
         }
 
         $apiResponse = $response['data'];
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] Raw API response: " . json_encode($apiResponse) . "\n", FILE_APPEND);
 
         // Map response
         $result = [];
         if (isset($mapping['response'])) {
             $result = self::mapResponse($mapping['response'], $apiResponse);
+            @file_put_contents($debugLog, "[$ts] [executeApiNode] Mapped result: " . json_encode($result) . "\n", FILE_APPEND);
         }
 
         $output = [];
@@ -328,6 +330,7 @@ class PluginManager
 
         // Update the rate limit slot with the actual task ID from API response
         $actualTaskId = $result['taskId'] ?? null;
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] Extracted taskId: " . ($actualTaskId ?? 'NULL') . "\n", FILE_APPEND);
         if ($taskId && $actualTaskId && class_exists('ApiRateLimiter')) {
             // Release the temporary slot and create one with the real task ID
             ApiRateLimiter::releaseSlot($provider, $taskId);
