@@ -218,25 +218,28 @@ class PluginManager
      */
     private static function executeApiNode($nodeType, $inputData, $definition)
     {
-        error_log("[PluginManager] executeApiNode called for: $nodeType");
+        $debugLog = dirname(__DIR__) . '/logs/worker_debug.log';
+        $ts = date('Y-m-d H:i:s');
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] START for: $nodeType\n", FILE_APPEND);
 
         if (!isset($definition['apiConfig']) || !isset($definition['apiMapping'])) {
-            error_log("[PluginManager] Missing API configuration for $nodeType");
+            @file_put_contents($debugLog, "[$ts] [executeApiNode] Missing API config\n", FILE_APPEND);
             return ['success' => false, 'error' => "Missing API configuration for $nodeType"];
         }
 
         $apiConfig = $definition['apiConfig'];
         $mapping = $definition['apiMapping'];
         $provider = $apiConfig['provider'] ?? 'custom';
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] Provider: $provider\n", FILE_APPEND);
 
         // Get API key - either from user input or from admin configuration
         $apiKey = $inputData['apiKey'] ?? '';
-        error_log("[PluginManager] Initial apiKey from inputData: " . (empty($apiKey) ? '(empty)' : '(set)'));
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] User apiKey: " . (empty($apiKey) ? '(empty)' : '(set)') . "\n", FILE_APPEND);
 
         // Fallback to Admin Key if user key is empty
         if (empty($apiKey)) {
             $adminKey = self::loadAdminApiKey($provider, $inputData['_user_id'] ?? null);
-            error_log("[PluginManager] Admin key lookup for provider '$provider': " . (empty($adminKey) ? '(not found)' : '(found)'));
+            @file_put_contents($debugLog, "[$ts] [executeApiNode] Admin key lookup for '$provider': " . (empty($adminKey) ? '(NOT FOUND)' : '(found)') . "\n", FILE_APPEND);
             if ($adminKey) {
                 $apiKey = $adminKey;
             }
@@ -244,12 +247,14 @@ class PluginManager
 
         // Update inputData with the resolved API key
         $inputData['apiKey'] = $apiKey;
-        error_log("[PluginManager] Final apiKey: " . (empty($apiKey) ? '(empty - will fail)' : '(set)'));
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] Final apiKey: " . (empty($apiKey) ? '(EMPTY - will fail)' : '(set)') . "\n", FILE_APPEND);
 
         // Check rate limit if ApiRateLimiter is available and we have an API key
         if (!empty($apiKey) && class_exists('ApiRateLimiter')) {
+            @file_put_contents($debugLog, "[$ts] [executeApiNode] Checking rate limit...\n", FILE_APPEND);
             if (!ApiRateLimiter::canProceed($provider, $apiKey)) {
                 // At rate limit - queue the request
+                @file_put_contents($debugLog, "[$ts] [executeApiNode] Rate limited - queueing request\n", FILE_APPEND);
                 $queueId = ApiRateLimiter::enqueue(
                     $provider,
                     $apiKey,
@@ -272,10 +277,12 @@ class PluginManager
         if (!isset($inputData['webhook_url'])) {
             $inputData['webhook_url'] = defined('APP_URL') ? APP_URL . '/api/webhook.php?source=' . $provider : '';
         }
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] Webhook URL: " . ($inputData['webhook_url'] ?? 'none') . "\n", FILE_APPEND);
 
         // Prepare request body using mapping
         $requestBody = self::mapData($mapping['request'], $inputData);
         $requestBody = self::processSpecialValues($requestBody);
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] Request body prepared, keys: " . implode(', ', array_keys($requestBody)) . "\n", FILE_APPEND);
 
         // Acquire rate limit slot before making the API call
         $taskId = null;
@@ -292,15 +299,17 @@ class PluginManager
         }
 
         // Call generic API
-        error_log("[PluginManager] Calling API endpoint: " . ($apiConfig['endpoint'] ?? 'unknown'));
+        $endpoint = $apiConfig['endpoint'] ?? 'unknown';
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] CALLING API: $endpoint\n", FILE_APPEND);
         $response = self::callGenericApi($apiConfig, $requestBody);
-        error_log("[PluginManager] API Response success: " . ($response['success'] ? 'true' : 'false') . ", error: " . ($response['error'] ?? 'none'));
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] API Response: success=" . ($response['success'] ? 'true' : 'false') . ", error=" . ($response['error'] ?? 'none') . "\n", FILE_APPEND);
 
         if (!$response['success']) {
             // Release slot on failure
             if ($taskId && class_exists('ApiRateLimiter')) {
                 ApiRateLimiter::releaseSlot($provider, $taskId);
             }
+            @file_put_contents($debugLog, "[$ts] [executeApiNode] Returning failure\n", FILE_APPEND);
             return $response;
         }
 
