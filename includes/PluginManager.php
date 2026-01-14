@@ -136,20 +136,29 @@ class PluginManager
      */
     public static function executeNode($nodeType, $inputData)
     {
+        // Debug logging
+        $debugLog = dirname(__DIR__) . '/logs/worker_debug.log';
+        $ts = date('Y-m-d H:i:s');
+        @file_put_contents($debugLog, "[$ts] [PluginManager] executeNode: $nodeType\n", FILE_APPEND);
+
         $definition = self::getNodeDefinition($nodeType);
         if (!$definition) {
+            @file_put_contents($debugLog, "[$ts] [PluginManager] No definition found for: $nodeType\n", FILE_APPEND);
             return ['success' => false, 'error' => "Unknown node type: $nodeType"];
         }
 
+        $execType = $definition['executionType'] ?? 'unknown';
+        @file_put_contents($debugLog, "[$ts] [PluginManager] executionType: $execType\n", FILE_APPEND);
+
         if ($definition['executionType'] === 'local') {
-            // Local execution usually handled via passing inputs to outputs
-            // For input nodes, we might need to handle file uploads here if passed as base64
-            // But for now, let's assume local execution is simple pass-through or handled specially
+            @file_put_contents($debugLog, "[$ts] [PluginManager] Executing as LOCAL node\n", FILE_APPEND);
             return self::executeLocalNode($nodeType, $inputData, $definition);
         } elseif ($definition['executionType'] === 'api') {
+            @file_put_contents($debugLog, "[$ts] [PluginManager] Executing as API node\n", FILE_APPEND);
             return self::executeApiNode($nodeType, $inputData, $definition);
         }
 
+        @file_put_contents($debugLog, "[$ts] [PluginManager] Unsupported execution type: $execType\n", FILE_APPEND);
         return ['success' => false, 'error' => "Unsupported execution type"];
     }
 

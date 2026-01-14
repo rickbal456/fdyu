@@ -342,15 +342,32 @@ function getNodeInputs(int $executionId, string $nodeId): array
  */
 function executeNode(string $nodeType, array $inputData): array
 {
+    // Debug: write to dedicated log file
+    $debugLog = __DIR__ . '/logs/worker_debug.log';
+    $logDir = __DIR__ . '/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    $ts = date('Y-m-d H:i:s');
+    @file_put_contents($debugLog, "[$ts] executeNode called for: $nodeType\n", FILE_APPEND);
+
     // Try Plugin Manager first
     $pluginResult = PluginManager::executeNode($nodeType, $inputData);
 
+    @file_put_contents($debugLog, "[$ts] PluginManager result: " . json_encode([
+        'success' => $pluginResult['success'] ?? false,
+        'error' => $pluginResult['error'] ?? null,
+        'taskId' => $pluginResult['taskId'] ?? null
+    ]) . "\n", FILE_APPEND);
+
     if ($pluginResult['success']) {
+        @file_put_contents($debugLog, "[$ts] Returning success from PluginManager\n", FILE_APPEND);
         return $pluginResult;
     }
 
     // If error is NOT "Unknown node type", it means plugin execution failed, so return error
     if (isset($pluginResult['error']) && strpos($pluginResult['error'], 'Unknown node type') === false) {
+        @file_put_contents($debugLog, "[$ts] Returning plugin error: {$pluginResult['error']}\n", FILE_APPEND);
         return $pluginResult;
     }
 
