@@ -502,6 +502,15 @@
         "hours": "hours",
         "days": "days"
     },
+    "enhance": {
+        "custom_prompt": "Custom Prompt",
+        "custom_prompt_title": "Custom Enhancement Prompt",
+        "enter_prompt": "Enter your enhancement prompt:",
+        "prompt_placeholder": "e.g., Make this text more professional and concise...",
+        "run_enhancement": "Run Enhancement",
+        "prompt_required": "Please enter a prompt",
+        "text_required": "Please enter some text in the node first"
+    },
     "panels": {
         "properties": "Properties",
         "select_node": "Select a node to view its properties",

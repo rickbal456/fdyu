@@ -502,6 +502,15 @@
         "hours": "ساعات",
         "days": "أيام"
     },
+    "enhance": {
+        "custom_prompt": "توجيه مخصص",
+        "custom_prompt_title": "توجيه تحسين مخصص",
+        "enter_prompt": "أدخل توجيه التحسين الخاص بك:",
+        "prompt_placeholder": "مثال: اجعل هذا النص أكثر احترافية وإيجازًا...",
+        "run_enhancement": "تشغيل التحسين",
+        "prompt_required": "الرجاء إدخال التوجيه",
+        "text_required": "الرجاء إدخال بعض النص في العقدة أولاً"
+    },
     "panels": {
         "properties": "الخصائص",
         "select_node": "اختر عقدة لعرض خصائصها",

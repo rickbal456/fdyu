@@ -502,6 +502,15 @@
         "hours": "jam",
         "days": "hari"
     },
+    "enhance": {
+        "custom_prompt": "Prompt Kustom",
+        "custom_prompt_title": "Prompt Peningkatan Kustom",
+        "enter_prompt": "Masukkan prompt peningkatan Anda:",
+        "prompt_placeholder": "misal, Buat teks ini lebih profesional dan ringkas...",
+        "run_enhancement": "Jalankan Peningkatan",
+        "prompt_required": "Silakan masukkan prompt",
+        "text_required": "Silakan masukkan teks pada node terlebih dahulu"
+    },
     "panels": {
         "properties": "Properti",
         "select_node": "Pilih node untuk melihat propertinya",
