@@ -521,12 +521,24 @@
                 const nodeStatuses = response.nodeStatuses || [];
 
                 // Get results from nodeStatuses if allResults is empty
-                const allResults = results.length > 0 ? results :
+                let allResults = results.length > 0 ? results :
                     nodeStatuses.filter(ns => ns.resultUrl).map(ns => ({
                         node_id: ns.nodeId,
                         node_type: ns.nodeType,
                         url: ns.resultUrl
                     }));
+
+                // Filter out input nodes (they are not generated results)
+                const inputNodeTypes = ['image-input', 'text-input', 'audio-input', 'video-input', 'file-input', 'manual-trigger'];
+                allResults = allResults.filter(result => {
+                    const nodeType = result.node_type || '';
+                    // Skip input category nodes
+                    if (inputNodeTypes.includes(nodeType)) return false;
+                    // Also check if it's in input category via NodeManager
+                    const nodeDef = window.editorInstance?.nodeManager?.getNodeDefinition(nodeType);
+                    if (nodeDef?.category === 'input') return false;
+                    return true;
+                });
 
                 if (allResults.length === 0) {
                     Toast.info('No results', 'This execution has no generated content');
@@ -549,33 +561,39 @@
                             <div class="p-4 overflow-y-auto custom-scrollbar flex-1">
                                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                                     ${allResults.map(result => {
-                    const isVideo = result.url?.match(/\\.(mp4|webm|mov)$/i);
-                    const isAudio = result.url?.match(/\\.(mp3|wav|ogg)$/i);
+                    // Detect media type from URL
+                    const url = result.url || '';
+                    const isVideo = /\.(mp4|webm|mov|avi)($|\?)/i.test(url);
+                    const isAudio = /\.(mp3|wav|ogg|m4a)($|\?)/i.test(url);
+
+                    // Get proper node name from definition
                     const nodeType = result.node_type || 'Unknown';
+                    const nodeDef = window.editorInstance?.nodeManager?.getNodeDefinition(nodeType);
+                    const nodeName = nodeDef?.name || nodeType.replace(/-/g, ' ').replace(/aflow\s*/gi, '').replace(/\b\w/g, l => l.toUpperCase());
 
                     return `
                                             <div class="relative group rounded-lg overflow-hidden bg-dark-800 border border-dark-700">
                                                 ${isVideo ? `
-                                                    <video src="${result.url}" class="w-full aspect-video object-cover" controls></video>
+                                                    <video src="${url}" class="w-full aspect-video object-cover" controls></video>
                                                 ` : isAudio ? `
                                                     <div class="p-4 flex items-center justify-center aspect-video bg-dark-700">
-                                                        <audio src="${result.url}" controls class="w-full"></audio>
+                                                        <audio src="${url}" controls class="w-full"></audio>
                                                     </div>
                                                 ` : `
-                                                    <img src="${result.url}" class="w-full aspect-video object-cover" alt="Result">
+                                                    <img src="${url}" class="w-full aspect-video object-cover" alt="Result">
                                                 `}
-                                                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                                                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 pointer-events-none">
                                                     <div class="flex-1">
-                                                        <p class="text-xs text-dark-300">${nodeType.replace(/-/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase())}</p>
+                                                        <p class="text-xs text-dark-300">${Utils.escapeHtml(nodeName)}</p>
                                                     </div>
-                                                    <div class="flex gap-2">
-                                                        <a href="${result.url}" target="_blank" class="p-2 bg-dark-800/80 rounded-lg hover:bg-dark-700 transition-colors">
-                                                            <i data-lucide="external-link" class="w-4 h-4 text-white"></i>
-                                                        </a>
-                                                        <a href="${result.url}" download class="p-2 bg-dark-800/80 rounded-lg hover:bg-dark-700 transition-colors">
-                                                            <i data-lucide="download" class="w-4 h-4 text-white"></i>
-                                                        </a>
-                                                    </div>
+                                                </div>
+                                                <div class="absolute bottom-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <a href="${url}" target="_blank" class="p-2 bg-dark-800/80 rounded-lg hover:bg-dark-700 transition-colors">
+                                                        <i data-lucide="external-link" class="w-4 h-4 text-white"></i>
+                                                    </a>
+                                                    <a href="${url}" download class="p-2 bg-dark-800/80 rounded-lg hover:bg-dark-700 transition-colors">
+                                                        <i data-lucide="download" class="w-4 h-4 text-white"></i>
+                                                    </a>
                                                 </div>
                                             </div>
                                         `;

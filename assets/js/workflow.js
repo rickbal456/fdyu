@@ -821,7 +821,14 @@ class WorkflowManager {
 
 
                     // Check if complete
-                    if (response.status === 'completed') {
+                    // Also check if progress is 100% as a fallback (server might not have updated status yet)
+                    const allNodesComplete = response.nodeStatuses?.every(ns =>
+                        ['completed', 'failed'].includes(ns.status)
+                    );
+                    const isComplete = response.status === 'completed' ||
+                        (response.progress >= 100 && allNodesComplete);
+
+                    if (isComplete) {
                         this.executionState.isRunning = false;
                         this.onExecutionComplete({
                             executionId,
