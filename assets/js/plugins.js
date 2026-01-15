@@ -551,10 +551,10 @@ class PluginManager {
         // Model selection change
         const modelSelect = container.querySelector('#openrouter-model');
         if (modelSelect) {
-            modelSelect.addEventListener('change', () => {
-                const settings = this.loadOpenRouterSettings();
+            modelSelect.addEventListener('change', async () => {
+                const settings = await this.loadOpenRouterSettings();
                 settings.model = modelSelect.value;
-                this.saveOpenRouterSettings(settings);
+                await this.saveOpenRouterSettings(settings);
             });
         }
 

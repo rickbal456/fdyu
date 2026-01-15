@@ -90,7 +90,7 @@ try {
         CURLOPT_HTTPHEADER => [
             'Authorization: Bearer ' . $apiKey,
             'Content-Type: application/json',
-            'HTTP-Referer: ' . (defined('APP_URL') ? APP_URL : 'https://aikaflow.com'),
+            'HTTP-Referer: ' . (defined('APP_URL') ? APP_URL : 'https://fidyu.com'),
             'X-Title: AIKAFLOW'
         ],
         CURLOPT_POSTFIELDS => json_encode([
