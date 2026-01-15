@@ -48,11 +48,22 @@ class Editor {
      */
     async init() {
         try {
-            // Load site config for nodes (maxRepeatCount, etc.)
-            await this.loadSiteConfig();
+            // Check if we're in viewer mode (read-only, possibly unauthenticated)
+            const isViewerMode = document.body.classList.contains('read-only-mode') ||
+                window.location.pathname.includes('view');
 
-            // Load settings from database
-            await this.loadSettings();
+            // Load site config for nodes (maxRepeatCount, etc.) - skip in viewer mode
+            if (!isViewerMode) {
+                await this.loadSiteConfig();
+            } else {
+                // Use defaults in viewer mode
+                window.AIKAFLOW_CONFIG = window.AIKAFLOW_CONFIG || { maxRepeatCount: 100 };
+            }
+
+            // Load settings from database - skip in viewer mode
+            if (!isViewerMode) {
+                await this.loadSettings();
+            }
 
             // Initialize node manager
             this.nodeManager = new NodeManager();
@@ -122,8 +133,10 @@ class Editor {
             }
 
 
-            // Check for autosaved workflow
-            await this.checkAutoSave();
+            // Check for autosaved workflow - skip in viewer mode
+            if (!isViewerMode) {
+                await this.checkAutoSave();
+            }
 
             // Apply settings
             this.applySettings();
@@ -142,12 +155,16 @@ class Editor {
                 setTimeout(() => loadingOverlay.remove(), 300);
             }
 
-            // Show welcome toast with dynamic site title
-            const siteTitle = window.AIKAFLOW_CONFIG?.siteTitle || 'AIKAFLOW';
-            Toast.info(`Welcome to ${siteTitle}`, 'Drag nodes from the sidebar to get started');
+            // Show welcome toast with dynamic site title - skip in viewer mode
+            if (!isViewerMode) {
+                const siteTitle = window.AIKAFLOW_CONFIG?.siteTitle || 'AIKAFLOW';
+                Toast.info(`Welcome to ${siteTitle}`, 'Drag nodes from the sidebar to get started');
+            }
 
-            // Check for any running executions and resume polling
-            this.workflowManager?.resumeRunningExecutions();
+            // Check for any running executions and resume polling - skip in viewer mode  
+            if (!isViewerMode) {
+                this.workflowManager?.resumeRunningExecutions();
+            }
 
         } catch (error) {
             console.error('Editor initialization error:', error);
@@ -1360,6 +1377,10 @@ class Editor {
         // Dispatch start event
         document.dispatchEvent(new CustomEvent('workflow:run:start', { detail: data }));
 
+        // Initialize node timer tracking
+        this.nodeStartTimes = new Map();
+        this.nodeTimerInterval = null;
+
         // Show execution modal
         Modals.open('modal-execution', {
             onOpen: (modal) => {
@@ -1469,7 +1490,7 @@ class Editor {
                 </div>
                 <div class="execution-node-info">
                     <div class="execution-node-name">${Utils.escapeHtml(displayName)}</div>
-                    <div class="execution-node-status">Pending</div>
+                    <div class="execution-node-status"><span class="status-text">Pending</span><span class="status-timer"></span></div>
                 </div>
                 <div class="execution-node-progress">
                     <div class="execution-node-progress-bar" style="width: 0%"></div>
@@ -1495,8 +1516,36 @@ class Editor {
                 const nodeItem = modal.querySelector(`.execution-node-item[data-node-id="${ns.nodeId}"]`);
                 if (nodeItem) {
                     nodeItem.className = `execution-node-item ${ns.status}`;
-                    nodeItem.querySelector('.execution-node-status').textContent =
-                        ns.status.charAt(0).toUpperCase() + ns.status.slice(1);
+                    const statusText = nodeItem.querySelector('.status-text');
+                    const statusTimer = nodeItem.querySelector('.status-timer');
+
+                    // Track start time when node starts processing
+                    if (ns.status === 'processing' && !this.nodeStartTimes.has(ns.nodeId)) {
+                        this.nodeStartTimes.set(ns.nodeId, Date.now());
+                        // Start timer interval if not already running
+                        this.startNodeTimers(modal);
+                    }
+
+                    // Update status text with timer
+                    if (ns.status === 'processing') {
+                        statusText.textContent = 'Processing';
+                        // Timer will be updated by interval
+                    } else if (ns.status === 'completed' || ns.status === 'failed') {
+                        // Show final elapsed time
+                        const startTime = this.nodeStartTimes.get(ns.nodeId);
+                        if (startTime) {
+                            const elapsed = this.formatElapsedTime(Date.now() - startTime);
+                            statusText.textContent = ns.status.charAt(0).toUpperCase() + ns.status.slice(1);
+                            statusTimer.textContent = ` (${elapsed})`;
+                            this.nodeStartTimes.delete(ns.nodeId);
+                        } else {
+                            statusText.textContent = ns.status.charAt(0).toUpperCase() + ns.status.slice(1);
+                            statusTimer.textContent = '';
+                        }
+                    } else {
+                        statusText.textContent = ns.status.charAt(0).toUpperCase() + ns.status.slice(1);
+                        statusTimer.textContent = '';
+                    }
 
                     if (ns.status === 'completed') {
                         nodeItem.querySelector('.execution-node-progress-bar').style.width = '100%';
@@ -1512,11 +1561,63 @@ class Editor {
     }
 
     /**
+     * Start node timers interval to update elapsed time display
+     */
+    startNodeTimers(modal) {
+        if (this.nodeTimerInterval) return; // Already running
+
+        this.nodeTimerInterval = setInterval(() => {
+            if (this.nodeStartTimes.size === 0) {
+                clearInterval(this.nodeTimerInterval);
+                this.nodeTimerInterval = null;
+                return;
+            }
+
+            this.nodeStartTimes.forEach((startTime, nodeId) => {
+                const nodeItem = modal.querySelector(`.execution-node-item[data-node-id="${nodeId}"]`);
+                if (nodeItem) {
+                    const statusTimer = nodeItem.querySelector('.status-timer');
+                    if (statusTimer) {
+                        const elapsed = this.formatElapsedTime(Date.now() - startTime);
+                        statusTimer.textContent = ` (${elapsed})`;
+                    }
+                }
+            });
+        }, 1000);
+    }
+
+    /**
+     * Format elapsed time as mm:ss
+     */
+    formatElapsedTime(ms) {
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    /**
+     * Cleanup node timers
+     */
+    cleanupNodeTimers() {
+        if (this.nodeTimerInterval) {
+            clearInterval(this.nodeTimerInterval);
+            this.nodeTimerInterval = null;
+        }
+        if (this.nodeStartTimes) {
+            this.nodeStartTimes.clear();
+        }
+    }
+
+    /**
      * Handle execution complete
      */
     handleExecutionComplete(data) {
         // Dispatch complete event
         document.dispatchEvent(new CustomEvent('workflow:run:complete', { detail: data }));
+
+        // Cleanup timers
+        this.cleanupNodeTimers();
 
         const modal = Modals.getModal('modal-execution');
         if (modal) {
@@ -1585,6 +1686,9 @@ class Editor {
     handleExecutionError(data) {
         // Dispatch error event
         document.dispatchEvent(new CustomEvent('workflow:run:error', { detail: data }));
+
+        // Cleanup timers
+        this.cleanupNodeTimers();
 
         const modal = Modals.getModal('modal-execution');
         if (modal) {

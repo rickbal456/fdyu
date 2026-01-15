@@ -17,28 +17,63 @@ class PluginManager {
      * Initialize plugin manager
      */
     async init() {
-        // Get base URL - use relative path from current location to avoid CORS
-        // Extract the app base path from current URL (e.g., /aikaflow)
-        const pathParts = window.location.pathname.split('/');
-        const appPath = pathParts.length > 1 && pathParts[1] ? '/' + pathParts[1] : '';
-        this.baseUrl = appPath + '/api';
-        this.appBase = appPath;
+        // Get base URL - use relative path based on known AIKAFLOW config or derive from pathname
+        // For root-level deployment (like app.fidyu.com), use relative './api'
+        // For subdirectory deployment (like localhost/aikaflow), use '/subdirectory/api'
+
+        if (window.AIKAFLOW && window.AIKAFLOW.apiUrl) {
+            // Use the configured API URL from PHP (most reliable)
+            this.baseUrl = window.AIKAFLOW.apiUrl;
+            // Derive app base from apiUrl (remove /api suffix)
+            this.appBase = this.baseUrl.replace(/\/api\/?$/, '');
+        } else {
+            // Fallback: derive from pathname, but be smarter about it
+            const pathname = window.location.pathname;
+
+            // Check if we're at root level (e.g., /view, /index, /login etc)
+            // or in a subdirectory (e.g., /aikaflow/view, /aikaflow/index)
+            const knownRootPages = ['view', 'view.php', 'index', 'index.php', 'login', 'login.php', 'register', 'register.php'];
+            const pathParts = pathname.split('/').filter(p => p);
+
+            if (pathParts.length <= 1 || knownRootPages.includes(pathParts[0])) {
+                // Root level deployment
+                this.baseUrl = './api';
+                this.appBase = '.';
+            } else {
+                // Subdirectory deployment (e.g., /aikaflow)
+                this.appBase = '/' + pathParts[0];
+                this.baseUrl = this.appBase + '/api';
+            }
+        }
+
+        // Check if we're in viewer mode (read-only, possibly unauthenticated)
+        const isViewerMode = document.body.classList.contains('read-only-mode') ||
+            window.location.pathname.includes('view');
 
         try {
-            // Load integration status from database (NOT actual keys - keys stay server-side for security)
-            this.integrationStatus = await this.loadIntegrationStatus();
+            // Skip auth-requiring API calls in viewer mode to avoid 401 errors
+            if (!isViewerMode) {
+                // Load integration status from database (NOT actual keys - keys stay server-side for security)
+                this.integrationStatus = await this.loadIntegrationStatus();
 
-            // Load actual keys for admin editing (only values the user owns, not shared admin keys)
-            this.integrationKeys = await this.loadUserIntegrationKeys();
+                // Load actual keys for admin editing (only values the user owns, not shared admin keys)
+                this.integrationKeys = await this.loadUserIntegrationKeys();
+            } else {
+                // In viewer mode, use empty defaults
+                this.integrationStatus = {};
+                this.integrationKeys = {};
+            }
 
-            // Load installed plugins
+            // Load installed plugins (this should work even in viewer mode as plugins list is public)
             await this.loadPlugins();
 
-            // Setup UI event listeners
+            // Setup UI event listeners (only if relevant UI exists)
             this.setupEventListeners();
 
-            // Render integration keys in settings
-            await this.renderIntegrationKeys();
+            // Render integration keys in settings (only if admin UI exists)
+            if (!isViewerMode) {
+                await this.renderIntegrationKeys();
+            }
 
             this.isInitialized = true;
 
@@ -49,6 +84,8 @@ class PluginManager {
 
         } catch (error) {
             console.error('Plugin Manager initialization error:', error);
+            // Even if init fails, mark as initialized so dependent code can proceed
+            this.isInitialized = true;
         }
     }
 

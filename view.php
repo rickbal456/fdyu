@@ -419,7 +419,7 @@ $csrfToken = $_SESSION['csrf_token'] ?? '';
             window.AIKAFLOW = {
                 user: <?= json_encode(['id' => $user['id'], 'username' => $user['username']]) ?>,
                 csrf: <?= json_encode($csrfToken) ?>,
-                apiUrl: <?= json_encode(APP_URL . '/api') ?>,
+                apiUrl: './api', // Use relative URL to avoid mixed content issues
                 version: '1.0.0',
                 sharedWorkflow: <?= json_encode($workflowData) ?>
             };

@@ -553,6 +553,13 @@
         }
 
         loadGalleryFromStorage() {
+            // Skip in viewer mode (unauthenticated)
+            const isViewerMode = document.body.classList.contains('read-only-mode') ||
+                window.location.pathname.includes('view');
+            if (isViewerMode) {
+                this.galleryData = [];
+                return;
+            }
             // Deprecated - use loadGalleryFromDatabase instead
             this.loadGalleryFromDatabase();
         }

@@ -284,7 +284,10 @@ class ContextMenuManager {
         this.isOpen = false;
         this.context = null;
 
-        this.init();
+        // Only initialize if menu element exists
+        if (this.menu) {
+            this.init();
+        }
     }
 
     /**
@@ -293,7 +296,7 @@ class ContextMenuManager {
     init() {
         // Hide on click outside
         document.addEventListener('click', (e) => {
-            if (!this.menu.contains(e.target)) {
+            if (this.menu && !this.menu.contains(e.target)) {
                 this.hide();
             }
         });
@@ -309,15 +312,17 @@ class ContextMenuManager {
         });
 
         // Handle menu item clicks
-        this.menu.querySelectorAll('.context-menu-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                const action = item.dataset.action;
-                if (action) {
-                    this.handleAction(action);
-                }
-                this.hide();
+        if (this.menu) {
+            this.menu.querySelectorAll('.context-menu-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const action = item.dataset.action;
+                    if (action) {
+                        this.handleAction(action);
+                    }
+                    this.hide();
+                });
             });
-        });
+        }
 
         // Listen for canvas context menu events
         document.addEventListener('canvas-contextmenu', (e) => {
@@ -332,6 +337,8 @@ class ContextMenuManager {
      * @param {Object} context - Context data
      */
     show(x, y, context = {}) {
+        if (!this.menu) return;
+
         this.context = context;
         this.isOpen = true;
 
@@ -361,6 +368,8 @@ class ContextMenuManager {
      * Hide context menu
      */
     hide() {
+        if (!this.menu) return;
+
         this.menu.classList.add('hidden');
         this.isOpen = false;
         this.context = null;
@@ -370,6 +379,8 @@ class ContextMenuManager {
      * Update menu items based on context
      */
     updateMenuItems(context) {
+        if (!this.menu) return;
+
         const hasSelection = context.hasSelection;
 
         // Enable/disable items based on selection

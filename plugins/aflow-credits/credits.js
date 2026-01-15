@@ -1063,6 +1063,38 @@
             return;
         }
 
+        // Helper function to get node display name from slug
+        const getNodeDisplayName = (description) => {
+            if (!description) return '-';
+
+            // Check if description matches "Node execution: {node-type}" pattern
+            const nodeExecMatch = description.match(/^Node execution:\s*(.+)$/i);
+            if (nodeExecMatch) {
+                const nodeType = nodeExecMatch[1].trim();
+
+                // Try to find name from nodeCostsData first
+                const nodeCost = nodeCostsData.find(n => n.node_type === nodeType);
+                if (nodeCost && nodeCost.node_name) {
+                    return `Node execution: ${nodeCost.node_name}`;
+                }
+
+                // Try to find name from global NodeDefinitions
+                if (window.NodeDefinitions && window.NodeDefinitions[nodeType]) {
+                    return `Node execution: ${window.NodeDefinitions[nodeType].name || nodeType}`;
+                }
+
+                // Try PluginManager
+                if (window.PluginManager) {
+                    const def = window.PluginManager.getNodeDefinition?.(nodeType);
+                    if (def && def.name) {
+                        return `Node execution: ${def.name}`;
+                    }
+                }
+            }
+
+            return description;
+        };
+
         const html = transactions.map(tx => {
             const isPositive = parseFloat(tx.amount) > 0;
             const typeLabels = {
@@ -1084,12 +1116,14 @@
                 welcome: 'text-green-400'
             };
 
+            const displayDescription = getNodeDisplayName(tx.description);
+
             return `
             <div class="p-4 hover:bg-dark-800/50">
                 <div class="flex justify-between items-start">
                     <div>
                         <span class="text-xs px-2 py-0.5 rounded ${typeColors[tx.type] || 'text-gray-400'} bg-dark-700">${typeLabels[tx.type] || tx.type}</span>
-                        <p class="text-sm text-dark-200 mt-1">${tx.description || '-'}</p>
+                        <p class="text-sm text-dark-200 mt-1">${displayDescription}</p>
                         <p class="text-xs text-dark-500 mt-1">${new Date(tx.created_at).toLocaleString()}</p>
                     </div>
                     <div class="text-right">
