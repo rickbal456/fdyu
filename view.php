@@ -82,6 +82,19 @@ $csrfToken = $_SESSION['csrf_token'] ?? '';
 // If no CSRF token (guest without deep session), generate one? 
 // Auth::initialization handles it.
 
+// Load site settings (for favicon)
+$faviconUrl = '';
+try {
+    $rows = Database::fetchAll("SELECT setting_key, setting_value FROM site_settings WHERE setting_key = 'favicon_url'");
+    foreach ($rows as $row) {
+        if ($row['setting_key'] === 'favicon_url') {
+            $faviconUrl = $row['setting_value'];
+        }
+    }
+} catch (Exception $e) {
+    // Ignore errors
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en" class="dark">
@@ -538,8 +551,12 @@ $csrfToken = $_SESSION['csrf_token'] ?? '';
 
         <!-- Loading Overlay -->
         <div id="viewer-loading-overlay" class="viewer-loading-overlay">
-            <div class="viewer-loading-logo">
-                <i data-lucide="eye" class="w-8 h-8 text-white"></i>
+            <div class="viewer-loading-logo overflow-hidden">
+                <?php if (!empty($faviconUrl)): ?>
+                    <img src="<?= htmlspecialchars($faviconUrl) ?>" alt="Loading..." class="w-full h-full object-cover">
+                <?php else: ?>
+                    <i data-lucide="eye" class="w-8 h-8 text-white"></i>
+                <?php endif; ?>
             </div>
             <div class="viewer-loading-text">Loading Shared Workflow</div>
             <div class="viewer-loading-progress">
