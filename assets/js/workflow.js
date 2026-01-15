@@ -734,6 +734,9 @@ class WorkflowManager {
         const maxPolls = 600; // 20 minutes max
         let pollCount = 0;
 
+        // Track which result URLs have already been dispatched to gallery
+        const dispatchedResults = new Set();
+
         const poll = async () => {
             if (!this.executionState.isRunning) return;
 
@@ -747,12 +750,36 @@ class WorkflowManager {
                             this.executionState.nodeStatuses.set(ns.nodeId, ns.status);
                             this.nodeManager?.setNodeStatus(ns.nodeId, ns.status, ns.error);
 
-                            if (ns.resultUrl) {
+                            if (ns.resultUrl && ns.status === 'completed') {
                                 // Get output port from node definition
                                 const node = this.nodeManager?.getNode(ns.nodeId);
                                 const def = this.nodeManager?.getNodeDefinition(node?.type);
                                 if (def?.outputs?.[0]) {
                                     this.nodeManager?.setNodeOutput(ns.nodeId, def.outputs[0].id, ns.resultUrl);
+                                }
+
+                                // Dispatch event to save to gallery (for generation/editing categories)
+                                // Only dispatch if not already dispatched (avoid duplicates during polling)
+                                const category = def?.category || '';
+                                if (['generation', 'editing', 'output'].includes(category) && !dispatchedResults.has(ns.resultUrl)) {
+                                    dispatchedResults.add(ns.resultUrl);
+
+                                    // Determine output type from URL or node definition
+                                    let outputType = 'image';
+                                    if (ns.resultUrl.match(/\.(mp4|webm|mov|avi)$/i) || def?.type?.includes('video') || def?.type?.includes('v2v') || def?.type?.includes('i2v')) {
+                                        outputType = 'video';
+                                    } else if (ns.resultUrl.match(/\.(mp3|wav|ogg|m4a)$/i) || def?.type?.includes('audio') || def?.type?.includes('tts')) {
+                                        outputType = 'audio';
+                                    }
+
+                                    document.dispatchEvent(new CustomEvent('node:output:generated', {
+                                        detail: {
+                                            type: outputType,
+                                            url: ns.resultUrl,
+                                            nodeId: ns.nodeId,
+                                            nodeType: def?.type || node?.type
+                                        }
+                                    }));
                                 }
                             }
                         });

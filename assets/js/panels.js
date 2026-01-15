@@ -181,6 +181,12 @@
 
         async addToGallery(item) {
             try {
+                // Skip duplicates (check if this URL was already added)
+                const existingItem = this.galleryData.find(g => g.url === item.url);
+                if (existingItem) {
+                    return; // Already in gallery
+                }
+
                 // Save to database
                 const response = await API.addToGallery({
                     type: item.type || 'image',
@@ -224,9 +230,9 @@
 
             if (!grid) return;
 
-            // Filter by current workflow
+            // Filter by current workflow (API returns workflow_id, local cache uses workflow_id too)
             const items = this.galleryData.filter(item =>
-                !this.currentWorkflowId || item.workflowId === this.currentWorkflowId
+                !this.currentWorkflowId || item.workflow_id === this.currentWorkflowId || item.workflowId === this.currentWorkflowId
             );
 
             if (items.length === 0) {
@@ -269,7 +275,7 @@
                     e.stopPropagation();
                     const itemEl = btn.closest('.gallery-item');
                     const itemId = itemEl?.dataset.itemId;
-                    const item = this.galleryData.find(i => i.id === itemId);
+                    const item = this.galleryData.find(i => String(i.id) === String(itemId));
 
                     if (btn.dataset.action === 'view' && item) {
                         window.open(item.url, '_blank');
