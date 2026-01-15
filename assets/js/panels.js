@@ -438,7 +438,7 @@
                 const isRunning = run.status === 'running' || run.status === 'pending' || run.status === 'queued';
 
                 return `
-                    <div class="history-item ${isRunning ? 'cursor-pointer hover:bg-dark-700/50' : ''}" 
+                    <div class="history-item cursor-pointer hover:bg-dark-700/50" 
                          data-execution-id="${run.id}" 
                          data-status="${run.status}">
                         <div class="history-item-header">
@@ -466,10 +466,10 @@
                             `).join('')}
                             ${(run.nodes?.length || 0) > 3 ? `<span class="history-item-node">+${run.nodes.length - 3} more</span>` : ''}
                         </div>
-                        ${run.resultUrl ? `
-                            <a href="${run.resultUrl}" target="_blank" class="text-xs text-primary-400 hover:underline mt-2 inline-block">
-                                <i data-lucide="external-link" class="w-3 h-3 inline mr-1"></i>View Result
-                            </a>
+                        ${run.status === 'completed' ? `
+                            <p class="text-xs text-primary-400 mt-2">
+                                <i data-lucide="image" class="w-3 h-3 inline mr-1"></i>Click to view results
+                            </p>
                         ` : ''}
                         ${run.error ? `
                             <p class="text-xs text-red-400 mt-2">${Utils.escapeHtml(run.error)}</p>
@@ -494,6 +494,127 @@
                     }
                 });
             });
+
+            // Add click handlers for completed items to show results modal
+            list.querySelectorAll('.history-item[data-status="completed"]').forEach(item => {
+                item.addEventListener('click', async () => {
+                    const executionId = item.dataset.executionId;
+                    await this.showResultsModal(executionId);
+                });
+            });
+        }
+
+        /**
+         * Show results modal for a completed execution
+         */
+        async showResultsModal(executionId) {
+            try {
+                // Fetch execution details
+                const response = await API.get(`/workflows/status.php?id=${executionId}`);
+
+                if (!response.success) {
+                    Toast.error('Failed to load results');
+                    return;
+                }
+
+                const results = response.allResults || [];
+                const nodeStatuses = response.nodeStatuses || [];
+
+                // Get results from nodeStatuses if allResults is empty
+                const allResults = results.length > 0 ? results :
+                    nodeStatuses.filter(ns => ns.resultUrl).map(ns => ({
+                        node_id: ns.nodeId,
+                        node_type: ns.nodeType,
+                        url: ns.resultUrl
+                    }));
+
+                if (allResults.length === 0) {
+                    Toast.info('No results', 'This execution has no generated content');
+                    return;
+                }
+
+                // Create modal HTML
+                const modalHtml = `
+                    <div id="results-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-[200] backdrop-blur-sm">
+                        <div class="bg-dark-900 rounded-2xl border border-dark-700 w-full max-w-4xl mx-4 shadow-2xl max-h-[90vh] flex flex-col">
+                            <div class="p-4 border-b border-dark-700 flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-dark-50 flex items-center gap-2">
+                                    <i data-lucide="images" class="w-5 h-5 text-primary-500"></i>
+                                    Execution Results (${allResults.length})
+                                </h3>
+                                <button id="btn-close-results" class="p-2 text-dark-400 hover:text-dark-50 rounded-lg hover:bg-dark-800 transition-colors">
+                                    <i data-lucide="x" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                            <div class="p-4 overflow-y-auto custom-scrollbar flex-1">
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    ${allResults.map(result => {
+                    const isVideo = result.url?.match(/\\.(mp4|webm|mov)$/i);
+                    const isAudio = result.url?.match(/\\.(mp3|wav|ogg)$/i);
+                    const nodeType = result.node_type || 'Unknown';
+
+                    return `
+                                            <div class="relative group rounded-lg overflow-hidden bg-dark-800 border border-dark-700">
+                                                ${isVideo ? `
+                                                    <video src="${result.url}" class="w-full aspect-video object-cover" controls></video>
+                                                ` : isAudio ? `
+                                                    <div class="p-4 flex items-center justify-center aspect-video bg-dark-700">
+                                                        <audio src="${result.url}" controls class="w-full"></audio>
+                                                    </div>
+                                                ` : `
+                                                    <img src="${result.url}" class="w-full aspect-video object-cover" alt="Result">
+                                                `}
+                                                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                                                    <div class="flex-1">
+                                                        <p class="text-xs text-dark-300">${nodeType.replace(/-/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase())}</p>
+                                                    </div>
+                                                    <div class="flex gap-2">
+                                                        <a href="${result.url}" target="_blank" class="p-2 bg-dark-800/80 rounded-lg hover:bg-dark-700 transition-colors">
+                                                            <i data-lucide="external-link" class="w-4 h-4 text-white"></i>
+                                                        </a>
+                                                        <a href="${result.url}" download class="p-2 bg-dark-800/80 rounded-lg hover:bg-dark-700 transition-colors">
+                                                            <i data-lucide="download" class="w-4 h-4 text-white"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+                }).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Add modal to DOM
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                // Initialize icons
+                const modal = document.getElementById('results-modal');
+                if (window.lucide) {
+                    lucide.createIcons({ nodes: [modal] });
+                }
+
+                // Close handlers
+                const closeBtn = document.getElementById('btn-close-results');
+                closeBtn?.addEventListener('click', () => modal.remove());
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modal.remove();
+                });
+
+                // Close on Escape
+                const escHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        modal.remove();
+                        document.removeEventListener('keydown', escHandler);
+                    }
+                };
+                document.addEventListener('keydown', escHandler);
+
+            } catch (error) {
+                console.error('Failed to show results:', error);
+                Toast.error('Failed to load results', error.message);
+            }
         }
 
         formatStatus(status) {

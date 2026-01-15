@@ -1274,9 +1274,38 @@ class Editor {
             return;
         }
 
-        // Get nodes in this flow (connected to the trigger)
-        const flowNodes = this.connectionManager?.getConnectedNodes(triggerNodeId, 'downstream') || [];
-        flowNodes.unshift(triggerNode); // Include the trigger itself
+        // Get nodes in this flow (connected to the trigger via flow connections)
+        const downstreamNodes = this.connectionManager?.getConnectedNodes(triggerNodeId, 'downstream') || [];
+
+        // Collect all nodes including upstream data providers
+        const flowNodeIds = new Set([triggerNodeId]);
+        const flowNodes = [triggerNode];
+
+        // Add downstream nodes
+        downstreamNodes.forEach(node => {
+            if (!flowNodeIds.has(node.id)) {
+                flowNodeIds.add(node.id);
+                flowNodes.push(node);
+            }
+        });
+
+        // For each downstream node, also get their upstream data providers (input nodes)
+        // This ensures Text Input, Image Input, etc. are included
+        downstreamNodes.forEach(node => {
+            const upstreamNodes = this.connectionManager?.getConnectedNodes(node.id, 'upstream') || [];
+            upstreamNodes.forEach(upNode => {
+                // Only add if not already in the flow and not a trigger node
+                // (triggers are handled separately)
+                if (!flowNodeIds.has(upNode.id)) {
+                    const nodeDef = this.nodeManager?.getNodeDefinition(upNode.type);
+                    // Include input/utility nodes that provide data
+                    if (nodeDef?.category === 'input' || nodeDef?.category === 'utility') {
+                        flowNodeIds.add(upNode.id);
+                        flowNodes.push(upNode);
+                    }
+                }
+            });
+        });
 
         if (flowNodes.length === 0) {
             Toast.warning('Empty flow', 'This trigger has no connected nodes');

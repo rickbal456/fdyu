@@ -242,6 +242,17 @@ try {
             }
             error_log("[Webhook] Status mapping: external=$status -> internal=$internalStatus");
 
+            // Skip if task is already completed or failed (prevent duplicate processing)
+            if (in_array($nodeTask['status'], ['completed', 'failed'])) {
+                error_log("[Webhook] Skipping - task already in final state: {$nodeTask['status']}");
+
+                // Mark webhook as processed and return success
+                Database::update('webhook_logs', ['processed' => 1], 'id = :id', ['id' => $logId]);
+
+                echo json_encode(['success' => true, 'message' => 'Already processed']);
+                exit;
+            }
+
             // Update task
             Database::update(
                 'node_tasks',
@@ -368,7 +379,94 @@ try {
  */
 function queueNextTask(int $executionId): void
 {
-    require_once __DIR__ . '/workflows/execute.php';
+    // Find next pending task
+    $task = Database::fetchOne(
+        "SELECT * FROM node_tasks WHERE execution_id = ? AND status = 'pending' ORDER BY id ASC LIMIT 1",
+        [$executionId]
+    );
+
+    if (!$task) {
+        // No more tasks - check if all completed
+        $pending = Database::fetchColumn(
+            "SELECT COUNT(*) FROM node_tasks WHERE execution_id = ? AND status NOT IN ('completed', 'failed')",
+            [$executionId]
+        );
+
+        if ($pending == 0) {
+            // All done - mark execution as complete
+            finalizeExecution($executionId);
+        }
+        return;
+    }
+
+    // Add to queue
+    Database::insert('task_queue', [
+        'task_type' => 'node_execution',
+        'payload' => json_encode([
+            'execution_id' => $executionId,
+            'task_id' => $task['id'],
+            'node_id' => $task['node_id'],
+            'node_type' => $task['node_type']
+        ]),
+        'priority' => 1,
+        'status' => 'pending'
+    ]);
+
+    // Update task status
+    Database::update(
+        'node_tasks',
+        ['status' => 'queued'],
+        'id = :id',
+        ['id' => $task['id']]
+    );
+}
+
+/**
+ * Finalize workflow execution
+ */
+function finalizeExecution(int $executionId): void
+{
+    // Get all task results
+    $tasks = Database::fetchAll(
+        "SELECT * FROM node_tasks WHERE execution_id = ? ORDER BY id ASC",
+        [$executionId]
+    );
+
+    $allCompleted = true;
+    $finalResultUrl = null;
+    $outputs = [];
+    $allResults = [];
+
+    foreach ($tasks as $task) {
+        if ($task['status'] !== 'completed') {
+            $allCompleted = false;
+        }
+
+        if ($task['result_url']) {
+            $finalResultUrl = $task['result_url'];
+            $outputs[$task['node_id']] = $task['result_url'];
+            $allResults[] = [
+                'node_id' => $task['node_id'],
+                'node_type' => $task['node_type'],
+                'url' => $task['result_url']
+            ];
+        }
+    }
+
+    // Update execution record
+    Database::update(
+        'workflow_executions',
+        [
+            'status' => $allCompleted ? 'completed' : 'failed',
+            'result_url' => $finalResultUrl,
+            'output_data' => json_encode(['outputs' => $outputs, 'all_results' => $allResults]),
+            'completed_at' => date('Y-m-d H:i:s')
+        ],
+        'id = :id',
+        ['id' => $executionId]
+    );
+
+    error_log("[Webhook] Execution $executionId finalized with status: " . ($allCompleted ? 'completed' : 'failed'));
 }
 
 /**

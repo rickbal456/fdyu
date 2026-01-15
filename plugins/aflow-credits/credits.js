@@ -30,6 +30,17 @@
         await loadBalance();
         injectUI();
         setupEventListeners();
+
+        // Auto-refresh credits after workflow completes or node generates output
+        document.addEventListener('workflow:run:complete', () => {
+            loadBalance();
+        });
+
+        document.addEventListener('node:output:generated', () => {
+            // Debounce to avoid too many requests
+            if (window._creditsRefreshTimeout) clearTimeout(window._creditsRefreshTimeout);
+            window._creditsRefreshTimeout = setTimeout(loadBalance, 1000);
+        });
     }
 
     // Load credit balance
