@@ -122,17 +122,22 @@ $invitationEnabled = ($siteSettings['invitation_enabled'] ?? '0') === '1';
 </head>
 
 <body class="bg-dark-950 text-gray-100 overflow-hidden">
-    <!-- Initial Loading Overlay -->
-    <div id="app-loading-overlay" class="fixed inset-0 bg-dark-950 z-[9999] flex items-center justify-center">
-        <div class="text-center">
-            <div class="relative w-16 h-16 mx-auto mb-4">
-                <div class="absolute inset-0 rounded-full border-4 border-dark-700"></div>
-                <div
-                    class="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin">
-                </div>
+    <!-- Initial Loading Overlay with Progress -->
+    <div id="app-loading-overlay"
+        class="fixed inset-0 bg-dark-950 z-[9999] flex flex-col items-center justify-center gap-4">
+        <div class="relative w-16 h-16">
+            <div
+                class="absolute inset-0 rounded-lg bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center animate-pulse">
+                <i data-lucide="workflow" class="w-8 h-8 text-white"></i>
             </div>
-            <p class="text-dark-400 text-sm">Loading...</p>
         </div>
+        <p class="text-dark-200 text-lg font-medium"><?= htmlspecialchars($siteTitle) ?></p>
+        <div class="w-48 h-1 bg-dark-800 rounded-full overflow-hidden">
+            <div id="app-loading-progress-bar"
+                class="h-full bg-gradient-to-r from-primary-500 to-purple-600 transition-all duration-300"
+                style="width: 0%"></div>
+        </div>
+        <p id="app-loading-status" class="text-dark-500 text-xs">Initializing...</p>
     </div>
 
     <!-- App Container -->

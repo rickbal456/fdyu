@@ -154,7 +154,17 @@ $csrfToken = $_SESSION['csrf_token'] ?? '';
         #btn-save,
         #btn-new,
         #btn-open,
-        #btn-run {
+        #btn-run,
+        #btn-history {
+            display: none !important;
+        }
+
+        /* Hide API key fields in viewer mode */
+        body.read-only-mode .node-field-group[data-field-type="api-key"],
+        body.read-only-mode .node-field-group[data-field-id="apiKey"],
+        body.read-only-mode .api-key-field,
+        body.read-only-mode [data-field-id*="apiKey"],
+        body.read-only-mode [data-field-id*="api_key"] {
             display: none !important;
         }
 
@@ -199,6 +209,120 @@ $csrfToken = $_SESSION['csrf_token'] ?? '';
             z-index: 99;
             pointer-events: none;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Loading Screen */
+        .viewer-loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--color-dark-950);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            transition: opacity 0.4s ease;
+        }
+
+        .viewer-loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .viewer-loading-logo {
+            width: 4rem;
+            height: 4rem;
+            background: linear-gradient(135deg, #0ea5e9, #8b5cf6);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
+
+        .viewer-loading-text {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--color-dark-200);
+        }
+
+        .viewer-loading-progress {
+            width: 200px;
+            height: 4px;
+            background: var(--color-dark-800);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .viewer-loading-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #0ea5e9, #8b5cf6);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .viewer-loading-status {
+            font-size: 0.75rem;
+            color: var(--color-dark-500);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        /* Clone Confirmation Modal */
+        .clone-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .clone-modal-overlay.hidden {
+            display: none;
+        }
+
+        .clone-modal {
+            background: var(--color-dark-900);
+            border: 1px solid var(--color-dark-700);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .clone-modal-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--color-dark-50);
+            margin-bottom: 0.75rem;
+        }
+
+        .clone-modal-message {
+            font-size: 0.875rem;
+            color: var(--color-dark-400);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .clone-modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
         }
     </style>
 </head>
@@ -361,9 +485,7 @@ $csrfToken = $_SESSION['csrf_token'] ?? '';
                     <button id="btn-gallery" class="canvas-control-btn" title="View Generated Content">
                         <i data-lucide="images" class="w-4 h-4"></i>
                     </button>
-                    <button id="btn-history" class="canvas-control-btn" title="Run History">
-                        <i data-lucide="history" class="w-4 h-4"></i>
-                    </button>
+                    <!-- History button hidden in viewer mode via CSS -->
                 </div>
             </div>
 
@@ -414,6 +536,35 @@ $csrfToken = $_SESSION['csrf_token'] ?? '';
         <!-- Toast Container -->
         <div id="toast-container" class="fixed bottom-20 right-4 z-[200] space-y-2"></div>
 
+        <!-- Loading Overlay -->
+        <div id="viewer-loading-overlay" class="viewer-loading-overlay">
+            <div class="viewer-loading-logo">
+                <i data-lucide="eye" class="w-8 h-8 text-white"></i>
+            </div>
+            <div class="viewer-loading-text">Loading Shared Workflow</div>
+            <div class="viewer-loading-progress">
+                <div id="viewer-loading-progress-bar" class="viewer-loading-progress-bar"></div>
+            </div>
+            <div id="viewer-loading-status" class="viewer-loading-status">Initializing...</div>
+        </div>
+
+        <!-- Clone Confirmation Modal -->
+        <div id="clone-modal" class="clone-modal-overlay hidden">
+            <div class="clone-modal">
+                <div class="clone-modal-title">Clone Workflow</div>
+                <div class="clone-modal-message">
+                    Are you sure you want to clone this workflow? A copy will be created in your account.
+                </div>
+                <div class="clone-modal-buttons">
+                    <button id="clone-modal-cancel" class="btn-secondary">Cancel</button>
+                    <button id="clone-modal-confirm" class="btn-primary">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                        Clone
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Initialization -->
         <script>
             window.AIKAFLOW = {
@@ -439,56 +590,125 @@ $csrfToken = $_SESSION['csrf_token'] ?? '';
 
         <script>
             // Auto-load shared workflow
-            document.addEventListener('DOMContentLoaded', () => {
-                const checkEditor = setInterval(() => {
-                    if (window.editorInstance && window.editorInstance.isInitialized && window.editorInstance.workflowManager) {
-                        clearInterval(checkEditor);
-
-                        if (window.AIKAFLOW.sharedWorkflow) {
-                            try {
-                                if (!window.AIKAFLOW.sharedWorkflow) throw new Error('No workflow data found');
-
-                                window.editorInstance.workflowManager.deserialize(window.AIKAFLOW.sharedWorkflow);
-
-                                // Fit view
-                                setTimeout(() => {
-                                    try {
-                                        window.editorInstance.canvasManager?.fitToView();
-                                    } catch (err) {
-                                        console.warn('Fit to view failed:', err);
-                                    }
-                                }, 100);
-                            } catch (e) {
-                                console.error('Failed to load shared workflow:', e);
-                                if (window.Toast) Toast.error('Failed to load workflow data: ' + e.message);
-                            }
-
-                            document.body.classList.add('read-only-mode');
-
-                            // Disable save buttons and other edits visually (redundant to CSS but good backup)
-                            const saveBtn = document.getElementById('btn-save');
-                            if (saveBtn) saveBtn.style.display = 'none';
+            with loading progress
+                document.addEventListener('DOMContentLoaded', () => {
+                    const loadingOverlay = document.getElementById('viewer-loading-overlay');
+                    const loadingBar = document.getElementById('viewer-loading-progress-bar');
+                    const loadingStatus = document.getElementById('viewer-loading-status');
+                
+                    let loadProgress = 0;
+                
+                    // Update loading progress
+                    const updateProgress = (percent, status) => {
+                        loadProgress = percent;
+                        if (loadingBar) loadingBar.style.width = `${percent}%`;
+                        if (loadingStatus) loadingStatus.textContent = status;
+                    };
+                
+                    // Hide loading overlay
+                    const hideLoading = () => {
+                        if (loadingOverlay) {
+                            loadingOverlay.classList.add('hidden');
+                            setTimeout(() => loadingOverlay.remove(), 400);
                         }
+                    };
+                
+                    updateProgress(10, 'Loading scripts...');
+                
+                    // Initialize lucide icons
+                    if (window.lucide) lucide.createIcons();
+                
+                    // Track plugin loading progress
+                    let totalPlugins = 0;
+                    let loadedPlugins = 0;
+                
+                    // Listen for plugin load events
+                    const originalLoadPluginNodes = window.PluginManager?.prototype?.loadPluginNodes;
+                    if (window.PluginManager && originalLoadPluginNodes) {
+                        window.PluginManager.prototype.loadPluginNodes = async function(plugin) {
+                            const result = await originalLoadPluginNodes.call(this, plugin);
+                            loadedPlugins++;
+                            const pluginProgress = 30 + Math.min(50, (loadedPlugins / Math.max(totalPlugins, 1)) * 50);
+                            updateProgress(pluginProgress, `Loading plugins... (${loadedPlugins}/${totalPlugins})`);
+                            return result;
+                        };
                     }
-                }, 100);
+                
+                    updateProgress(20, 'Initializing editor...');
+                
+                    const checkEditor = setInterval(() => {
+                        if (window.editorInstance && window.editorInstance.isInitialized && window.editorInstance.workflowManager) {
+                            clearInterval(checkEditor);
+                        
+                            updateProgress(80, 'Loading workflow...');
 
-                // Timeout after 10 seconds
-                setTimeout(() => clearInterval(checkEditor), 10000);
+                            if (window.AIKAFLOW.sharedWorkflow) {
+                                try {
+                                    if (!window.AIKAFLOW.sharedWorkflow) throw new Error('No workflow data found');
 
-                if (window.lucide) lucide.createIcons();
+                                    window.editorInstance.workflowManager.deserialize(window.AIKAFLOW.sharedWorkflow);
+                                
+                                    updateProgress(90, 'Rendering nodes...');
 
-                // Clone Workflow Logic
-                const cloneBtn = document.getElementById('btn-clone-workflow');
-                if (cloneBtn) {
-                    cloneBtn.addEventListener('click', async () => {
-                        // Check auth
-                        if (!window.AIKAFLOW.user || !window.AIKAFLOW.user.id || window.AIKAFLOW.user.id <= 0) {
-                            if (window.Toast) Toast.error('Please login to clone this workflow');
-                            // Optional: Redirect to login
-                            // window.location.href = 'login.php'; 
-                            return;
+                                    // Fit view
+                                    setTimeout(() => {
+                                        try {
+                                            window.editorInstance.canvasManager?.fitToView();
+                                        } catch (err) {
+                                            console.warn('Fit to view failed:', err);
+                                        }
+                                    
+                                        updateProgress(100, 'Complete!');
+                                    
+                                        // Hide loading after a small delay
+                                        setTimeout(hideLoading, 300);
+                                    }, 100);
+                                } catch (e) {
+                                    console.error('Failed to load shared workflow:', e);
+                                    if (window.Toast) Toast.error('Failed to load workflow data: ' + e.message);
+                                    hideLoading();
+                                }
+
+                                document.body.classList.add('read-only-mode');
+
+                                // Disable save buttons and other edits visually (redundant to CSS but good backup)
+                                const saveBtn = document.getElementById('btn-save');
+                                if (saveBtn) saveBtn.style.display = 'none';
+                            } else {
+                                hideLoading();
+                            }
                         }
+                    }, 100);
 
+                    // Timeout after 10 seconds
+                    setTimeout(() => {
+                        clearInterval(checkEditor);
+                        hideLoading();
+                    }, 10000);
+
+                    // Clone Modal Logic
+                    const cloneBtn = document.getElementById('btn-clone-workflow');
+                    const cloneModal = document.getElementById('clone-modal');
+                    const cloneModalCancel = document.getElementById('clone-modal-cancel');
+                    const cloneModalConfirm = document.getElementById('clone-modal-confirm');
+                
+                    // Show clone confirmation modal
+                    const showCloneModal = () => {
+                        if (cloneModal) {
+                            cloneModal.classList.remove('hidden');
+                            if (window.lucide) lucide.createIcons({ nodes: [cloneModal] });
+                        }
+                    };
+                
+                    // Hide clone confirmation modal
+                    const hideCloneModal = () => {
+                        if (cloneModal) cloneModal.classList.add('hidden');
+                    };
+                
+                    // Execute clone action
+                    const executeClone = async () => {
+                        hideCloneModal();
+                    
                         if (!window.AIKAFLOW.sharedWorkflow) {
                             if (window.Toast) Toast.error('No workflow data to clone');
                             return;
@@ -501,7 +721,7 @@ $csrfToken = $_SESSION['csrf_token'] ?? '';
                             if (window.lucide) lucide.createIcons({ nodes: [cloneBtn] });
 
                             const workflowData = window.AIKAFLOW.sharedWorkflow;
-                            const name = "Copy of " + (workflowData.name || 'Shared Workflow');
+                            const name = "Copy of " + (workflowData.workflow?.name || workflowData.name || 'Shared Workflow');
 
                             const response = await fetch(window.AIKAFLOW.apiUrl + '/workflows/save.php', {
                                 method: 'POST',
@@ -510,7 +730,7 @@ $csrfToken = $_SESSION['csrf_token'] ?? '';
                                 },
                                 body: JSON.stringify({
                                     name: name,
-                                    description: workflowData.description || 'Cloned from shared workflow',
+                                    description: workflowData.workflow?.description || workflowData.description || 'Cloned from shared workflow',
                                     data: workflowData,
                                     isPublic: false
                                 })
@@ -534,10 +754,86 @@ $csrfToken = $_SESSION['csrf_token'] ?? '';
                             cloneBtn.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i> <span>Clone Workflow</span>';
                             if (window.lucide) lucide.createIcons({ nodes: [cloneBtn] });
                         }
+                    };
+                
+                    if (cloneBtn) {
+                        cloneBtn.addEventListener('click', () => {
+                            // Check auth - if not logged in, redirect to login
+                            if (!window.AIKAFLOW.user || !window.AIKAFLOW.user.id || window.AIKAFLOW.user.id <= 0) {
+                                if (window.Toast) Toast.info('Redirecting to login...', 'Please login to clone this workflow');
+                                setTimeout(() => {
+                                    window.location.href = 'login.php?redirect=' + encodeURIComponent(window.location.href);
+                                }, 1500);
+                                return;
+                            }
+
+                            // Show confirmation modal for logged-in users
+                            showCloneModal();
+                        });
+                    }
+                
+                    // Clone modal button handlers
+                    if (cloneModalCancel) {
+                        cloneModalCancel.addEventListener('click', hideCloneModal);
+                    }
+                
+                    if (cloneModalConfirm) {
+                        cloneModalConfirm.addEventListener('click', executeClone);
+                    }
+                
+                    // Close modal on backdrop click
+                    if (cloneModal) {
+                        cloneModal.addEventListener('click', (e) => {
+                            if (e.target === cloneModal) hideCloneModal();
+                        });
+                    }
+                
+                    // Close modal on Escape key
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape' && cloneModal && !cloneModal.classList.contains('hidden')) {
+                            hideCloneModal();
+                        }
                     });
-                }
-            });
-        </script>
+
+                    // Load gallery content from shared workflow outputs (if any)
+                    setTimeout(() => {
+                        if (window.AIKAFLOW.sharedWorkflow?.outputs) {
+                            const galleryGrid = document.getElementById('gallery-grid');
+                            const galleryEmpty = document.getElementById('gallery-empty');
+                        
+                            if (galleryGrid && window.AIKAFLOW.sharedWorkflow.outputs.length > 0) {
+                                galleryEmpty?.classList.add('hidden');
+                            
+                                window.AIKAFLOW.sharedWorkflow.outputs.forEach(output => {
+                                    if (output.url) {
+                                        const item = document.createElement('div');
+                                        item.className = 'relative rounded-lg overflow-hidden bg-dark-800 aspect-video group cursor-pointer';
+                                    
+                                        if (output.type === 'video') {
+                                            item.innerHTML = `
+                                            <video src="${output.url}" class="w-full h-full object-cover" poster="${output.thumbnail || ''}"></video>
+                                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
+                                                <i data-lucide="play-circle" class="w-10 h-10 text-white"></i>
+                                            </div>
+                                        `;
+                                        } else {
+                                            item.innerHTML = `<img src="${output.url}" class="w-full h-full object-cover" alt="Output">`;
+                                        }
+                                    
+                                        item.addEventListener('click', () => {
+                                            window.open(output.url, '_blank');
+                                        });
+                                    
+                                        galleryGrid.appendChild(item);
+                                    }
+                                });
+                            
+                                if (window.lucide) lucide.createIcons({ nodes: [galleryGrid] });
+                            }
+                        }
+                    }, 500);
+                });
+            </script>
 
     <?php endif; ?>
 </body>

@@ -48,11 +48,22 @@ class Editor {
      */
     async init() {
         try {
+            // Helper to update loading progress
+            const updateLoadingProgress = (percent, status) => {
+                const progressBar = document.getElementById('app-loading-progress-bar');
+                const statusText = document.getElementById('app-loading-status');
+                if (progressBar) progressBar.style.width = `${percent}%`;
+                if (statusText) statusText.textContent = status;
+            };
+
+            updateLoadingProgress(5, 'Initializing...');
+
             // Check if we're in viewer mode (read-only, possibly unauthenticated)
             const isViewerMode = document.body.classList.contains('read-only-mode') ||
                 window.location.pathname.includes('view');
 
             // Load site config for nodes (maxRepeatCount, etc.) - skip in viewer mode
+            updateLoadingProgress(10, 'Loading configuration...');
             if (!isViewerMode) {
                 await this.loadSiteConfig();
             } else {
@@ -61,14 +72,17 @@ class Editor {
             }
 
             // Load settings from database - skip in viewer mode
+            updateLoadingProgress(15, 'Loading settings...');
             if (!isViewerMode) {
                 await this.loadSettings();
             }
 
             // Initialize node manager
+            updateLoadingProgress(20, 'Initializing node manager...');
             this.nodeManager = new NodeManager();
 
             // Initialize connection manager
+            updateLoadingProgress(25, 'Initializing connections...');
             this.connectionManager = new ConnectionManager({
                 nodeManager: this.nodeManager,
                 style: this.settings.connectionStyle,
@@ -77,6 +91,7 @@ class Editor {
             });
 
             // Initialize canvas manager
+            updateLoadingProgress(30, 'Initializing canvas...');
             this.canvasManager = new CanvasManager({
                 nodeManager: this.nodeManager,
                 connectionManager: this.connectionManager,
@@ -93,6 +108,7 @@ class Editor {
             this.connectionManager.canvasManager = this.canvasManager;
 
             // Initialize properties panel
+            updateLoadingProgress(35, 'Initializing properties panel...');
             this.propertiesPanel = new PropertiesPanel({
                 nodeManager: this.nodeManager,
                 canvasManager: this.canvasManager,
@@ -102,6 +118,7 @@ class Editor {
             });
 
             // Initialize workflow manager
+            updateLoadingProgress(40, 'Initializing workflow manager...');
             this.workflowManager = new WorkflowManager({
                 nodeManager: this.nodeManager,
                 connectionManager: this.connectionManager,
@@ -116,6 +133,7 @@ class Editor {
             });
 
             // Setup UI event listeners
+            updateLoadingProgress(45, 'Setting up UI...');
             this.setupUIListeners();
 
             // Setup keyboard shortcuts
@@ -127,11 +145,28 @@ class Editor {
             // Setup quick add buttons
             this.setupQuickAddButtons();
 
-            // Initialize plugin manager
+            // Initialize plugin manager with progress tracking
+            updateLoadingProgress(50, 'Loading plugins...');
             if (window.pluginManager) {
+                // Hook into plugin loading for progress updates
+                const originalLoadPluginNodes = window.pluginManager.loadPluginNodes?.bind(window.pluginManager);
+                if (originalLoadPluginNodes) {
+                    let loadedCount = 0;
+                    const pluginCount = window.pluginManager.plugins?.size || 10;
+
+                    window.pluginManager.loadPluginNodes = async function (plugin) {
+                        const result = await originalLoadPluginNodes(plugin);
+                        loadedCount++;
+                        const pluginProgress = 50 + Math.min(30, (loadedCount / pluginCount) * 30);
+                        updateLoadingProgress(pluginProgress, `Loading plugins... (${loadedCount})`);
+                        return result;
+                    };
+                }
+
                 await window.pluginManager.init();
             }
 
+            updateLoadingProgress(85, 'Finalizing...');
 
             // Check for autosaved workflow - skip in viewer mode
             if (!isViewerMode) {
@@ -139,6 +174,7 @@ class Editor {
             }
 
             // Apply settings
+            updateLoadingProgress(90, 'Applying settings...');
             this.applySettings();
 
             // Mark as initialized
@@ -147,12 +183,16 @@ class Editor {
             // Store global reference
             window.editorInstance = this;
 
+            updateLoadingProgress(100, 'Ready!');
+
             // Hide loading overlay
             const loadingOverlay = document.getElementById('app-loading-overlay');
             if (loadingOverlay) {
-                loadingOverlay.style.opacity = '0';
-                loadingOverlay.style.transition = 'opacity 0.3s ease';
-                setTimeout(() => loadingOverlay.remove(), 300);
+                setTimeout(() => {
+                    loadingOverlay.style.opacity = '0';
+                    loadingOverlay.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => loadingOverlay.remove(), 300);
+                }, 200);
             }
 
             // Show welcome toast with dynamic site title - skip in viewer mode
@@ -169,6 +209,13 @@ class Editor {
         } catch (error) {
             console.error('Editor initialization error:', error);
             Toast.error('Initialization Error', error.message);
+
+            // Still hide loading overlay on error
+            const loadingOverlay = document.getElementById('app-loading-overlay');
+            if (loadingOverlay) {
+                loadingOverlay.style.opacity = '0';
+                setTimeout(() => loadingOverlay.remove(), 300);
+            }
         }
     }
 
