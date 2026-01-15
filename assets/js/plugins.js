@@ -346,6 +346,7 @@ class PluginManager {
                                     <select id="openrouter-model" class="form-select openrouter-setting" data-setting="model">
                                         <option value="openai/gpt-4o-mini" ${openRouterSettings.model === 'openai/gpt-4o-mini' ? 'selected' : ''}>GPT-4o Mini (Fast)</option>
                                         <option value="openai/gpt-4o" ${openRouterSettings.model === 'openai/gpt-4o' ? 'selected' : ''}>GPT-4o</option>
+                                        <option value="openai/gpt-5-mini" ${openRouterSettings.model === 'openai/gpt-5-mini' ? 'selected' : ''}>GPT-5 Mini</option>
                                         <option value="anthropic/claude-3.5-sonnet" ${openRouterSettings.model === 'anthropic/claude-3.5-sonnet' ? 'selected' : ''}>Claude 3.5 Sonnet</option>
                                         <option value="anthropic/claude-3-haiku" ${openRouterSettings.model === 'anthropic/claude-3-haiku' ? 'selected' : ''}>Claude 3 Haiku (Fast)</option>
                                         <option value="google/gemini-pro-1.5" ${openRouterSettings.model === 'google/gemini-pro-1.5' ? 'selected' : ''}>Gemini Pro 1.5</option>
