@@ -240,6 +240,7 @@ try {
             } elseif (in_array($status, ['failed', 'error'])) {
                 $internalStatus = 'failed';
             }
+            error_log("[Webhook] Status mapping: external=$status -> internal=$internalStatus");
 
             // Update task
             Database::update(
@@ -284,6 +285,8 @@ try {
 
                 queueNextTask($nodeTask['execution_id']);
             } elseif ($internalStatus === 'failed') {
+                error_log("[Webhook] Processing failure for node_task id={$nodeTask['id']}, execution_id={$nodeTask['execution_id']}");
+
                 // Release rate limit slot on failure too
                 $apiKeyHash = ApiRateLimiter::releaseSlot($source, $taskId);
                 if ($apiKeyHash) {
@@ -310,18 +313,19 @@ try {
                     );
 
                     if ($cost > 0) {
-                        // Add refund to credit ledger
-                        Database::insert('credit_ledger', [
-                            'user_id' => $userId,
-                            'amount' => $cost,
-                            'remaining' => $cost,
-                            'type' => 'refund',
-                            'description' => 'Refund for failed generation: ' . $nodeType,
-                            'source' => 'webhook_failure',
-                            'source_id' => $nodeTask['id']
-                        ]);
-
-                        error_log("[Webhook] Refunded {$cost} credits to user {$userId} for failed node {$nodeType}");
+                        // Add refund to credit ledger using 'adjustment' source (allowed in ENUM)
+                        // Note: 'adjustment' is used because 'refund' is not in the source ENUM
+                        try {
+                            Database::insert('credit_ledger', [
+                                'user_id' => $userId,
+                                'credits' => $cost,
+                                'remaining' => $cost,
+                                'source' => 'adjustment'
+                            ]);
+                            error_log("[Webhook] Refunded {$cost} credits to user {$userId} for failed node {$nodeType}");
+                        } catch (Exception $refundError) {
+                            error_log("[Webhook] Failed to refund credits: " . $refundError->getMessage());
+                        }
                     }
                 }
 
@@ -336,6 +340,7 @@ try {
                     'id = :id',
                     ['id' => $nodeTask['execution_id']]
                 );
+                error_log("[Webhook] Updated workflow_executions id={$nodeTask['execution_id']} to status=failed");
             }
         } else {
             error_log("[Webhook] No node_task found for external_task_id: $taskId");

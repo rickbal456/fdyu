@@ -1275,6 +1275,116 @@ class PropertiesPanel {
     }
 
     /**
+     * Show modal for custom prompt input
+     */
+    showCustomPromptModal(text, textarea, actionBtn) {
+        // Remove existing modal if any
+        const existingModal = document.querySelector('.custom-prompt-modal-overlay');
+        if (existingModal) existingModal.remove();
+
+        // Create modal HTML
+        const modalHtml = `
+            <div class="custom-prompt-modal-overlay">
+                <div class="custom-prompt-modal">
+                    <div class="custom-prompt-modal-header">
+                        <h3>${window.t ? window.t('enhance.custom_prompt_title') : 'Custom Enhancement Prompt'}</h3>
+                        <button class="custom-prompt-modal-close" type="button">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="custom-prompt-modal-body">
+                        <label class="custom-prompt-label">
+                            ${window.t ? window.t('enhance.enter_prompt') : 'Enter your enhancement prompt:'}
+                        </label>
+                        <textarea class="custom-prompt-textarea" rows="4" placeholder="${window.t ? window.t('enhance.prompt_placeholder') : 'e.g., Make this text more professional and concise...'}"></textarea>
+                    </div>
+                    <div class="custom-prompt-modal-footer">
+                        <button class="custom-prompt-cancel btn-secondary" type="button">
+                            ${window.t ? window.t('common.cancel') : 'Cancel'}
+                        </button>
+                        <button class="custom-prompt-submit btn-primary" type="button">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            ${window.t ? window.t('enhance.run_enhancement') : 'Run Enhancement'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to document
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = document.querySelector('.custom-prompt-modal-overlay');
+        const promptTextarea = modal.querySelector('.custom-prompt-textarea');
+
+        // Initialize icons
+        if (window.lucide) {
+            lucide.createIcons({ root: modal });
+        }
+
+        // Focus on textarea
+        promptTextarea.focus();
+
+        // Close handlers
+        const closeModal = () => modal.remove();
+        modal.querySelector('.custom-prompt-modal-close').addEventListener('click', closeModal);
+        modal.querySelector('.custom-prompt-cancel').addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // Submit handler
+        modal.querySelector('.custom-prompt-submit').addEventListener('click', async () => {
+            const customPrompt = promptTextarea.value.trim();
+            if (!customPrompt) {
+                alert(window.t ? window.t('enhance.prompt_required') : 'Please enter a prompt');
+                return;
+            }
+            if (!text.trim()) {
+                alert(window.t ? window.t('enhance.text_required') : 'Please enter some text in the node first');
+                closeModal();
+                return;
+            }
+
+            // Show loading state
+            actionBtn.classList.add('loading');
+            const originalIcon = actionBtn.innerHTML;
+            actionBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i>';
+            if (window.lucide) lucide.createIcons({ nodes: [actionBtn] });
+            closeModal();
+
+            try {
+                // Deduct credits first
+                const deductRes = await fetch('api/credits/deduct.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'enhance' })
+                });
+                const deductData = await deductRes.json();
+
+                if (!deductData.success) {
+                    if (deductRes.status === 402) {
+                        throw new Error(`Insufficient credits. Required: ${deductData.required}, Balance: ${deductData.balance}`);
+                    }
+                    throw new Error(deductData.error || 'Failed to deduct credits');
+                }
+
+                // Use custom prompt directly
+                const enhanced = await window.AIKAFLOWTextEnhance.enhanceWithCustomPrompt(text, customPrompt);
+                if (textarea) {
+                    textarea.value = enhanced;
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            } catch (error) {
+                alert('Enhancement failed: ' + error.message);
+            } finally {
+                actionBtn.classList.remove('loading');
+                actionBtn.innerHTML = originalIcon;
+                if (window.lucide) lucide.createIcons({ nodes: [actionBtn] });
+            }
+        });
+    }
+
+    /**
      * Setup label action buttons (like AI enhance on textarea)
      */
     setupLabelActions(definition, node) {
@@ -1288,7 +1398,7 @@ class PropertiesPanel {
 
             // Handle AI enhance action specifically
             if (field.labelAction.id === 'enhance') {
-                actionBtn.addEventListener('click', (e) => {
+                actionBtn.addEventListener('click', async (e) => {
                     e.stopPropagation();
 
                     // Check if dropdown already exists
@@ -1298,15 +1408,33 @@ class PropertiesPanel {
                         return;
                     }
 
-                    // Get OpenRouter settings for system prompts
-                    const settings = window.AIKAFLOWTextEnhance?.getSettings() || { systemPrompts: [] };
-                    const prompts = settings.systemPrompts || [];
+                    // Check if OpenRouter is configured
+                    if (!window.AIKAFLOWTextEnhance) {
+                        alert('Text enhancement not available');
+                        return;
+                    }
 
-                    // Create dropdown HTML
+                    // Fetch system prompts from server (same as canvas.js)
+                    let prompts = [];
+                    try {
+                        const res = await fetch('./api/ai/prompts.php');
+                        const data = await res.json();
+                        if (data.success) {
+                            prompts = data.systemPrompts || [];
+                            if (!data.isConfigured) {
+                                alert('OpenRouter API key not configured');
+                                return;
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Failed to fetch prompts:', err);
+                    }
+
+                    // Create dropdown HTML - Custom Prompt first
                     let dropdownHtml = `
-                        <div class="enhance-dropdown-item" data-prompt-id="">
-                            <i data-lucide="sparkles" class="w-4 h-4"></i>
-                            <span>Default Enhancement</span>
+                        <div class="enhance-dropdown-item" data-prompt-id="custom">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            <span>${window.t ? window.t('enhance.custom_prompt') : 'Custom Prompt'}</span>
                         </div>
                     `;
 
@@ -1347,6 +1475,13 @@ class PropertiesPanel {
                             const promptId = item.dataset.promptId || null;
                             const textarea = this.content.querySelector(`textarea[data-field-id="${field.id}"]`);
                             const text = textarea?.value || node.data[field.id] || '';
+
+                            // Handle custom prompt
+                            if (promptId === 'custom') {
+                                dropdown.remove();
+                                this.showCustomPromptModal(text, textarea, actionBtn);
+                                return;
+                            }
 
                             if (!text.trim()) {
                                 alert('Please enter some text first');

@@ -1203,6 +1203,100 @@ class CanvasManager {
             });
         });
 
+        // Helper function for custom prompt modal in canvas
+        const showCanvasCustomPromptModal = (text, textarea, btn) => {
+            // Remove existing modal if any
+            const existingModal = document.querySelector('.custom-prompt-modal-overlay');
+            if (existingModal) existingModal.remove();
+
+            // Create modal HTML
+            const modalHtml = `
+                <div class="custom-prompt-modal-overlay">
+                    <div class="custom-prompt-modal">
+                        <div class="custom-prompt-modal-header">
+                            <h3>${window.t ? window.t('enhance.custom_prompt_title') : 'Custom Enhancement Prompt'}</h3>
+                            <button class="custom-prompt-modal-close" type="button">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <div class="custom-prompt-modal-body">
+                            <label class="custom-prompt-label">
+                                ${window.t ? window.t('enhance.enter_prompt') : 'Enter your enhancement prompt:'}
+                            </label>
+                            <textarea class="custom-prompt-textarea" rows="4" placeholder="${window.t ? window.t('enhance.prompt_placeholder') : 'e.g., Make this text more professional and concise...'}"></textarea>
+                        </div>
+                        <div class="custom-prompt-modal-footer">
+                            <button class="custom-prompt-cancel btn-secondary" type="button">
+                                ${window.t ? window.t('common.cancel') : 'Cancel'}
+                            </button>
+                            <button class="custom-prompt-submit btn-primary" type="button">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                                ${window.t ? window.t('enhance.run_enhancement') : 'Run Enhancement'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Add modal to document
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const modal = document.querySelector('.custom-prompt-modal-overlay');
+            const promptTextarea = modal.querySelector('.custom-prompt-textarea');
+
+            // Initialize icons
+            if (window.lucide) {
+                lucide.createIcons({ root: modal });
+            }
+
+            // Focus on textarea
+            promptTextarea.focus();
+
+            // Close handlers
+            const closeModal = () => modal.remove();
+            modal.querySelector('.custom-prompt-modal-close').addEventListener('click', closeModal);
+            modal.querySelector('.custom-prompt-cancel').addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+
+            // Submit handler
+            modal.querySelector('.custom-prompt-submit').addEventListener('click', async () => {
+                const customPrompt = promptTextarea.value.trim();
+                if (!customPrompt) {
+                    Toast?.error(window.t ? window.t('enhance.prompt_required') : 'Please enter a prompt');
+                    return;
+                }
+                if (!text.trim()) {
+                    Toast?.error(window.t ? window.t('enhance.text_required') : 'Please enter some text in the node first');
+                    closeModal();
+                    return;
+                }
+
+                // Show loading state
+                btn.classList.add('loading');
+                const originalIcon = btn.innerHTML;
+                btn.innerHTML = '<i data-lucide="loader" class="w-3 h-3 animate-spin"></i>';
+                if (window.lucide) lucide.createIcons({ nodes: [btn] });
+                closeModal();
+
+                try {
+                    // Use custom prompt directly
+                    const enhanced = await window.AIKAFLOWTextEnhance.enhanceWithCustomPrompt(text, customPrompt);
+                    if (textarea) {
+                        textarea.value = enhanced;
+                        textarea.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    Toast?.success('Text enhanced!');
+                } catch (error) {
+                    Toast?.error('Enhancement failed: ' + error.message);
+                } finally {
+                    btn.classList.remove('loading');
+                    btn.innerHTML = originalIcon;
+                    if (window.lucide) lucide.createIcons({ nodes: [btn] });
+                }
+            });
+        };
+
         // Add event listener for field action buttons (like AI enhance)
         element.querySelectorAll('.node-field-action-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
@@ -1248,11 +1342,11 @@ class CanvasManager {
                         console.error('Failed to fetch prompts:', err);
                     }
 
-                    // Create dropdown HTML
+                    // Create dropdown HTML - Custom Prompt first
                     let dropdownHtml = `
-                        <div class="enhance-dropdown-item" data-prompt-id="">
-                            <i data-lucide="sparkles" class="w-4 h-4"></i>
-                            <span>Default Enhancement</span>
+                        <div class="enhance-dropdown-item" data-prompt-id="custom">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            <span>${window.t ? window.t('enhance.custom_prompt') : 'Custom Prompt'}</span>
                         </div>
                     `;
 
@@ -1291,6 +1385,12 @@ class CanvasManager {
                         item.addEventListener('click', async () => {
                             const promptId = item.dataset.promptId || null;
                             dropdown.remove();
+
+                            // Handle custom prompt
+                            if (promptId === 'custom') {
+                                showCanvasCustomPromptModal(text, textarea, btn);
+                                return;
+                            }
 
                             // Show loading state
                             btn.classList.add('loading');

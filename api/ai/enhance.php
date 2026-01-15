@@ -30,6 +30,7 @@ try {
 
     $text = trim($input['text'] ?? '');
     $systemPromptId = $input['systemPromptId'] ?? null;
+    $customPrompt = trim($input['customPrompt'] ?? '');
 
     if (empty($text)) {
         errorResponse('Text is required');
@@ -64,10 +65,15 @@ try {
         $systemPrompts = $settings['systemPrompts'] ?? [];
     }
 
-    // Find the system prompt
+    // Determine the system prompt to use
+    // Priority: 1) Custom prompt from user, 2) System prompt by ID, 3) Default
     $systemPrompt = 'You are a helpful assistant that enhances and improves text prompts for AI image and video generation. Make the prompt more descriptive, detailed, and effective while maintaining the original intent. Return only the enhanced prompt without any explanation.';
 
-    if ($systemPromptId && !empty($systemPrompts)) {
+    if (!empty($customPrompt)) {
+        // User provided their own custom prompt
+        $systemPrompt = $customPrompt;
+    } elseif ($systemPromptId && !empty($systemPrompts)) {
+        // Find the system prompt by ID
         foreach ($systemPrompts as $prompt) {
             if (($prompt['id'] ?? '') === $systemPromptId) {
                 $systemPrompt = $prompt['content'] ?? $systemPrompt;

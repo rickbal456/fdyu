@@ -71,6 +71,38 @@
         return data.enhanced;
     }
 
+    /**
+     * Enhance text using a custom user-provided prompt
+     */
+    async function enhanceWithCustomPrompt(text, customPrompt) {
+        // Check if configured
+        const isConfigured = window.pluginManager?.integrationStatus?.openrouter === true;
+
+        if (!isConfigured) {
+            throw new Error('OpenRouter API key not configured. Please configure it in Administration → Integrations.');
+        }
+
+        // Call server-side endpoint with custom prompt
+        const response = await fetch('./api/ai/enhance.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text: text,
+                customPrompt: customPrompt
+            })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to enhance text');
+        }
+
+        return data.enhanced;
+    }
+
     const nodeDefinitions = {
         'text-input': {
             type: 'text-input',
@@ -129,6 +161,7 @@
     // Expose enhancement function globally for other plugins and properties panel
     window.AIKAFLOWTextEnhance = {
         enhance: enhanceText,
+        enhanceWithCustomPrompt: enhanceWithCustomPrompt,
         getSettings: getOpenRouterSettings,
         saveSettings: saveOpenRouterSettings
     };
