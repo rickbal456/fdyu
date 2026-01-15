@@ -963,6 +963,21 @@ class PluginManager {
      * Add a node to the sidebar dynamically
      */
     static addNodeToSidebar(nodeDefinition) {
+        // Skip in viewer mode (no sidebar exists)
+        const isViewerMode = document.body.classList.contains('read-only-mode') ||
+            window.location.pathname.includes('view');
+        if (isViewerMode) {
+            // In viewer mode, just register the node definition without modifying sidebar
+            return;
+        }
+
+        // Check if sidebar exists
+        const sidebar = document.getElementById('sidebar-left');
+        if (!sidebar) {
+            // Sidebar doesn't exist, skip adding to sidebar
+            return;
+        }
+
         const category = nodeDefinition.category || 'utility';
         const categoryColors = {
             'input': 'blue',

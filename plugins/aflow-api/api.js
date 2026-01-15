@@ -28,6 +28,13 @@
         init() {
             if (this.isInitialized) return;
 
+            // Skip in viewer mode (no canvas controls)
+            const isViewerMode = document.body.classList.contains('read-only-mode') ||
+                window.location.pathname.includes('view');
+            if (isViewerMode) {
+                return; // Don't inject UI in viewer mode
+            }
+
             this.injectButton();
             this.injectModal();
             this.setupEventListeners();

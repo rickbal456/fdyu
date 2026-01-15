@@ -20,6 +20,13 @@
 
     // Initialize
     async function init() {
+        // Skip in viewer mode (unauthenticated)
+        const isViewerMode = document.body.classList.contains('read-only-mode') ||
+            window.location.pathname.includes('view');
+        if (isViewerMode) {
+            return; // Don't load credits in viewer mode
+        }
+
         await loadBalance();
         injectUI();
         setupEventListeners();

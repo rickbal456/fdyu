@@ -589,251 +589,250 @@ $csrfToken = $_SESSION['csrf_token'] ?? '';
         <script src="assets/js/editor.js"></script>
 
         <script>
-            // Auto-load shared workflow
-            with loading progress
-                document.addEventListener('DOMContentLoaded', () => {
-                    const loadingOverlay = document.getElementById('viewer-loading-overlay');
-                    const loadingBar = document.getElementById('viewer-loading-progress-bar');
-                    const loadingStatus = document.getElementById('viewer-loading-status');
-                
-                    let loadProgress = 0;
-                
-                    // Update loading progress
-                    const updateProgress = (percent, status) => {
-                        loadProgress = percent;
-                        if (loadingBar) loadingBar.style.width = `${percent}%`;
-                        if (loadingStatus) loadingStatus.textContent = status;
-                    };
-                
-                    // Hide loading overlay
-                    const hideLoading = () => {
-                        if (loadingOverlay) {
-                            loadingOverlay.classList.add('hidden');
-                            setTimeout(() => loadingOverlay.remove(), 400);
-                        }
-                    };
-                
-                    updateProgress(10, 'Loading scripts...');
-                
-                    // Initialize lucide icons
-                    if (window.lucide) lucide.createIcons();
-                
-                    // Track plugin loading progress
-                    let totalPlugins = 0;
-                    let loadedPlugins = 0;
-                
-                    // Listen for plugin load events
-                    const originalLoadPluginNodes = window.PluginManager?.prototype?.loadPluginNodes;
-                    if (window.PluginManager && originalLoadPluginNodes) {
-                        window.PluginManager.prototype.loadPluginNodes = async function(plugin) {
-                            const result = await originalLoadPluginNodes.call(this, plugin);
-                            loadedPlugins++;
-                            const pluginProgress = 30 + Math.min(50, (loadedPlugins / Math.max(totalPlugins, 1)) * 50);
-                            updateProgress(pluginProgress, `Loading plugins... (${loadedPlugins}/${totalPlugins})`);
-                            return result;
-                        };
+            // Auto-load shared workflow with loading progress
+            document.addEventListener('DOMContentLoaded', () => {
+                const loadingOverlay = document.getElementById('viewer-loading-overlay');
+                const loadingBar = document.getElementById('viewer-loading-progress-bar');
+                const loadingStatus = document.getElementById('viewer-loading-status');
+
+                let loadProgress = 0;
+
+                // Update loading progress
+                const updateProgress = (percent, status) => {
+                    loadProgress = percent;
+                    if (loadingBar) loadingBar.style.width = `${percent}%`;
+                    if (loadingStatus) loadingStatus.textContent = status;
+                };
+
+                // Hide loading overlay
+                const hideLoading = () => {
+                    if (loadingOverlay) {
+                        loadingOverlay.classList.add('hidden');
+                        setTimeout(() => loadingOverlay.remove(), 400);
                     }
-                
-                    updateProgress(20, 'Initializing editor...');
-                
-                    const checkEditor = setInterval(() => {
-                        if (window.editorInstance && window.editorInstance.isInitialized && window.editorInstance.workflowManager) {
-                            clearInterval(checkEditor);
-                        
-                            updateProgress(80, 'Loading workflow...');
+                };
 
-                            if (window.AIKAFLOW.sharedWorkflow) {
-                                try {
-                                    if (!window.AIKAFLOW.sharedWorkflow) throw new Error('No workflow data found');
+                updateProgress(10, 'Loading scripts...');
 
-                                    window.editorInstance.workflowManager.deserialize(window.AIKAFLOW.sharedWorkflow);
-                                
-                                    updateProgress(90, 'Rendering nodes...');
+                // Initialize lucide icons
+                if (window.lucide) lucide.createIcons();
 
-                                    // Fit view
-                                    setTimeout(() => {
-                                        try {
-                                            window.editorInstance.canvasManager?.fitToView();
-                                        } catch (err) {
-                                            console.warn('Fit to view failed:', err);
-                                        }
-                                    
-                                        updateProgress(100, 'Complete!');
-                                    
-                                        // Hide loading after a small delay
-                                        setTimeout(hideLoading, 300);
-                                    }, 100);
-                                } catch (e) {
-                                    console.error('Failed to load shared workflow:', e);
-                                    if (window.Toast) Toast.error('Failed to load workflow data: ' + e.message);
-                                    hideLoading();
-                                }
+                // Track plugin loading progress
+                let totalPlugins = 0;
+                let loadedPlugins = 0;
 
-                                document.body.classList.add('read-only-mode');
+                // Listen for plugin load events
+                const originalLoadPluginNodes = window.PluginManager?.prototype?.loadPluginNodes;
+                if (window.PluginManager && originalLoadPluginNodes) {
+                    window.PluginManager.prototype.loadPluginNodes = async function (plugin) {
+                        const result = await originalLoadPluginNodes.call(this, plugin);
+                        loadedPlugins++;
+                        const pluginProgress = 30 + Math.min(50, (loadedPlugins / Math.max(totalPlugins, 1)) * 50);
+                        updateProgress(pluginProgress, `Loading plugins... (${loadedPlugins}/${totalPlugins})`);
+                        return result;
+                    };
+                }
 
-                                // Disable save buttons and other edits visually (redundant to CSS but good backup)
-                                const saveBtn = document.getElementById('btn-save');
-                                if (saveBtn) saveBtn.style.display = 'none';
-                            } else {
+                updateProgress(20, 'Initializing editor...');
+
+                const checkEditor = setInterval(() => {
+                    if (window.editorInstance && window.editorInstance.isInitialized && window.editorInstance.workflowManager) {
+                        clearInterval(checkEditor);
+
+                        updateProgress(80, 'Loading workflow...');
+
+                        if (window.AIKAFLOW.sharedWorkflow) {
+                            try {
+                                if (!window.AIKAFLOW.sharedWorkflow) throw new Error('No workflow data found');
+
+                                window.editorInstance.workflowManager.deserialize(window.AIKAFLOW.sharedWorkflow);
+
+                                updateProgress(90, 'Rendering nodes...');
+
+                                // Fit view
+                                setTimeout(() => {
+                                    try {
+                                        window.editorInstance.canvasManager?.fitToView();
+                                    } catch (err) {
+                                        console.warn('Fit to view failed:', err);
+                                    }
+
+                                    updateProgress(100, 'Complete!');
+
+                                    // Hide loading after a small delay
+                                    setTimeout(hideLoading, 300);
+                                }, 100);
+                            } catch (e) {
+                                console.error('Failed to load shared workflow:', e);
+                                if (window.Toast) Toast.error('Failed to load workflow data: ' + e.message);
                                 hideLoading();
                             }
-                        }
-                    }, 100);
 
-                    // Timeout after 10 seconds
-                    setTimeout(() => {
-                        clearInterval(checkEditor);
-                        hideLoading();
-                    }, 10000);
+                            document.body.classList.add('read-only-mode');
 
-                    // Clone Modal Logic
-                    const cloneBtn = document.getElementById('btn-clone-workflow');
-                    const cloneModal = document.getElementById('clone-modal');
-                    const cloneModalCancel = document.getElementById('clone-modal-cancel');
-                    const cloneModalConfirm = document.getElementById('clone-modal-confirm');
-                
-                    // Show clone confirmation modal
-                    const showCloneModal = () => {
-                        if (cloneModal) {
-                            cloneModal.classList.remove('hidden');
-                            if (window.lucide) lucide.createIcons({ nodes: [cloneModal] });
+                            // Disable save buttons and other edits visually (redundant to CSS but good backup)
+                            const saveBtn = document.getElementById('btn-save');
+                            if (saveBtn) saveBtn.style.display = 'none';
+                        } else {
+                            hideLoading();
                         }
-                    };
-                
-                    // Hide clone confirmation modal
-                    const hideCloneModal = () => {
-                        if (cloneModal) cloneModal.classList.add('hidden');
-                    };
-                
-                    // Execute clone action
-                    const executeClone = async () => {
-                        hideCloneModal();
-                    
-                        if (!window.AIKAFLOW.sharedWorkflow) {
-                            if (window.Toast) Toast.error('No workflow data to clone');
+                    }
+                }, 100);
+
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    clearInterval(checkEditor);
+                    hideLoading();
+                }, 10000);
+
+                // Clone Modal Logic
+                const cloneBtn = document.getElementById('btn-clone-workflow');
+                const cloneModal = document.getElementById('clone-modal');
+                const cloneModalCancel = document.getElementById('clone-modal-cancel');
+                const cloneModalConfirm = document.getElementById('clone-modal-confirm');
+
+                // Show clone confirmation modal
+                const showCloneModal = () => {
+                    if (cloneModal) {
+                        cloneModal.classList.remove('hidden');
+                        if (window.lucide) lucide.createIcons({ nodes: [cloneModal] });
+                    }
+                };
+
+                // Hide clone confirmation modal
+                const hideCloneModal = () => {
+                    if (cloneModal) cloneModal.classList.add('hidden');
+                };
+
+                // Execute clone action
+                const executeClone = async () => {
+                    hideCloneModal();
+
+                    if (!window.AIKAFLOW.sharedWorkflow) {
+                        if (window.Toast) Toast.error('No workflow data to clone');
+                        return;
+                    }
+
+                    try {
+                        const originalText = cloneBtn.innerHTML;
+                        cloneBtn.disabled = true;
+                        cloneBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> <span>Cloning...</span>';
+                        if (window.lucide) lucide.createIcons({ nodes: [cloneBtn] });
+
+                        const workflowData = window.AIKAFLOW.sharedWorkflow;
+                        const name = "Copy of " + (workflowData.workflow?.name || workflowData.name || 'Shared Workflow');
+
+                        const response = await fetch(window.AIKAFLOW.apiUrl + '/workflows/save.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                name: name,
+                                description: workflowData.workflow?.description || workflowData.description || 'Cloned from shared workflow',
+                                data: workflowData,
+                                isPublic: false
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success && result.workflowId) {
+                            if (window.Toast) Toast.success('Workflow cloned successfully!');
+                            setTimeout(() => {
+                                window.location.href = 'index.php?id=' + result.workflowId;
+                            }, 1000);
+                        } else {
+                            throw new Error(result.error || 'Failed to clone workflow');
+                        }
+
+                    } catch (error) {
+                        console.error('Clone failed:', error);
+                        if (window.Toast) Toast.error(error.message);
+                        cloneBtn.disabled = false;
+                        cloneBtn.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i> <span>Clone Workflow</span>';
+                        if (window.lucide) lucide.createIcons({ nodes: [cloneBtn] });
+                    }
+                };
+
+                if (cloneBtn) {
+                    cloneBtn.addEventListener('click', () => {
+                        // Check auth - if not logged in, redirect to login
+                        if (!window.AIKAFLOW.user || !window.AIKAFLOW.user.id || window.AIKAFLOW.user.id <= 0) {
+                            if (window.Toast) Toast.info('Redirecting to login...', 'Please login to clone this workflow');
+                            setTimeout(() => {
+                                window.location.href = 'login.php?redirect=' + encodeURIComponent(window.location.href);
+                            }, 1500);
                             return;
                         }
 
-                        try {
-                            const originalText = cloneBtn.innerHTML;
-                            cloneBtn.disabled = true;
-                            cloneBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> <span>Cloning...</span>';
-                            if (window.lucide) lucide.createIcons({ nodes: [cloneBtn] });
-
-                            const workflowData = window.AIKAFLOW.sharedWorkflow;
-                            const name = "Copy of " + (workflowData.workflow?.name || workflowData.name || 'Shared Workflow');
-
-                            const response = await fetch(window.AIKAFLOW.apiUrl + '/workflows/save.php', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    name: name,
-                                    description: workflowData.workflow?.description || workflowData.description || 'Cloned from shared workflow',
-                                    data: workflowData,
-                                    isPublic: false
-                                })
-                            });
-
-                            const result = await response.json();
-
-                            if (result.success && result.workflowId) {
-                                if (window.Toast) Toast.success('Workflow cloned successfully!');
-                                setTimeout(() => {
-                                    window.location.href = 'index.php?id=' + result.workflowId;
-                                }, 1000);
-                            } else {
-                                throw new Error(result.error || 'Failed to clone workflow');
-                            }
-
-                        } catch (error) {
-                            console.error('Clone failed:', error);
-                            if (window.Toast) Toast.error(error.message);
-                            cloneBtn.disabled = false;
-                            cloneBtn.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i> <span>Clone Workflow</span>';
-                            if (window.lucide) lucide.createIcons({ nodes: [cloneBtn] });
-                        }
-                    };
-                
-                    if (cloneBtn) {
-                        cloneBtn.addEventListener('click', () => {
-                            // Check auth - if not logged in, redirect to login
-                            if (!window.AIKAFLOW.user || !window.AIKAFLOW.user.id || window.AIKAFLOW.user.id <= 0) {
-                                if (window.Toast) Toast.info('Redirecting to login...', 'Please login to clone this workflow');
-                                setTimeout(() => {
-                                    window.location.href = 'login.php?redirect=' + encodeURIComponent(window.location.href);
-                                }, 1500);
-                                return;
-                            }
-
-                            // Show confirmation modal for logged-in users
-                            showCloneModal();
-                        });
-                    }
-                
-                    // Clone modal button handlers
-                    if (cloneModalCancel) {
-                        cloneModalCancel.addEventListener('click', hideCloneModal);
-                    }
-                
-                    if (cloneModalConfirm) {
-                        cloneModalConfirm.addEventListener('click', executeClone);
-                    }
-                
-                    // Close modal on backdrop click
-                    if (cloneModal) {
-                        cloneModal.addEventListener('click', (e) => {
-                            if (e.target === cloneModal) hideCloneModal();
-                        });
-                    }
-                
-                    // Close modal on Escape key
-                    document.addEventListener('keydown', (e) => {
-                        if (e.key === 'Escape' && cloneModal && !cloneModal.classList.contains('hidden')) {
-                            hideCloneModal();
-                        }
+                        // Show confirmation modal for logged-in users
+                        showCloneModal();
                     });
+                }
 
-                    // Load gallery content from shared workflow outputs (if any)
-                    setTimeout(() => {
-                        if (window.AIKAFLOW.sharedWorkflow?.outputs) {
-                            const galleryGrid = document.getElementById('gallery-grid');
-                            const galleryEmpty = document.getElementById('gallery-empty');
-                        
-                            if (galleryGrid && window.AIKAFLOW.sharedWorkflow.outputs.length > 0) {
-                                galleryEmpty?.classList.add('hidden');
-                            
-                                window.AIKAFLOW.sharedWorkflow.outputs.forEach(output => {
-                                    if (output.url) {
-                                        const item = document.createElement('div');
-                                        item.className = 'relative rounded-lg overflow-hidden bg-dark-800 aspect-video group cursor-pointer';
-                                    
-                                        if (output.type === 'video') {
-                                            item.innerHTML = `
+                // Clone modal button handlers
+                if (cloneModalCancel) {
+                    cloneModalCancel.addEventListener('click', hideCloneModal);
+                }
+
+                if (cloneModalConfirm) {
+                    cloneModalConfirm.addEventListener('click', executeClone);
+                }
+
+                // Close modal on backdrop click
+                if (cloneModal) {
+                    cloneModal.addEventListener('click', (e) => {
+                        if (e.target === cloneModal) hideCloneModal();
+                    });
+                }
+
+                // Close modal on Escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && cloneModal && !cloneModal.classList.contains('hidden')) {
+                        hideCloneModal();
+                    }
+                });
+
+                // Load gallery content from shared workflow outputs (if any)
+                setTimeout(() => {
+                    if (window.AIKAFLOW.sharedWorkflow?.outputs) {
+                        const galleryGrid = document.getElementById('gallery-grid');
+                        const galleryEmpty = document.getElementById('gallery-empty');
+
+                        if (galleryGrid && window.AIKAFLOW.sharedWorkflow.outputs.length > 0) {
+                            galleryEmpty?.classList.add('hidden');
+
+                            window.AIKAFLOW.sharedWorkflow.outputs.forEach(output => {
+                                if (output.url) {
+                                    const item = document.createElement('div');
+                                    item.className = 'relative rounded-lg overflow-hidden bg-dark-800 aspect-video group cursor-pointer';
+
+                                    if (output.type === 'video') {
+                                        item.innerHTML = `
                                             <video src="${output.url}" class="w-full h-full object-cover" poster="${output.thumbnail || ''}"></video>
                                             <div class="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
                                                 <i data-lucide="play-circle" class="w-10 h-10 text-white"></i>
                                             </div>
                                         `;
-                                        } else {
-                                            item.innerHTML = `<img src="${output.url}" class="w-full h-full object-cover" alt="Output">`;
-                                        }
-                                    
-                                        item.addEventListener('click', () => {
-                                            window.open(output.url, '_blank');
-                                        });
-                                    
-                                        galleryGrid.appendChild(item);
+                                    } else {
+                                        item.innerHTML = `<img src="${output.url}" class="w-full h-full object-cover" alt="Output">`;
                                     }
-                                });
-                            
-                                if (window.lucide) lucide.createIcons({ nodes: [galleryGrid] });
-                            }
+
+                                    item.addEventListener('click', () => {
+                                        window.open(output.url, '_blank');
+                                    });
+
+                                    galleryGrid.appendChild(item);
+                                }
+                            });
+
+                            if (window.lucide) lucide.createIcons({ nodes: [galleryGrid] });
                         }
-                    }, 500);
-                });
-            </script>
+                    }
+                }, 500);
+            });
+        </script>
 
     <?php endif; ?>
 </body>
