@@ -551,9 +551,10 @@ try {
 
         <!-- Loading Overlay -->
         <div id="viewer-loading-overlay" class="viewer-loading-overlay">
-            <div class="viewer-loading-logo overflow-hidden">
+            <div class="viewer-loading-logo"
+                style="<?= !empty($faviconUrl) ? 'background: none; border-radius: 0;' : '' ?>">
                 <?php if (!empty($faviconUrl)): ?>
-                    <img src="<?= htmlspecialchars($faviconUrl) ?>" alt="Loading..." class="w-full h-full object-cover">
+                    <img src="<?= htmlspecialchars($faviconUrl) ?>" alt="Loading..." class="w-full h-full object-contain">
                 <?php else: ?>
                     <i data-lucide="eye" class="w-8 h-8 text-white"></i>
                 <?php endif; ?>
