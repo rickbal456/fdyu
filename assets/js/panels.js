@@ -657,7 +657,16 @@
 
         formatTimeAgo(dateString) {
             if (!dateString) return '';
-            const date = new Date(dateString);
+
+            // Server returns dates in UTC without timezone indicator
+            // Add 'Z' to indicate UTC, or replace space with 'T' for ISO format
+            let normalizedDate = dateString;
+            if (!dateString.includes('T') && !dateString.includes('Z')) {
+                // Convert "2026-01-15 15:44:49" to "2026-01-15T15:44:49Z" (UTC)
+                normalizedDate = dateString.replace(' ', 'T') + 'Z';
+            }
+
+            const date = new Date(normalizedDate);
             const now = new Date();
             const seconds = Math.floor((now - date) / 1000);
 
@@ -665,6 +674,7 @@
             const t = window.t;
             const justNow = t ? t('time.just_now') : 'Just now';
 
+            if (seconds < 0) return (justNow !== 'time.just_now') ? justNow : 'Just now'; // Future date (clock skew)
             if (seconds < 60) return (justNow !== 'time.just_now') ? justNow : 'Just now';
             if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
             if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;

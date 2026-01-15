@@ -755,7 +755,15 @@ class WorkflowManager {
                                 const node = this.nodeManager?.getNode(ns.nodeId);
                                 const def = this.nodeManager?.getNodeDefinition(node?.type);
                                 if (def?.outputs?.[0]) {
-                                    this.nodeManager?.setNodeOutput(ns.nodeId, def.outputs[0].id, ns.resultUrl);
+                                    // Only update if we don't have an output yet, or if new URL is from CDN
+                                    const currentOutput = node?.outputs?.[def.outputs[0].id];
+                                    const isCdnUrl = ns.resultUrl.includes('cdn.fidyu.com') || ns.resultUrl.includes('bunnycdn');
+                                    const currentIsCdn = currentOutput?.includes?.('cdn.fidyu.com') || currentOutput?.includes?.('bunnycdn');
+
+                                    // Update if: no current output, or new is CDN and current is not
+                                    if (!currentOutput || (isCdnUrl && !currentIsCdn)) {
+                                        this.nodeManager?.setNodeOutput(ns.nodeId, def.outputs[0].id, ns.resultUrl);
+                                    }
                                 }
 
                                 // Dispatch event to save to gallery (for generation/editing categories)
