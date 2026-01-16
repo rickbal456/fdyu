@@ -435,10 +435,12 @@
                                 run.status === 'cancelled' ? 'octagon' : 'x-circle';
                 const statusClass = run.status === 'cancelled' ? 'aborted' : run.status;
                 const timeAgo = this.formatTimeAgo(run.startedAt);
-                const isRunning = run.status === 'running' || run.status === 'pending' || run.status === 'queued';
+                const isRunning = run.status === 'running';
+                const isPending = run.status === 'pending' || run.status === 'queued';
+                const isClickable = run.status === 'running' || run.status === 'completed';
 
                 return `
-                    <div class="history-item cursor-pointer hover:bg-dark-700/50" 
+                    <div class="history-item ${isClickable ? 'cursor-pointer hover:bg-dark-700/50' : 'opacity-70'}" 
                          data-execution-id="${run.id}" 
                          data-status="${run.status}">
                         <div class="history-item-header">
@@ -466,9 +468,19 @@
                             `).join('')}
                             ${(run.nodes?.length || 0) > 3 ? `<span class="history-item-node">+${run.nodes.length - 3} more</span>` : ''}
                         </div>
+                        ${run.status === 'running' ? `
+                            <p class="text-xs text-primary-400 mt-2">
+                                <i data-lucide="eye" class="w-3 h-3 inline mr-1"></i>Click to view progress
+                            </p>
+                        ` : ''}
                         ${run.status === 'completed' ? `
                             <p class="text-xs text-primary-400 mt-2">
                                 <i data-lucide="image" class="w-3 h-3 inline mr-1"></i>Click to view results
+                            </p>
+                        ` : ''}
+                        ${isPending ? `
+                            <p class="text-xs text-dark-500 mt-2">
+                                <i data-lucide="hourglass" class="w-3 h-3 inline mr-1"></i>Waiting in queue
                             </p>
                         ` : ''}
                         ${run.error ? `
@@ -483,8 +495,8 @@
                 lucide.createIcons({ root: list });
             }
 
-            // Add click handlers for running items to open execution modal
-            list.querySelectorAll('.history-item[data-status="running"], .history-item[data-status="pending"], .history-item[data-status="queued"]').forEach(item => {
+            // Add click handlers for running items only to open execution modal
+            list.querySelectorAll('.history-item[data-status="running"]').forEach(item => {
                 item.addEventListener('click', () => {
                     // Close history panel
                     this.closeHistory();

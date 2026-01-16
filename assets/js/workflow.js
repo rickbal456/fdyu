@@ -616,10 +616,14 @@ class WorkflowManager {
             if (response.success) {
                 this.executionState.executionId = response.executionId;
 
+                // Store all execution IDs for repeat workflows
+                this.executionState.executionIds = response.executionIds || [response.executionId];
+                this.executionState.currentExecutionIndex = 0;
+
                 // Start polling for status
                 this.pollExecutionStatus(response.executionId);
 
-                return { success: true, executionId: response.executionId };
+                return { success: true, executionId: response.executionId, executionIds: response.executionIds };
             } else {
                 throw new Error(response.error || 'Execution failed to start');
             }
@@ -706,8 +710,13 @@ class WorkflowManager {
 
             if (response.success) {
                 this.executionState.executionId = response.executionId;
+
+                // Store all execution IDs for repeat workflows
+                this.executionState.executionIds = response.executionIds || [response.executionId];
+                this.executionState.currentExecutionIndex = 0;
+
                 this.pollExecutionStatus(response.executionId);
-                return { success: true, executionId: response.executionId };
+                return { success: true, executionId: response.executionId, executionIds: response.executionIds };
             } else {
                 throw new Error(response.error || 'Execution failed to start');
             }
@@ -837,6 +846,43 @@ class WorkflowManager {
                         (response.progress >= 100 && allNodesComplete);
 
                     if (isComplete) {
+                        // Check if there are more executions in the queue (repeat workflow)
+                        const executionIds = this.executionState.executionIds || [];
+                        const currentIndex = this.executionState.currentExecutionIndex || 0;
+
+                        if (currentIndex < executionIds.length - 1) {
+                            // There's a next execution, start polling it
+                            const nextIndex = currentIndex + 1;
+                            const nextExecutionId = executionIds[nextIndex];
+
+                            this.executionState.currentExecutionIndex = nextIndex;
+                            this.executionState.executionId = nextExecutionId;
+                            this.executionState.progress = 0;
+                            this.executionState.nodeStatuses = new Map();
+
+                            // Reset node statuses in the UI
+                            this.nodeManager?.resetAllStatuses();
+
+                            // Notify about the new execution starting
+                            if (window.Toast) {
+                                Toast.info(`Execution ${nextIndex + 1}/${executionIds.length}`, 'Starting next workflow in queue');
+                            }
+
+                            // Notify progress reset
+                            this.onExecutionProgress({
+                                executionId: nextExecutionId,
+                                progress: 0,
+                                status: 'running',
+                                nodeStatuses: [],
+                                flowStatuses: []
+                            });
+
+                            // Start polling the next execution
+                            this.pollExecutionStatus(nextExecutionId);
+                            return;
+                        }
+
+                        // All executions complete
                         this.executionState.isRunning = false;
                         this.onExecutionComplete({
                             executionId,
@@ -845,7 +891,12 @@ class WorkflowManager {
                         });
 
                         if (window.Toast) {
-                            Toast.success('Execution complete!', 'Your workflow has finished processing');
+                            const totalExecutions = executionIds.length;
+                            if (totalExecutions > 1) {
+                                Toast.success('All executions complete!', `${totalExecutions} workflows finished processing`);
+                            } else {
+                                Toast.success('Execution complete!', 'Your workflow has finished processing');
+                            }
                         }
                         return;
                     }

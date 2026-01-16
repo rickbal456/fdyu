@@ -1529,6 +1529,9 @@ class Editor {
         this.nodeStartTimes = new Map();
         this.nodeTimerInterval = null;
 
+        // Reset execution tracking for repeat workflows
+        this.currentTrackingExecutionId = data.executionId;
+
         // Show execution modal
         Modals.open('modal-execution', {
             onOpen: (modal) => {
@@ -1653,6 +1656,34 @@ class Editor {
     handleExecutionProgress(data) {
         const modal = Modals.getModal('modal-execution');
         if (!modal) return;
+
+        // Check if this is a new execution (execution ID changed) - happens with repeat workflows
+        if (this.currentTrackingExecutionId && this.currentTrackingExecutionId !== data.executionId) {
+            // Reset the modal for new execution
+            this.cleanupNodeTimers();
+            this.nodeStartTimes = new Map();
+
+            // Reset progress bar
+            modal.querySelector('#execution-progress-bar').style.width = '0%';
+            modal.querySelector('#execution-progress-text').textContent = '0%';
+
+            // Reset all node items to pending state
+            modal.querySelectorAll('.execution-node-item').forEach(item => {
+                item.className = 'execution-node-item pending';
+                const statusText = item.querySelector('.status-text');
+                const statusTimer = item.querySelector('.status-timer');
+                const progressBar = item.querySelector('.execution-node-progress-bar');
+                if (statusText) statusText.textContent = 'Pending';
+                if (statusTimer) statusTimer.textContent = '';
+                if (progressBar) progressBar.style.width = '0%';
+            });
+
+            // Add log entry for new execution
+            this.addExecutionLog(`--- Starting Execution ${data.executionId} ---`);
+        }
+
+        // Track current execution ID
+        this.currentTrackingExecutionId = data.executionId;
 
         // Update progress bar
         modal.querySelector('#execution-progress-bar').style.width = `${data.progress}%`;

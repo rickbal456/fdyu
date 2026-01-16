@@ -253,14 +253,34 @@ try {
                 exit;
             }
 
-            // Update task
+            // If task completed successfully with a result URL, handle BunnyCDN upload first
+            // This ensures the frontend gets the CDN URL when BunnyCDN is enabled
+            $finalResultUrl = $resultUrl;
+            $finalStatus = $internalStatus;
+
+            if ($resultUrl && $internalStatus === 'completed') {
+                // Check if this is a generation/editing node that should use CDN
+                $nodeType = $nodeTask['node_type'];
+
+                // Try to upload to BunnyCDN - if configured
+                $cdnUrl = uploadToBunnyCDN($resultUrl, $nodeTask['execution_id'], $nodeTask['node_id']);
+                if ($cdnUrl) {
+                    $finalResultUrl = $cdnUrl; // Use CDN URL instead of original
+                    error_log("[Webhook] CDN upload successful for node {$nodeTask['node_id']}: $cdnUrl");
+                } else {
+                    // CDN upload failed or not configured, use original URL
+                    error_log("[Webhook] CDN upload skipped/failed for node {$nodeTask['node_id']}, using original URL");
+                }
+            }
+
+            // Update task with final URL and status
             Database::update(
                 'node_tasks',
                 [
-                    'status' => $internalStatus,
-                    'result_url' => $resultUrl,
+                    'status' => $finalStatus,
+                    'result_url' => $finalResultUrl,
                     'error_message' => $error,
-                    'completed_at' => in_array($internalStatus, ['completed', 'failed'])
+                    'completed_at' => in_array($finalStatus, ['completed', 'failed'])
                         ? date('Y-m-d H:i:s')
                         : null
                 ],
@@ -268,21 +288,8 @@ try {
                 ['id' => $nodeTask['id']]
             );
 
-            // If completed, upload result to BunnyCDN for persistence
-            if ($resultUrl && $internalStatus === 'completed') {
-                $cdnUrl = uploadToBunnyCDN($resultUrl, $nodeTask['execution_id'], $nodeTask['node_id']);
-                if ($cdnUrl) {
-                    Database::update(
-                        'node_tasks',
-                        ['result_url' => $cdnUrl],
-                        'id = :id',
-                        ['id' => $nodeTask['id']]
-                    );
-                }
-            }
-
             // Queue next task if this one completed
-            if ($internalStatus === 'completed') {
+            if ($finalStatus === 'completed') {
                 // Release rate limit slot and process queue
                 $apiKeyHash = ApiRateLimiter::releaseSlot($source, $taskId);
                 if ($apiKeyHash) {
