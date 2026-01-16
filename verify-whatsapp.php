@@ -224,6 +224,10 @@ $csrfToken = Auth::getCsrfToken();
         .iti__dial-code {
             color: rgb(156, 163, 175) !important;
         }
+
+        .iti__selected-dial-code {
+            color: rgb(209 213 219 / var(--tw-text-opacity, 1)) !important;
+        }
     </style>
 </head>
 
@@ -274,7 +278,8 @@ $csrfToken = Auth::getCsrfToken();
                     </label>
                     <div class="flex gap-2 items-start">
                         <div class="flex-1">
-                            <input type="tel" id="whatsapp_phone" name="whatsapp_phone" required class="w-full">
+                            <input type="tel" id="whatsapp_phone" name="whatsapp_phone" required class="w-full"
+                                style="padding-left: 87px!important;">
                             <input type="hidden" id="whatsapp_phone_full" name="whatsapp_phone_full" value="">
                         </div>
                         <button type="button" id="btn-send-wa-code"
