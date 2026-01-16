@@ -38,7 +38,7 @@ try {
     if ($status) {
         if ($status === 'current') {
             // Running or pending
-            $whereClause .= " AND we.status IN ('running', 'pending', 'queued')";
+            $whereClause .= " AND we.status IN ('running', 'pending')";
         } elseif ($status === 'completed') {
             $whereClause .= " AND we.status = 'completed'";
         } elseif ($status === 'aborted') {

@@ -118,7 +118,7 @@ try {
         $executionId = Database::insert('workflow_executions', [
             'workflow_id' => $workflowId ?: null,  // Use NULL for unsaved workflows
             'user_id' => $user['id'],
-            'status' => $isFirst ? 'pending' : 'queued',
+            'status' => 'pending',  // All start as pending, first one will be updated to running
             'input_data' => json_encode($input['inputs'] ?? []),
             'repeat_count' => 1,  // Each execution is a single iteration now
             'current_iteration' => 1,

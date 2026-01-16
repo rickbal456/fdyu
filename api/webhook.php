@@ -475,8 +475,9 @@ function finalizeExecution(int $executionId): void
     );
 
     if ($execution) {
-        // Find next queued execution for same workflow (or same user if workflow is null)
-        $whereClause = "status = 'queued'";
+        // Find next pending execution that hasn't started yet (queued)
+        // Pending executions with started_at = null are waiting to be started
+        $whereClause = "status = 'pending' AND started_at IS NULL";
         $params = [];
 
         if ($execution['workflow_id']) {
