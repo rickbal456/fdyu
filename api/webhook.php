@@ -467,6 +467,50 @@ function finalizeExecution(int $executionId): void
     );
 
     error_log("[Webhook] Execution $executionId finalized with status: " . ($allCompleted ? 'completed' : 'failed'));
+
+    // Check for next queued execution from the same user/workflow
+    $execution = Database::fetchOne(
+        "SELECT user_id, workflow_id FROM workflow_executions WHERE id = ?",
+        [$executionId]
+    );
+
+    if ($execution) {
+        // Find next queued execution for same workflow (or same user if workflow is null)
+        $whereClause = "status = 'queued'";
+        $params = [];
+
+        if ($execution['workflow_id']) {
+            $whereClause .= " AND workflow_id = :workflow_id";
+            $params['workflow_id'] = $execution['workflow_id'];
+        } else {
+            $whereClause .= " AND user_id = :user_id AND workflow_id IS NULL";
+            $params['user_id'] = $execution['user_id'];
+        }
+
+        $nextExecution = Database::fetchOne(
+            "SELECT id FROM workflow_executions WHERE {$whereClause} ORDER BY id ASC LIMIT 1",
+            $params
+        );
+
+        if ($nextExecution) {
+            $nextId = $nextExecution['id'];
+            error_log("[Webhook] Starting next queued execution: $nextId");
+
+            // Update status to running
+            Database::update(
+                'workflow_executions',
+                [
+                    'status' => 'running',
+                    'started_at' => date('Y-m-d H:i:s')
+                ],
+                'id = :id',
+                ['id' => $nextId]
+            );
+
+            // Queue first task for the next execution
+            queueNextTask($nextId);
+        }
+    }
 }
 
 /**

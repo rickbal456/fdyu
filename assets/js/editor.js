@@ -277,7 +277,12 @@ class Editor {
 
         // Execution modal buttons
         document.getElementById('btn-start-execution')?.addEventListener('click', () => {
-            this.startExecution();
+            // Check if there's a pending flow execution (from Start Flow node)
+            if (this.pendingFlowExecution) {
+                this.startFlowExecution();
+            } else {
+                this.startExecution();
+            }
         });
 
         document.getElementById('btn-abort-execution')?.addEventListener('click', async () => {
@@ -1238,7 +1243,17 @@ class Editor {
      * Actually start the workflow execution (called from modal button)
      */
     async startExecution() {
-        await this.workflowManager?.executeWorkflow();
+        const result = await this.workflowManager?.executeWorkflow();
+
+        if (result?.success) {
+            // Close the execution modal
+            Modals.closeActive();
+
+            // Open the run history panel
+            if (window.PanelsManager) {
+                window.PanelsManager.openHistory();
+            }
+        }
     }
 
     /**
@@ -1263,11 +1278,6 @@ class Editor {
      * @param {string} triggerNodeId - The ID of the trigger node to start from
      */
     async runSingleFlow(triggerNodeId) {
-        if (this.workflowManager?.isRunning()) {
-            Toast.warning('Already running', 'Please wait for the current execution to complete');
-            return;
-        }
-
         const triggerNode = this.nodeManager?.getNode(triggerNodeId);
         if (!triggerNode) {
             Toast.error('Node not found', 'The trigger node could not be found');
@@ -1314,18 +1324,80 @@ class Editor {
 
         const flowName = triggerNode.data?.flowName || 'Flow';
 
-        // Show confirmation dialog
-        const confirmed = await ConfirmDialog.show({
-            title: `Run ${flowName}?`,
-            message: `This will execute ${flowNodes.length} node(s) in this flow. Do you want to continue?`,
-            confirmText: 'Run Flow',
-            cancelText: 'Cancel'
-        });
+        // Store pending flow execution data
+        this.pendingFlowExecution = {
+            triggerNodeId,
+            flowNodes,
+            flowName
+        };
 
-        if (confirmed) {
+        // Open execution modal with the flow nodes
+        this.openExecutionModalForFlow(flowNodes, flowName);
+    }
+
+    /**
+     * Open execution modal for a specific flow
+     */
+    openExecutionModalForFlow(flowNodes, flowName) {
+        Modals.open('modal-execution', {
+            onOpen: (modal) => {
+                // Reset progress
+                modal.querySelector('#execution-progress-bar').style.width = '0%';
+                modal.querySelector('#execution-progress-text').textContent = '0%';
+
+                // Show nodes list in pending state
+                const nodesList = modal.querySelector('#execution-nodes');
+                if (flowNodes.length > 0) {
+                    nodesList.innerHTML = flowNodes
+                        .map(node => this.renderExecutionNodeItem(node))
+                        .join('');
+                } else {
+                    nodesList.innerHTML = `
+                        <div class="text-center py-8 text-dark-400">
+                            <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-4 text-dark-500"></i>
+                            <p class="text-sm">No nodes to execute</p>
+                        </div>
+                    `;
+                }
+
+                // Clear log
+                const logEl = modal.querySelector('#execution-log');
+                if (logEl) logEl.textContent = '';
+
+                // Show pre-run buttons
+                modal.querySelector('#btn-close-execution-modal')?.classList.remove('hidden');
+                modal.querySelector('#btn-start-execution')?.classList.remove('hidden');
+                modal.querySelector('#btn-abort-execution')?.classList.add('hidden');
+                modal.querySelector('#btn-view-result')?.classList.add('hidden');
+
+                if (window.lucide) {
+                    lucide.createIcons({ nodes: [nodesList] });
+                }
+            }
+        });
+    }
+
+    /**
+     * Start execution for pending flow (called from modal button when flow is pending)
+     */
+    async startFlowExecution() {
+        if (this.pendingFlowExecution) {
+            const { triggerNodeId, flowNodes, flowName } = this.pendingFlowExecution;
+            this.pendingFlowExecution = null;
+
             Toast.info(`Running ${flowName}`, `Starting execution of ${flowNodes.length} node(s)`);
-            // Execute just this flow
-            await this.workflowManager?.executeSingleFlow(triggerNodeId, flowNodes);
+
+            const result = await this.workflowManager?.executeSingleFlow(triggerNodeId, flowNodes);
+
+            if (result?.success) {
+                // Close the execution modal
+                Modals.closeActive();
+
+                // Open the run history panel
+                if (window.PanelsManager) {
+                    window.PanelsManager.openHistory();
+                }
+            }
         }
     }
 

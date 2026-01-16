@@ -108,82 +108,98 @@ try {
         }
     }
 
-    // Create execution record with repeat info
-    $executionId = Database::insert('workflow_executions', [
-        'workflow_id' => $workflowId ?: null,  // Use NULL for unsaved workflows
-        'user_id' => $user['id'],
-        'status' => 'pending',
-        'input_data' => json_encode($input['inputs'] ?? []),
-        'repeat_count' => $repeatCount,
-        'current_iteration' => 1,
-        'iteration_outputs' => json_encode([]),
-        'started_at' => date('Y-m-d H:i:s')
-    ]);
+    // Create execution records - one for each repeat iteration
+    $executionIds = [];
+    $firstExecutionId = null;
 
-    // If this is a single-flow execution, create a flow execution record
-    $flowExecutionId = null;
-    if ($flowId) {
-        // Find the entry node (trigger node)
-        $entryNode = null;
-        foreach ($nodes as $node) {
-            if ($node['id'] === $flowId) {
-                $entryNode = $node;
-                break;
-            }
+    for ($i = 0; $i < $repeatCount; $i++) {
+        $isFirst = ($i === 0);
+
+        $executionId = Database::insert('workflow_executions', [
+            'workflow_id' => $workflowId ?: null,  // Use NULL for unsaved workflows
+            'user_id' => $user['id'],
+            'status' => $isFirst ? 'pending' : 'queued',
+            'input_data' => json_encode($input['inputs'] ?? []),
+            'repeat_count' => 1,  // Each execution is a single iteration now
+            'current_iteration' => 1,
+            'iteration_outputs' => json_encode([]),
+            'started_at' => $isFirst ? date('Y-m-d H:i:s') : null
+        ]);
+
+        $executionIds[] = $executionId;
+        if ($isFirst) {
+            $firstExecutionId = $executionId;
         }
 
-        $flowName = $entryNode['data']['flowName'] ?? 'Single Flow';
-        $priority = $entryNode['data']['priority'] ?? 0;
+        // If this is a single-flow execution, create a flow execution record
+        $flowExecutionId = null;
+        if ($flowId) {
+            // Find the entry node (trigger node)
+            $entryNode = null;
+            foreach ($nodes as $node) {
+                if ($node['id'] === $flowId) {
+                    $entryNode = $node;
+                    break;
+                }
+            }
 
-        $flowExecutionId = Database::insert('flow_executions', [
-            'execution_id' => $executionId,
-            'flow_id' => $flowId,
-            'entry_node_id' => $flowId,
-            'flow_name' => $flowName,
-            'status' => 'queued',
-            'priority' => $priority,
-            'started_at' => date('Y-m-d H:i:s')
-        ]);
+            $flowName = $entryNode['data']['flowName'] ?? 'Single Flow';
+            $priority = $entryNode['data']['priority'] ?? 0;
+
+            $flowExecutionId = Database::insert('flow_executions', [
+                'execution_id' => $executionId,
+                'flow_id' => $flowId,
+                'entry_node_id' => $flowId,
+                'flow_name' => $flowName,
+                'status' => $isFirst ? 'queued' : 'queued',
+                'priority' => $priority,
+                'started_at' => $isFirst ? date('Y-m-d H:i:s') : null
+            ]);
+        }
+
+        // Calculate execution order (topological sort)
+        $executionOrder = calculateExecutionOrder($nodes, $connections);
+
+        // Create task records for each node
+        foreach ($executionOrder as $index => $node) {
+            Database::insert('node_tasks', [
+                'execution_id' => $executionId,
+                'node_id' => $node['id'],
+                'node_type' => $node['type'],
+                'status' => 'pending',
+                'input_data' => json_encode($node['data'] ?? [])
+            ]);
+        }
+
+        // Only start the first execution immediately
+        if ($isFirst) {
+            // Update execution status to running
+            Database::update(
+                'workflow_executions',
+                ['status' => 'running'],
+                'id = :id',
+                ['id' => $executionId]
+            );
+
+            // Update flow execution status to running if applicable
+            if ($flowExecutionId) {
+                Database::update(
+                    'flow_executions',
+                    ['status' => 'running'],
+                    'id = :id',
+                    ['id' => $flowExecutionId]
+                );
+            }
+
+            // Queue first task for execution
+            queueNextTask($executionId);
+        }
     }
-
-    // Calculate execution order (topological sort)
-    $executionOrder = calculateExecutionOrder($nodes, $connections);
-
-    // Create task records for each node
-    foreach ($executionOrder as $index => $node) {
-        Database::insert('node_tasks', [
-            'execution_id' => $executionId,
-            'node_id' => $node['id'],
-            'node_type' => $node['type'],
-            'status' => 'pending',
-            'input_data' => json_encode($node['data'] ?? [])
-        ]);
-    }
-
-    // Update execution status to running
-    Database::update(
-        'workflow_executions',
-        ['status' => 'running'],
-        'id = :id',
-        ['id' => $executionId]
-    );
-
-    // Update flow execution status to running if applicable
-    if ($flowExecutionId) {
-        Database::update(
-            'flow_executions',
-            ['status' => 'running'],
-            'id = :id',
-            ['id' => $flowExecutionId]
-        );
-    }
-
-    // Queue first task for execution
-    queueNextTask($executionId);
 
     successResponse([
-        'executionId' => $executionId,
-        'flowExecutionId' => $flowExecutionId,
+        'executionId' => $firstExecutionId,
+        'executionIds' => $executionIds,
+        'flowExecutionId' => $flowExecutionId ?? null,
         'flowId' => $flowId,
         'status' => 'running',
         'nodeCount' => count($nodes),
@@ -191,7 +207,9 @@ try {
             'total' => $repeatCount,
             'current' => 1
         ],
-        'message' => $flowId ? 'Single flow execution started' : 'Workflow execution started'
+        'message' => $repeatCount > 1
+            ? "Started {$repeatCount} workflow executions (" . ($repeatCount - 1) . " queued)"
+            : ($flowId ? 'Single flow execution started' : 'Workflow execution started')
     ]);
 
 
