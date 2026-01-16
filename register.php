@@ -406,7 +406,7 @@ $csrfToken = Auth::getCsrfToken();
 
         .iti__tel-input {
             width: 100%;
-            padding: 0.75rem 1rem 0.75rem 52px !important;
+            padding: 0.75rem 1rem 0.75rem 87px !important;
             background-color: rgb(31, 41, 55) !important;
             border: 1px solid rgb(75, 85, 99) !important;
             border-radius: 0.5rem !important;
@@ -617,8 +617,7 @@ $csrfToken = Auth::getCsrfToken();
                     <div class="flex gap-2 items-start">
                         <div class="flex-1">
                             <input type="tel" id="whatsapp_phone" name="whatsapp_phone" required class="w-full"
-                                value="<?= htmlspecialchars($formData['whatsapp_phone']) ?>"
-                                style="padding-left: 87px!important;">
+                                value="<?= htmlspecialchars($formData['whatsapp_phone']) ?>">
                             <input type="hidden" id="whatsapp_phone_full" name="whatsapp_phone_full" value="">
                         </div>
                         <?php if ($whatsappVerificationEnabled): ?>
