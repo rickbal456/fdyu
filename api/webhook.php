@@ -359,6 +359,10 @@ try {
                     ['id' => $nodeTask['execution_id']]
                 );
                 error_log("[Webhook] Updated workflow_executions id={$nodeTask['execution_id']} to status=failed");
+
+                // Start next queued execution (for repeat workflows)
+                // Even if this one failed, continue with the next one in queue
+                startNextQueuedExecution($nodeTask['execution_id']);
             }
         } else {
             error_log("[Webhook] No node_task found for external_task_id: $taskId");
@@ -379,6 +383,62 @@ try {
     error_log('Webhook error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Internal error']);
+}
+
+/**
+ * Start next queued workflow execution (for repeat workflows)
+ * Called when a workflow execution completes or fails
+ */
+function startNextQueuedExecution(int $executionId): void
+{
+    // Get the execution details to find related queued executions
+    $execution = Database::fetchOne(
+        "SELECT user_id, workflow_id FROM workflow_executions WHERE id = ?",
+        [$executionId]
+    );
+
+    if (!$execution) {
+        return;
+    }
+
+    // Find next pending execution that hasn't started yet (queued)
+    // Pending executions with started_at = null are waiting to be started
+    $whereClause = "status = 'pending' AND started_at IS NULL";
+    $params = [];
+
+    if ($execution['workflow_id']) {
+        $whereClause .= " AND workflow_id = :workflow_id";
+        $params['workflow_id'] = $execution['workflow_id'];
+    } else {
+        $whereClause .= " AND user_id = :user_id AND workflow_id IS NULL";
+        $params['user_id'] = $execution['user_id'];
+    }
+
+    $nextExecution = Database::fetchOne(
+        "SELECT id FROM workflow_executions WHERE {$whereClause} ORDER BY id ASC LIMIT 1",
+        $params
+    );
+
+    if ($nextExecution) {
+        $nextId = $nextExecution['id'];
+        error_log("[Webhook] Starting next queued execution: $nextId (after execution $executionId)");
+
+        // Update status to running
+        Database::update(
+            'workflow_executions',
+            [
+                'status' => 'running',
+                'started_at' => date('Y-m-d H:i:s')
+            ],
+            'id = :id',
+            ['id' => $nextId]
+        );
+
+        // Queue first task for the next execution
+        queueNextTask($nextId);
+    } else {
+        error_log("[Webhook] No more queued executions found after execution $executionId");
+    }
 }
 
 /**
@@ -475,50 +535,8 @@ function finalizeExecution(int $executionId): void
 
     error_log("[Webhook] Execution $executionId finalized with status: " . ($allCompleted ? 'completed' : 'failed'));
 
-    // Check for next queued execution from the same user/workflow
-    $execution = Database::fetchOne(
-        "SELECT user_id, workflow_id FROM workflow_executions WHERE id = ?",
-        [$executionId]
-    );
-
-    if ($execution) {
-        // Find next pending execution that hasn't started yet (queued)
-        // Pending executions with started_at = null are waiting to be started
-        $whereClause = "status = 'pending' AND started_at IS NULL";
-        $params = [];
-
-        if ($execution['workflow_id']) {
-            $whereClause .= " AND workflow_id = :workflow_id";
-            $params['workflow_id'] = $execution['workflow_id'];
-        } else {
-            $whereClause .= " AND user_id = :user_id AND workflow_id IS NULL";
-            $params['user_id'] = $execution['user_id'];
-        }
-
-        $nextExecution = Database::fetchOne(
-            "SELECT id FROM workflow_executions WHERE {$whereClause} ORDER BY id ASC LIMIT 1",
-            $params
-        );
-
-        if ($nextExecution) {
-            $nextId = $nextExecution['id'];
-            error_log("[Webhook] Starting next queued execution: $nextId");
-
-            // Update status to running
-            Database::update(
-                'workflow_executions',
-                [
-                    'status' => 'running',
-                    'started_at' => date('Y-m-d H:i:s')
-                ],
-                'id = :id',
-                ['id' => $nextId]
-            );
-
-            // Queue first task for the next execution
-            queueNextTask($nextId);
-        }
-    }
+    // Start next queued execution (for repeat workflows)
+    startNextQueuedExecution($executionId);
 }
 
 /**
