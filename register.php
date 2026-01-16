@@ -39,7 +39,7 @@ try {
             $privacyPolicy = $row['setting_value'] ?? '';
     }
     // Load logo, favicon, and site title
-    $brandRows = Database::fetchAll("SELECT setting_key, setting_value FROM site_settings WHERE setting_key IN ('logo_url_dark', 'logo_url_light', 'favicon_url', 'site_title', 'google_auth_enabled', 'invitation_enabled', 'invitation_referrer_credits', 'invitation_referee_credits')");
+    $brandRows = Database::fetchAll("SELECT setting_key, setting_value FROM site_settings WHERE setting_key IN ('logo_url_dark', 'logo_url_light', 'favicon_url', 'site_title', 'google_auth_enabled', 'invitation_enabled', 'invitation_referrer_credits', 'invitation_referee_credits', 'whatsapp_verification_enabled')");
     foreach ($brandRows as $row) {
         if ($row['setting_key'] === 'logo_url_dark')
             $logoUrlDark = $row['setting_value'] ?? '';
@@ -57,6 +57,8 @@ try {
             $referrerCredits = (int) $row['setting_value'];
         if ($row['setting_key'] === 'invitation_referee_credits')
             $refereeCredits = (int) $row['setting_value'];
+        if ($row['setting_key'] === 'whatsapp_verification_enabled')
+            $whatsappVerificationEnabled = $row['setting_value'] === '1';
     }
 } catch (Exception $e) {
     // Ignore
@@ -67,6 +69,7 @@ $faviconUrl = $faviconUrl ?? '';
 $siteTitle = $siteTitle ?? 'AIKAFLOW';
 $googleAuthEnabled = $googleAuthEnabled ?? false;
 $invitationEnabled = $invitationEnabled ?? false;
+$whatsappVerificationEnabled = $whatsappVerificationEnabled ?? false;
 $referrerCredits = $referrerCredits ?? 50;
 $refereeCredits = $refereeCredits ?? 50;
 
@@ -74,7 +77,8 @@ $error = '';
 $errors = [];
 $formData = [
     'email' => '',
-    'username' => ''
+    'username' => '',
+    'whatsapp_phone' => ''
 ];
 
 // Handle registration form submission
@@ -120,6 +124,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$agreeTerms) {
             $errors['agree_terms'] = 'You must agree to the terms and conditions.';
+        }
+
+        // WhatsApp phone validation
+        $formData['whatsapp_phone'] = trim($_POST['whatsapp_phone'] ?? '');
+        if (!empty($formData['whatsapp_phone'])) {
+            // Validate phone format
+            if (!preg_match('/^\+?[0-9]{10,15}$/', $formData['whatsapp_phone'])) {
+                $errors['whatsapp_phone'] = 'Invalid phone number format. Please include country code.';
+            } else {
+                // Check if phone is already registered
+                $existingPhone = Database::fetchOne(
+                    "SELECT id FROM users WHERE whatsapp_phone = ?",
+                    [$formData['whatsapp_phone']]
+                );
+                if ($existingPhone) {
+                    $errors['whatsapp_phone'] = 'This WhatsApp number is already registered.';
+                }
+            }
+        }
+
+        // If WhatsApp verification is enabled, check if phone is verified
+        if ($whatsappVerificationEnabled && empty($errors)) {
+            if (empty($formData['whatsapp_phone'])) {
+                $errors['whatsapp_phone'] = 'WhatsApp number is required.';
+            } elseif (
+                !isset($_SESSION['whatsapp_verified']) ||
+                $_SESSION['whatsapp_verified']['phone'] !== $formData['whatsapp_phone']
+            ) {
+                $errors['whatsapp_phone'] = 'Please verify your WhatsApp number before registering.';
+            }
         }
 
         // Verify hCaptcha if enabled
@@ -184,6 +218,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 } catch (Exception $e) {
                     error_log('Failed to grant welcome credits: ' . $e->getMessage());
+                }
+
+                // Save WhatsApp phone number if provided
+                if (!empty($formData['whatsapp_phone'])) {
+                    try {
+                        Database::update(
+                            'users',
+                            ['whatsapp_phone' => $formData['whatsapp_phone']],
+                            'id = :id',
+                            ['id' => $result['user_id']]
+                        );
+                        // Clear verification session data
+                        unset($_SESSION['whatsapp_verified']);
+                    } catch (Exception $e) {
+                        error_log('Failed to save WhatsApp phone: ' . $e->getMessage());
+                    }
                 }
 
                 // Process invitation code if provided
@@ -501,6 +551,59 @@ $csrfToken = Auth::getCsrfToken();
                     <p id="password-match" class="mt-1 text-xs hidden"></p>
                 </div>
 
+                <!-- WhatsApp Phone Field -->
+                <div>
+                    <label for="whatsapp_phone" class="block text-sm font-medium text-gray-300 mb-2">
+                        WhatsApp Number <?php if (!$whatsappVerificationEnabled): ?><span
+                                class="text-gray-500">(optional)</span><?php endif; ?>
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="tel" id="whatsapp_phone" name="whatsapp_phone" <?= $whatsappVerificationEnabled ? 'required' : '' ?>
+                            class="flex-1 px-4 py-3 bg-dark-800 border <?= isset($errors['whatsapp_phone']) ? 'border-red-500' : 'border-dark-600' ?> rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                            placeholder="+6281234567890" value="<?= htmlspecialchars($formData['whatsapp_phone']) ?>">
+                        <?php if ($whatsappVerificationEnabled): ?>
+                            <button type="button" id="btn-send-wa-code"
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+                                Send Code
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <?php if (isset($errors['whatsapp_phone'])): ?>
+                        <p class="mt-1 text-sm text-red-400"><?= htmlspecialchars($errors['whatsapp_phone']) ?></p>
+                    <?php else: ?>
+                        <p class="mt-1 text-xs text-gray-500">Include country code (e.g., +62 for Indonesia)</p>
+                    <?php endif; ?>
+
+                    <?php if ($whatsappVerificationEnabled): ?>
+                        <!-- OTP Verification Section (hidden by default) -->
+                        <div id="wa-otp-section" class="mt-3 hidden">
+                            <div class="flex gap-2">
+                                <input type="text" id="wa_otp_code" maxlength="6"
+                                    class="flex-1 px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-center tracking-widest font-mono text-lg"
+                                    placeholder="Enter 6-digit code">
+                                <button type="button" id="btn-verify-wa-code"
+                                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+                                    Verify
+                                </button>
+                            </div>
+                            <p id="wa-otp-status" class="mt-1 text-xs text-gray-500">Enter the verification code sent to
+                                your WhatsApp</p>
+                        </div>
+                        <!-- Verified Badge (hidden by default) -->
+                        <div id="wa-verified-badge" class="mt-2 hidden">
+                            <span
+                                class="inline-flex items-center gap-1 px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Verified
+                            </span>
+                        </div>
+                        <input type="hidden" id="whatsapp_verified" name="whatsapp_verified" value="0">
+                    <?php endif; ?>
+                </div>
+
                 <?php if ($invitationEnabled): ?>
                     <!-- Invitation Code -->
                     <div>
@@ -713,6 +816,157 @@ $csrfToken = Auth::getCsrfToken();
                 });
             }
         });
+
+        // WhatsApp Verification
+        (function() {
+            const sendBtn = document.getElementById('btn-send-wa-code');
+            const verifyBtn = document.getElementById('btn-verify-wa-code');
+            const phoneInput = document.getElementById('whatsapp_phone');
+            const otpSection = document.getElementById('wa-otp-section');
+            const otpInput = document.getElementById('wa_otp_code');
+            const otpStatus = document.getElementById('wa-otp-status');
+            const verifiedBadge = document.getElementById('wa-verified-badge');
+            const verifiedHidden = document.getElementById('whatsapp_verified');
+            
+            if (!sendBtn) return; // WhatsApp verification not enabled
+            
+            let cooldownTimer = null;
+            let isVerified = false;
+            
+            // Send verification code
+            sendBtn.addEventListener('click', async function() {
+                const phone = phoneInput.value.trim();
+                
+                if (!phone) {
+                    showOtpError('Please enter your WhatsApp number');
+                    return;
+                }
+                
+                if (!/^\+?[0-9]{10,15}$/.test(phone)) {
+                    showOtpError('Invalid phone format. Include country code.');
+                    return;
+                }
+                
+                sendBtn.disabled = true;
+                sendBtn.textContent = 'Sending...';
+                
+                try {
+                    const response = await fetch('api/auth/send-whatsapp-code.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        otpSection.classList.remove('hidden');
+                        otpInput.value = '';
+                        otpInput.focus();
+                        showOtpSuccess('Verification code sent to your WhatsApp');
+                        startCooldown(60);
+                        phoneInput.readOnly = true;
+                    } else {
+                        showOtpError(data.error || 'Failed to send code');
+                        sendBtn.disabled = false;
+                        sendBtn.textContent = 'Send Code';
+                    }
+                } catch (error) {
+                    console.error('Send code error:', error);
+                    showOtpError('Failed to send code. Please try again.');
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = 'Send Code';
+                }
+            });
+            
+            // Verify code
+            verifyBtn?.addEventListener('click', async function() {
+                const code = otpInput.value.trim();
+                const phone = phoneInput.value.trim();
+                
+                if (!code || code.length !== 6) {
+                    showOtpError('Please enter the 6-digit code');
+                    return;
+                }
+                
+                verifyBtn.disabled = true;
+                verifyBtn.textContent = 'Verifying...';
+                
+                try {
+                    const response = await fetch('api/auth/verify-whatsapp-code.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code, phone })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        isVerified = true;
+                        otpSection.classList.add('hidden');
+                        verifiedBadge.classList.remove('hidden');
+                        sendBtn.classList.add('hidden');
+                        verifiedHidden.value = '1';
+                        showOtpSuccess('WhatsApp number verified!');
+                    } else {
+                        showOtpError(data.error || 'Invalid code');
+                        verifyBtn.disabled = false;
+                        verifyBtn.textContent = 'Verify';
+                    }
+                } catch (error) {
+                    console.error('Verify code error:', error);
+                    showOtpError('Verification failed. Please try again.');
+                    verifyBtn.disabled = false;
+                    verifyBtn.textContent = 'Verify';
+                }
+            });
+            
+            // Allow only digits in OTP input
+            otpInput?.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+            
+            // Reset verification if phone changes
+            phoneInput?.addEventListener('input', function() {
+                if (isVerified) {
+                    isVerified = false;
+                    verifiedBadge.classList.add('hidden');
+                    sendBtn.classList.remove('hidden');
+                    verifiedHidden.value = '0';
+                    phoneInput.readOnly = false;
+                }
+            });
+            
+            function startCooldown(seconds) {
+                let remaining = seconds;
+                sendBtn.disabled = true;
+                
+                cooldownTimer = setInterval(() => {
+                    remaining--;
+                    sendBtn.textContent = `Resend (${remaining}s)`;
+                    
+                    if (remaining <= 0) {
+                        clearInterval(cooldownTimer);
+                        sendBtn.disabled = false;
+                        sendBtn.textContent = 'Resend Code';
+                    }
+                }, 1000);
+            }
+            
+            function showOtpError(msg) {
+                if (otpStatus) {
+                    otpStatus.textContent = msg;
+                    otpStatus.className = 'mt-1 text-xs text-red-400';
+                }
+            }
+            
+            function showOtpSuccess(msg) {
+                if (otpStatus) {
+                    otpStatus.textContent = msg;
+                    otpStatus.className = 'mt-1 text-xs text-green-400';
+                }
+            }
+        })();
     </script>
 
     <!-- Terms of Service Modal -->

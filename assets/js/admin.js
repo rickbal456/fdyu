@@ -427,6 +427,18 @@
                 setFieldValue('admin-paypal-secret-key', result.settings.paypal_secret_key || '');
 
                 toggleFieldVisibility('paypal-fields', result.settings.paypal_enabled === '1');
+
+                // WhatsApp Verification Settings
+                const whatsappToggle = document.getElementById('admin-whatsapp-verification-enabled');
+                if (whatsappToggle) whatsappToggle.checked = result.settings.whatsapp_verification_enabled === '1';
+
+                setFieldValue('admin-whatsapp-api-url', result.settings.whatsapp_api_url || '');
+                setFieldValue('admin-whatsapp-api-method', result.settings.whatsapp_api_method || 'GET');
+
+                const waMessage = document.getElementById('admin-whatsapp-verification-message');
+                if (waMessage) waMessage.value = (result.settings.whatsapp_verification_message || '').replace(/\\n/g, '\n');
+
+                toggleFieldVisibility('whatsapp-verification-fields', result.settings.whatsapp_verification_enabled === '1');
             }
         } catch (error) {
             console.error('Load site settings error:', error);
@@ -464,6 +476,11 @@
     // PayPal toggle
     document.getElementById('admin-paypal-enabled')?.addEventListener('change', (e) => {
         toggleFieldVisibility('paypal-fields', e.target.checked);
+    });
+
+    // WhatsApp Verification toggle
+    document.getElementById('admin-whatsapp-verification-enabled')?.addEventListener('change', (e) => {
+        toggleFieldVisibility('whatsapp-verification-fields', e.target.checked);
     });
 
     // Send Test Email button
@@ -675,7 +692,12 @@
                     paypal_enabled: document.getElementById('admin-paypal-enabled')?.checked ? '1' : '0',
                     paypal_sandbox: document.getElementById('admin-paypal-sandbox')?.checked ? '1' : '0',
                     paypal_client_id: document.getElementById('admin-paypal-client-id')?.value,
-                    paypal_secret_key: document.getElementById('admin-paypal-secret-key')?.value
+                    paypal_secret_key: document.getElementById('admin-paypal-secret-key')?.value,
+                    // WhatsApp Verification
+                    whatsapp_verification_enabled: document.getElementById('admin-whatsapp-verification-enabled')?.checked ? '1' : '0',
+                    whatsapp_api_url: document.getElementById('admin-whatsapp-api-url')?.value,
+                    whatsapp_api_method: document.getElementById('admin-whatsapp-api-method')?.value,
+                    whatsapp_verification_message: document.getElementById('admin-whatsapp-verification-message')?.value?.replace(/\n/g, '\\n')
                 })
             });
 

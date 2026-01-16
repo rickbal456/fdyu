@@ -6,6 +6,7 @@
 CREATE TABLE IF NOT EXISTS users (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
+    whatsapp_phone VARCHAR(20) NULL UNIQUE,
     username VARCHAR(50) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     api_key VARCHAR(64) NULL UNIQUE,
@@ -22,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
     verification_token VARCHAR(64) NULL,
     verification_token_expires_at TIMESTAMP NULL,
     INDEX idx_email (email),
+    INDEX idx_whatsapp_phone (whatsapp_phone),
     INDEX idx_api_key (api_key),
     INDEX idx_invitation_code (invitation_code)
 ) ENGINE=InnoDB;
@@ -247,6 +249,11 @@ INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES
 -- Terms and Privacy
 ('terms_of_service', '# Terms of Service\n\nBy using AIKAFLOW, you agree to these terms.'),
 ('privacy_policy', '# Privacy Policy\n\nYour privacy is important to us.'),
+-- WhatsApp Verification
+('whatsapp_verification_enabled', '0'),
+('whatsapp_api_url', ''),
+('whatsapp_api_method', 'GET'),
+('whatsapp_verification_message', 'Your verification code for {{site_title}} is: {{code}}. This code expires in 10 minutes.'),
 -- Integration API Keys (stored as JSON string)
 ('integration_keys', '{}');
 

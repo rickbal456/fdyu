@@ -1417,6 +1417,55 @@ $invitationEnabled = ($siteSettings['invitation_enabled'] ?? '0') === '1';
                                 </div>
                             </div>
 
+                            <!-- WhatsApp Verification -->
+                            <div class="space-y-4">
+                                <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">WhatsApp
+                                    Verification</h4>
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
+                                        <input type="checkbox" id="admin-whatsapp-verification-enabled"
+                                            class="form-checkbox">
+                                        <span>Enable WhatsApp Verification on Registration</span>
+                                    </label>
+                                    <p class="text-xs text-dark-500 mt-1">Require users to verify their WhatsApp number
+                                        during registration</p>
+                                </div>
+                                <div id="whatsapp-verification-fields" class="space-y-4 hidden">
+                                    <div>
+                                        <label class="block text-sm font-medium text-dark-300 mb-2">API URL
+                                            Template</label>
+                                        <input type="text" id="admin-whatsapp-api-url"
+                                            class="form-input w-full font-mono text-sm"
+                                            placeholder="https://api.example.com/send.php?number={{destination_number}}&message={{message}}&token=xxx">
+                                        <p class="text-xs text-dark-500 mt-1">Use <code
+                                                class="bg-dark-700 px-1 rounded">{{destination_number}}</code> and <code
+                                                class="bg-dark-700 px-1 rounded">{{message}}</code> as placeholders</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-dark-300 mb-2">HTTP Method</label>
+                                        <select id="admin-whatsapp-api-method" class="form-select w-full">
+                                            <option value="GET">GET</option>
+                                            <option value="POST">POST</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-dark-300 mb-2">Verification Message
+                                            Template</label>
+                                        <textarea id="admin-whatsapp-verification-message"
+                                            class="form-textarea w-full text-sm" rows="3"
+                                            placeholder="Your verification code for {{site_title}} is: {{code}}. This code expires in 10 minutes."></textarea>
+                                        <p class="text-xs text-dark-500 mt-1">Use <code
+                                                class="bg-dark-700 px-1 rounded">{{code}}</code> and <code
+                                                class="bg-dark-700 px-1 rounded">{{site_title}}</code> as placeholders</p>
+                                    </div>
+                                    <div class="bg-dark-800 p-3 rounded-lg text-xs text-dark-400">
+                                        <p class="font-medium text-dark-300 mb-1">Example API URL:</p>
+                                        <code
+                                            class="block text-dark-400 break-all">https://x2.woonotif.com/api/send.php?number={{destination_number}}&type=text&message={{message}}&instance_id=YOUR_ID&access_token=YOUR_TOKEN</code>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- SMTP Email -->
                             <div class="space-y-4">
                                 <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">SMTP Email</h4>

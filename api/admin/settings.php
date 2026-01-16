@@ -109,6 +109,11 @@ switch ($method) {
             'paypal_client_id',
             'paypal_secret_key',
             'paypal_usd_rate',
+            // WhatsApp Verification
+            'whatsapp_verification_enabled',
+            'whatsapp_api_url',
+            'whatsapp_api_method',
+            'whatsapp_verification_message',
             // Integration Keys (API keys for external services - stored as JSON string)
             'integration_keys',
             // OpenRouter settings (model, system prompts - stored as JSON string)
