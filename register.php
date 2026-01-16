@@ -126,29 +126,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors['agree_terms'] = 'You must agree to the terms and conditions.';
         }
 
-        // WhatsApp phone validation
+        // WhatsApp phone validation (always mandatory)
         $formData['whatsapp_phone'] = trim($_POST['whatsapp_phone'] ?? '');
-        if (!empty($formData['whatsapp_phone'])) {
-            // Validate phone format
-            if (!preg_match('/^\+?[0-9]{10,15}$/', $formData['whatsapp_phone'])) {
-                $errors['whatsapp_phone'] = 'Invalid phone number format. Please include country code.';
-            } else {
-                // Check if phone is already registered
-                $existingPhone = Database::fetchOne(
-                    "SELECT id FROM users WHERE whatsapp_phone = ?",
-                    [$formData['whatsapp_phone']]
-                );
-                if ($existingPhone) {
-                    $errors['whatsapp_phone'] = 'This WhatsApp number is already registered.';
-                }
+        if (empty($formData['whatsapp_phone'])) {
+            $errors['whatsapp_phone'] = 'WhatsApp number is required.';
+        } elseif (!preg_match('/^\+?[0-9]{10,15}$/', $formData['whatsapp_phone'])) {
+            $errors['whatsapp_phone'] = 'Invalid phone number format.';
+        } else {
+            // Check if phone is already registered
+            $existingPhone = Database::fetchOne(
+                "SELECT id FROM users WHERE whatsapp_phone = ?",
+                [$formData['whatsapp_phone']]
+            );
+            if ($existingPhone) {
+                $errors['whatsapp_phone'] = 'This WhatsApp number is already registered.';
             }
         }
 
         // If WhatsApp verification is enabled, check if phone is verified
-        if ($whatsappVerificationEnabled && empty($errors)) {
-            if (empty($formData['whatsapp_phone'])) {
-                $errors['whatsapp_phone'] = 'WhatsApp number is required.';
-            } elseif (
+        if ($whatsappVerificationEnabled && empty($errors['whatsapp_phone'])) {
+            if (
                 !isset($_SESSION['whatsapp_verified']) ||
                 $_SESSION['whatsapp_verified']['phone'] !== $formData['whatsapp_phone']
             ) {
@@ -384,6 +381,9 @@ $csrfToken = Auth::getCsrfToken();
     <?php if ($hcaptchaEnabled && !empty($hcaptchaSiteKey)): ?>
         <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
     <?php endif; ?>
+    <!-- intl-tel-input for phone number -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.5.3/build/css/intlTelInput.css">
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.5.3/build/js/intlTelInput.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -397,6 +397,60 @@ $csrfToken = Auth::getCsrfToken();
             background: rgba(17, 24, 39, 0.8);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* intl-tel-input dark theme overrides */
+        .iti {
+            width: 100%;
+        }
+
+        .iti__tel-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 52px !important;
+            background-color: rgb(31, 41, 55) !important;
+            border: 1px solid rgb(75, 85, 99) !important;
+            border-radius: 0.5rem !important;
+            color: white !important;
+        }
+
+        .iti__tel-input:focus {
+            outline: none !important;
+            ring: 2px !important;
+            ring-color: rgb(147, 51, 234) !important;
+            border-color: transparent !important;
+        }
+
+        .iti__tel-input::placeholder {
+            color: rgb(107, 114, 128) !important;
+        }
+
+        .iti__country-container {
+            padding-left: 0 !important;
+        }
+
+        .iti__dropdown-content {
+            background-color: rgb(31, 41, 55) !important;
+            border: 1px solid rgb(75, 85, 99) !important;
+            color: white !important;
+        }
+
+        .iti__search-input {
+            background-color: rgb(55, 65, 81) !important;
+            color: white !important;
+            border-color: rgb(75, 85, 99) !important;
+        }
+
+        .iti__country {
+            padding: 8px 10px !important;
+        }
+
+        .iti__country:hover,
+        .iti__country--highlight {
+            background-color: rgb(55, 65, 81) !important;
+        }
+
+        .iti__dial-code {
+            color: rgb(156, 163, 175) !important;
         }
     </style>
 </head>
@@ -554,16 +608,17 @@ $csrfToken = Auth::getCsrfToken();
                 <!-- WhatsApp Phone Field -->
                 <div>
                     <label for="whatsapp_phone" class="block text-sm font-medium text-gray-300 mb-2">
-                        WhatsApp Number <?php if (!$whatsappVerificationEnabled): ?><span
-                                class="text-gray-500">(optional)</span><?php endif; ?>
+                        WhatsApp Number <span class="text-red-400">*</span>
                     </label>
-                    <div class="flex gap-2">
-                        <input type="tel" id="whatsapp_phone" name="whatsapp_phone" <?= $whatsappVerificationEnabled ? 'required' : '' ?>
-                            class="flex-1 px-4 py-3 bg-dark-800 border <?= isset($errors['whatsapp_phone']) ? 'border-red-500' : 'border-dark-600' ?> rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                            placeholder="+6281234567890" value="<?= htmlspecialchars($formData['whatsapp_phone']) ?>">
+                    <div class="flex gap-2 items-start">
+                        <div class="flex-1">
+                            <input type="tel" id="whatsapp_phone" name="whatsapp_phone" required class="w-full"
+                                value="<?= htmlspecialchars($formData['whatsapp_phone']) ?>">
+                            <input type="hidden" id="whatsapp_phone_full" name="whatsapp_phone_full" value="">
+                        </div>
                         <?php if ($whatsappVerificationEnabled): ?>
                             <button type="button" id="btn-send-wa-code"
-                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+                                class="px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
                                 Send Code
                             </button>
                         <?php endif; ?>
@@ -571,7 +626,7 @@ $csrfToken = Auth::getCsrfToken();
                     <?php if (isset($errors['whatsapp_phone'])): ?>
                         <p class="mt-1 text-sm text-red-400"><?= htmlspecialchars($errors['whatsapp_phone']) ?></p>
                     <?php else: ?>
-                        <p class="mt-1 text-xs text-gray-500">Include country code (e.g., +62 for Indonesia)</p>
+                        <p class="mt-1 text-xs text-gray-500">Select your country and enter your phone number</p>
                     <?php endif; ?>
 
                     <?php if ($whatsappVerificationEnabled): ?>
@@ -818,54 +873,94 @@ $csrfToken = Auth::getCsrfToken();
         });
 
         // WhatsApp Verification
-        (function() {
+        (function () {
             const sendBtn = document.getElementById('btn-send-wa-code');
             const verifyBtn = document.getElementById('btn-verify-wa-code');
             const phoneInput = document.getElementById('whatsapp_phone');
+            const phoneFullInput = document.getElementById('whatsapp_phone_full');
             const otpSection = document.getElementById('wa-otp-section');
             const otpInput = document.getElementById('wa_otp_code');
             const otpStatus = document.getElementById('wa-otp-status');
             const verifiedBadge = document.getElementById('wa-verified-badge');
             const verifiedHidden = document.getElementById('whatsapp_verified');
-            
+
+            if (!phoneInput) return; // No phone input found
+
+            // Initialize intl-tel-input
+            let iti = null;
+            if (typeof intlTelInput !== 'undefined') {
+                iti = intlTelInput(phoneInput, {
+                    initialCountry: "auto",
+                    geoIpLookup: function (callback) {
+                        fetch("https://ipapi.co/json")
+                            .then(res => res.json())
+                            .then(data => callback(data.country_code))
+                            .catch(() => callback("ID")); // Default to Indonesia
+                    },
+                    separateDialCode: true,
+                    utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.5.3/build/js/utils.js",
+                    preferredCountries: ["id", "sa", "my", "sg"],
+                    nationalMode: false,
+                    formatOnDisplay: true
+                });
+            }
+
+            // Update hidden field with full number before form submit
+            const form = document.getElementById('register-form');
+            form?.addEventListener('submit', function () {
+                if (iti) {
+                    phoneFullInput.value = iti.getNumber();
+                    phoneInput.value = iti.getNumber();
+                }
+            });
+
+            // Helper to get full phone number
+            function getFullPhone() {
+                if (iti) {
+                    return iti.getNumber();
+                }
+                return phoneInput.value.trim();
+            }
+
             if (!sendBtn) return; // WhatsApp verification not enabled
-            
+
             let cooldownTimer = null;
             let isVerified = false;
-            
+
             // Send verification code
-            sendBtn.addEventListener('click', async function() {
-                const phone = phoneInput.value.trim();
-                
+            sendBtn.addEventListener('click', async function () {
+                const phone = getFullPhone();
+
                 if (!phone) {
                     showOtpError('Please enter your WhatsApp number');
                     return;
                 }
-                
-                if (!/^\+?[0-9]{10,15}$/.test(phone)) {
-                    showOtpError('Invalid phone format. Include country code.');
+
+                if (iti && !iti.isValidNumber()) {
+                    showOtpError('Please enter a valid phone number');
                     return;
                 }
-                
+
                 sendBtn.disabled = true;
                 sendBtn.textContent = 'Sending...';
-                
+
                 try {
                     const response = await fetch('api/auth/send-whatsapp-code.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ phone })
                     });
-                    
+
                     const data = await response.json();
-                    
+
                     if (data.success) {
                         otpSection.classList.remove('hidden');
                         otpInput.value = '';
                         otpInput.focus();
                         showOtpSuccess('Verification code sent to your WhatsApp');
                         startCooldown(60);
-                        phoneInput.readOnly = true;
+                        phoneInput.disabled = true;
+                        if (iti) iti.setDisabled(true);
                     } else {
                         showOtpError(data.error || 'Failed to send code');
                         sendBtn.disabled = false;
@@ -878,29 +973,29 @@ $csrfToken = Auth::getCsrfToken();
                     sendBtn.textContent = 'Send Code';
                 }
             });
-            
+
             // Verify code
-            verifyBtn?.addEventListener('click', async function() {
+            verifyBtn?.addEventListener('click', async function () {
                 const code = otpInput.value.trim();
-                const phone = phoneInput.value.trim();
-                
+                const phone = getFullPhone();
+
                 if (!code || code.length !== 6) {
                     showOtpError('Please enter the 6-digit code');
                     return;
                 }
-                
+
                 verifyBtn.disabled = true;
                 verifyBtn.textContent = 'Verifying...';
-                
+
                 try {
                     const response = await fetch('api/auth/verify-whatsapp-code.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ code, phone })
                     });
-                    
+
                     const data = await response.json();
-                    
+
                     if (data.success) {
                         isVerified = true;
                         otpSection.classList.add('hidden');
@@ -920,31 +1015,42 @@ $csrfToken = Auth::getCsrfToken();
                     verifyBtn.textContent = 'Verify';
                 }
             });
-            
+
             // Allow only digits in OTP input
-            otpInput?.addEventListener('input', function(e) {
+            otpInput?.addEventListener('input', function (e) {
                 this.value = this.value.replace(/[^0-9]/g, '');
             });
-            
+
             // Reset verification if phone changes
-            phoneInput?.addEventListener('input', function() {
+            phoneInput?.addEventListener('countrychange', function () {
                 if (isVerified) {
-                    isVerified = false;
-                    verifiedBadge.classList.add('hidden');
-                    sendBtn.classList.remove('hidden');
-                    verifiedHidden.value = '0';
-                    phoneInput.readOnly = false;
+                    resetVerification();
                 }
             });
-            
+
+            phoneInput?.addEventListener('input', function () {
+                if (isVerified) {
+                    resetVerification();
+                }
+            });
+
+            function resetVerification() {
+                isVerified = false;
+                verifiedBadge?.classList.add('hidden');
+                sendBtn?.classList.remove('hidden');
+                if (verifiedHidden) verifiedHidden.value = '0';
+                phoneInput.disabled = false;
+                if (iti) iti.setDisabled(false);
+            }
+
             function startCooldown(seconds) {
                 let remaining = seconds;
                 sendBtn.disabled = true;
-                
+
                 cooldownTimer = setInterval(() => {
                     remaining--;
                     sendBtn.textContent = `Resend (${remaining}s)`;
-                    
+
                     if (remaining <= 0) {
                         clearInterval(cooldownTimer);
                         sendBtn.disabled = false;
@@ -952,14 +1058,14 @@ $csrfToken = Auth::getCsrfToken();
                     }
                 }, 1000);
             }
-            
+
             function showOtpError(msg) {
                 if (otpStatus) {
                     otpStatus.textContent = msg;
                     otpStatus.className = 'mt-1 text-xs text-red-400';
                 }
             }
-            
+
             function showOtpSuccess(msg) {
                 if (otpStatus) {
                     otpStatus.textContent = msg;

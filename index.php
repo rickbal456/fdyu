@@ -52,6 +52,13 @@ $logoUrlDark = $siteSettings['logo_url_dark'] ?? '';
 $logoUrlLight = $siteSettings['logo_url_light'] ?? '';
 $faviconUrl = $siteSettings['favicon_url'] ?? '';
 $invitationEnabled = ($siteSettings['invitation_enabled'] ?? '0') === '1';
+$whatsappVerificationEnabled = ($siteSettings['whatsapp_verification_enabled'] ?? '0') === '1';
+
+// Redirect to WhatsApp verification if enabled and user doesn't have a verified number
+if ($whatsappVerificationEnabled && empty($user['whatsapp_phone'])) {
+    header('Location: verify-whatsapp.php');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" class="dark">

@@ -26,9 +26,10 @@ if (Auth::check()) {
 $googleEnabled = false;
 $googleClientId = '';
 $googleClientSecret = '';
+$whatsappVerificationEnabled = false;
 
 try {
-    $rows = Database::fetchAll("SELECT setting_key, setting_value FROM site_settings WHERE setting_key IN ('google_auth_enabled', 'google_client_id', 'google_client_secret')");
+    $rows = Database::fetchAll("SELECT setting_key, setting_value FROM site_settings WHERE setting_key IN ('google_auth_enabled', 'google_client_id', 'google_client_secret', 'whatsapp_verification_enabled')");
     foreach ($rows as $row) {
         if ($row['setting_key'] === 'google_auth_enabled')
             $googleEnabled = $row['setting_value'] === '1';
@@ -36,6 +37,8 @@ try {
             $googleClientId = $row['setting_value'] ?? '';
         if ($row['setting_key'] === 'google_client_secret')
             $googleClientSecret = $row['setting_value'] ?? '';
+        if ($row['setting_key'] === 'whatsapp_verification_enabled')
+            $whatsappVerificationEnabled = $row['setting_value'] === '1';
     }
 } catch (Exception $e) {
     error_log('Google OAuth settings error: ' . $e->getMessage());
@@ -181,6 +184,12 @@ if ($existingUser) {
     // Clear any failed login attempts
     Auth::clearFailedLogins($email);
 
+    // Check if WhatsApp verification is required and user doesn't have a verified number
+    if ($whatsappVerificationEnabled && empty($existingUser['whatsapp_phone'])) {
+        header('Location: ../../verify-whatsapp.php');
+        exit;
+    }
+
     header('Location: ../../');
     exit;
 } else {
@@ -292,6 +301,12 @@ if ($existingUser) {
 
     // Store session in database
     Auth::storeSession($userId);
+
+    // New users always need WhatsApp verification if enabled (they don't have a number yet)
+    if ($whatsappVerificationEnabled) {
+        header('Location: ../../verify-whatsapp.php');
+        exit;
+    }
 
     header('Location: ../../');
     exit;
