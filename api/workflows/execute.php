@@ -20,6 +20,10 @@ header('Content-Type: application/json');
 requireMethod('POST');
 $user = requireAuth();
 
+// Detect execution source: api or manual
+// API calls use X-API-Key header or api_key query parameter
+$executionSource = (!empty($_SERVER['HTTP_X_API_KEY']) || !empty($_GET['api_key'])) ? 'api' : 'manual';
+
 $input = getJsonInput();
 $workflowId = isset($input['workflowId']) ? (int) $input['workflowId'] : null;
 $workflowData = $input['workflowData'] ?? null;
@@ -115,11 +119,17 @@ try {
     for ($i = 0; $i < $repeatCount; $i++) {
         $isFirst = ($i === 0);
 
+        // Store execution metadata including source
+        $inputData = [
+            'inputs' => $input['inputs'] ?? [],
+            '_source' => $executionSource  // 'manual' or 'api'
+        ];
+
         $executionId = Database::insert('workflow_executions', [
             'workflow_id' => $workflowId ?: null,  // Use NULL for unsaved workflows
             'user_id' => $user['id'],
             'status' => 'pending',  // All start as pending, first one will be updated to running
-            'input_data' => json_encode($input['inputs'] ?? []),
+            'input_data' => json_encode($inputData),
             'repeat_count' => 1,  // Each execution is a single iteration now
             'current_iteration' => 1,
             'iteration_outputs' => json_encode([]),

@@ -21,13 +21,21 @@
 
             this.currentWorkflowId = null;
             this.historyCache = { current: [], completed: [], aborted: [] };
-            this.galleryData = [];
+            this.galleryData = { manual: [], api: [] };  // Separate data for each source
             this.isLoadingHistory = false;
 
             // Scroll pagination state
             this.historyPage = { current: 1, completed: 1, aborted: 1 };
             this.hasMoreHistory = { current: false, completed: false, aborted: false };
             this.isLoadingMore = false;
+
+            // Gallery pagination state - separate for each tab
+            this.galleryPage = { manual: 1, api: 1 };
+            this.galleryLimit = 20;
+            this.galleryTotal = { manual: 0, api: 0 };
+            this.hasMoreGallery = { manual: false, api: false };
+            this.isLoadingGallery = false;
+            this.currentGalleryTab = 'manual';  // Default tab
 
             this.init();
         }
@@ -49,6 +57,13 @@
             });
 
             // Share button - handled by aflow-share plugin
+
+            // Gallery tab switching
+            document.querySelectorAll('.gallery-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    this.switchGalleryTab(tab.dataset.tab);
+                });
+            });
 
             // Close buttons
             document.getElementById('btn-close-gallery')?.addEventListener('click', () => {
@@ -169,9 +184,12 @@
 
         // ========== Gallery ==========
 
-        openGallery() {
+        async openGallery() {
             this.closeHistory();
             this.galleryPanel?.classList.add('open');
+
+            // Load fresh data from database for current tab
+            await this.loadGalleryFromDatabase(this.currentGalleryTab, true);
             this.renderGallery();
         }
 
@@ -179,10 +197,35 @@
             this.galleryPanel?.classList.remove('open');
         }
 
+        async switchGalleryTab(tab) {
+            if (tab === this.currentGalleryTab) return;
+
+            this.currentGalleryTab = tab;
+
+            // Update tab UI
+            document.querySelectorAll('.gallery-tab').forEach(t => {
+                const isActive = t.dataset.tab === tab;
+                t.classList.toggle('text-dark-50', isActive);
+                t.classList.toggle('border-primary-500', isActive);
+                t.classList.toggle('text-dark-400', !isActive);
+                t.classList.toggle('border-transparent', !isActive);
+            });
+
+            // Load data for this tab if not cached
+            if (!this.galleryData[tab] || this.galleryData[tab].length === 0) {
+                await this.loadGalleryFromDatabase(tab, true);
+            }
+
+            this.renderGallery();
+        }
+
         async addToGallery(item) {
             try {
+                const source = item.source || 'manual';
+                const tabData = this.galleryData[source] || [];
+
                 // Skip duplicates (check if this URL was already added)
-                const existingItem = this.galleryData.find(g => g.url === item.url);
+                const existingItem = tabData.find(g => g.url === item.url);
                 if (existingItem) {
                     return; // Already in gallery
                 }
@@ -193,7 +236,8 @@
                     url: item.url,
                     nodeId: item.nodeId,
                     nodeType: item.nodeType,
-                    workflowId: this.currentWorkflowId
+                    workflowId: this.currentWorkflowId,
+                    source: source
                 });
 
                 if (response.success) {
@@ -204,18 +248,19 @@
                         url: item.url,
                         nodeId: item.nodeId,
                         nodeType: item.nodeType,
+                        source: source,
                         created_at: new Date().toISOString(),
                         workflow_id: this.currentWorkflowId
                     };
-                    this.galleryData.unshift(galleryItem);
+                    this.galleryData[source].unshift(galleryItem);
 
                     // Limit local cache size
-                    if (this.galleryData.length > 50) {
-                        this.galleryData = this.galleryData.slice(0, 50);
+                    if (this.galleryData[source].length > 50) {
+                        this.galleryData[source] = this.galleryData[source].slice(0, 50);
                     }
 
-                    // Update if panel is open
-                    if (this.galleryPanel?.classList.contains('open')) {
+                    // Update if panel is open and on the right tab
+                    if (this.galleryPanel?.classList.contains('open') && this.currentGalleryTab === source) {
                         this.renderGallery();
                     }
                 }
@@ -227,17 +272,23 @@
         renderGallery() {
             const grid = document.getElementById('gallery-grid');
             const empty = document.getElementById('gallery-empty');
+            const tab = this.currentGalleryTab;
 
             if (!grid) return;
 
+            // Get items for current tab
+            const tabData = this.galleryData[tab] || [];
+
             // Filter by current workflow (API returns workflow_id, local cache uses workflow_id too)
-            const items = this.galleryData.filter(item =>
+            const items = tabData.filter(item =>
                 !this.currentWorkflowId || item.workflow_id === this.currentWorkflowId || item.workflowId === this.currentWorkflowId
             );
 
             if (items.length === 0) {
                 grid.innerHTML = '';
                 empty?.classList.remove('hidden');
+                // Remove pagination info if exists
+                document.getElementById('gallery-pagination')?.remove();
                 return;
             }
 
@@ -264,10 +315,39 @@
                 `;
             }).join('');
 
+            // Add pagination info and Load More button after grid
+            let paginationEl = document.getElementById('gallery-pagination');
+            if (!paginationEl) {
+                paginationEl = document.createElement('div');
+                paginationEl.id = 'gallery-pagination';
+                paginationEl.className = 'text-center py-4 space-y-2';
+                grid.parentNode.appendChild(paginationEl);
+            }
+
+            const showingCount = items.length;
+            const totalCount = this.galleryTotal[tab] || items.length;
+            const hasMore = this.hasMoreGallery[tab];
+
+            paginationEl.innerHTML = `
+                <p class="text-xs text-dark-500">Showing ${showingCount} of ${totalCount} items</p>
+                ${hasMore ? `
+                    <button id="btn-load-more-gallery" class="btn-secondary text-sm px-4 py-2">
+                        <i data-lucide="plus" class="w-4 h-4 mr-1 inline"></i>
+                        Load More
+                    </button>
+                ` : ''}
+            `;
+
             // Initialize icons
             if (window.lucide) {
                 lucide.createIcons({ root: grid });
+                lucide.createIcons({ root: paginationEl });
             }
+
+            // Add Load More button event listener
+            document.getElementById('btn-load-more-gallery')?.addEventListener('click', () => {
+                this.loadMoreGallery();
+            });
 
             // Add event listeners
             grid.querySelectorAll('.gallery-item-btn').forEach(btn => {
@@ -275,7 +355,8 @@
                     e.stopPropagation();
                     const itemEl = btn.closest('.gallery-item');
                     const itemId = itemEl?.dataset.itemId;
-                    const item = this.galleryData.find(i => String(i.id) === String(itemId));
+                    const tabData = this.galleryData[this.currentGalleryTab] || [];
+                    const item = tabData.find(i => String(i.id) === String(itemId));
 
                     if (btn.dataset.action === 'view' && item) {
                         window.open(item.url, '_blank');
@@ -704,19 +785,50 @@
             // This method is kept for backward compatibility
         }
 
-        async loadGalleryFromDatabase() {
+        async loadGalleryFromDatabase(tab = 'manual', reset = true) {
+            if (this.isLoadingGallery) return;
+            this.isLoadingGallery = true;
+
+            if (reset) {
+                this.galleryPage[tab] = 1;
+                this.galleryData[tab] = [];
+            }
+
+            const offset = (this.galleryPage[tab] - 1) * this.galleryLimit;
+
             try {
                 const response = await API.getGallery({
                     workflowId: this.currentWorkflowId,
-                    limit: 50
+                    source: tab,
+                    limit: this.galleryLimit,
+                    offset: offset
                 });
                 if (response.success) {
-                    this.galleryData = response.items || [];
+                    if (reset) {
+                        this.galleryData[tab] = response.items || [];
+                    } else {
+                        this.galleryData[tab] = [...this.galleryData[tab], ...(response.items || [])];
+                    }
+                    this.galleryTotal[tab] = response.total || 0;
+                    this.hasMoreGallery[tab] = this.galleryData[tab].length < this.galleryTotal[tab];
                 }
             } catch (error) {
                 console.error('Failed to load gallery from database:', error);
-                this.galleryData = [];
+                if (reset) {
+                    this.galleryData[tab] = [];
+                }
+            } finally {
+                this.isLoadingGallery = false;
             }
+        }
+
+        async loadMoreGallery() {
+            const tab = this.currentGalleryTab;
+            if (this.isLoadingGallery || !this.hasMoreGallery[tab]) return;
+
+            this.galleryPage[tab]++;
+            await this.loadGalleryFromDatabase(tab, false);
+            this.renderGallery();
         }
 
         loadGalleryFromStorage() {
@@ -724,11 +836,11 @@
             const isViewerMode = document.body.classList.contains('read-only-mode') ||
                 window.location.pathname.includes('view');
             if (isViewerMode) {
-                this.galleryData = [];
+                this.galleryData = { manual: [], api: [] };
                 return;
             }
             // Deprecated - use loadGalleryFromDatabase instead
-            this.loadGalleryFromDatabase();
+            this.loadGalleryFromDatabase(this.currentGalleryTab);
         }
     }
 

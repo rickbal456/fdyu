@@ -19,7 +19,8 @@ header('Content-Type: application/json');
 requireMethod('GET');
 $user = requireAuth();
 
-$executionId = (int) ($_GET['id'] ?? 0);
+// Accept both 'id' and 'executionId' query parameters
+$executionId = (int) ($_GET['id'] ?? $_GET['executionId'] ?? 0);
 
 if (!$executionId) {
     errorResponse('Execution ID is required');

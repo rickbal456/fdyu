@@ -455,6 +455,7 @@ class APIClient {
     async getGallery(options = {}) {
         const params = new URLSearchParams();
         if (options.workflowId) params.append('workflow_id', options.workflowId);
+        if (options.source) params.append('source', options.source);
         if (options.limit) params.append('limit', options.limit);
         if (options.offset) params.append('offset', options.offset);
 

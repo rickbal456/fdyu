@@ -503,12 +503,14 @@ CREATE TABLE IF NOT EXISTS user_gallery (
     url VARCHAR(512) NOT NULL,
     node_id VARCHAR(50) NULL,
     node_type VARCHAR(50) NULL,
+    source ENUM('manual', 'api') DEFAULT 'manual',
     metadata JSON NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE SET NULL,
     INDEX idx_user_id (user_id),
-    INDEX idx_workflow_id (workflow_id)
+    INDEX idx_workflow_id (workflow_id),
+    INDEX idx_source (source)
 ) ENGINE=InnoDB;
 
 -- ============================================
@@ -535,3 +537,7 @@ CREATE TABLE IF NOT EXISTS user_gallery (
 --
 -- For User Settings Migration:
 -- Run the CREATE TABLE statements for: user_settings, workflow_autosaves, user_gallery
+--
+-- For Gallery Source Column (Manual vs API):
+-- ALTER TABLE user_gallery ADD COLUMN source ENUM('manual', 'api') DEFAULT 'manual' AFTER node_type;
+-- ALTER TABLE user_gallery ADD INDEX idx_source (source);

@@ -493,6 +493,21 @@ function queueNextTask(int $executionId): void
  */
 function finalizeExecution(int $executionId): void
 {
+    // Get execution details including source
+    $execution = Database::fetchOne(
+        "SELECT user_id, workflow_id, input_data FROM workflow_executions WHERE id = ?",
+        [$executionId]
+    );
+
+    if (!$execution) {
+        error_log("[Webhook] Cannot finalize - execution not found: $executionId");
+        return;
+    }
+
+    // Get execution source from input_data
+    $inputData = json_decode($execution['input_data'] ?? '{}', true);
+    $source = $inputData['_source'] ?? 'manual';
+
     // Get all task results
     $tasks = Database::fetchAll(
         "SELECT * FROM node_tasks WHERE execution_id = ? ORDER BY id ASC",
@@ -517,6 +532,41 @@ function finalizeExecution(int $executionId): void
                 'node_type' => $task['node_type'],
                 'url' => $task['result_url']
             ];
+
+            // Add to gallery if completed successfully
+            if ($task['status'] === 'completed') {
+                try {
+                    // Determine media type based on URL
+                    $url = $task['result_url'];
+                    $itemType = 'image'; // default
+                    if (preg_match('/\.(mp4|webm|mov|avi)$/i', $url)) {
+                        $itemType = 'video';
+                    } elseif (preg_match('/\.(mp3|wav|ogg|m4a)$/i', $url)) {
+                        $itemType = 'audio';
+                    }
+
+                    // Check for duplicates
+                    $existing = Database::fetchOne(
+                        "SELECT id FROM user_gallery WHERE user_id = ? AND url = ?",
+                        [$execution['user_id'], $url]
+                    );
+
+                    if (!$existing) {
+                        Database::insert('user_gallery', [
+                            'user_id' => $execution['user_id'],
+                            'workflow_id' => $execution['workflow_id'],
+                            'item_type' => $itemType,
+                            'url' => $url,
+                            'node_id' => $task['node_id'],
+                            'node_type' => $task['node_type'],
+                            'source' => $source,
+                            'metadata' => json_encode(['execution_id' => $executionId])
+                        ]);
+                    }
+                } catch (Exception $galleryError) {
+                    error_log("[Webhook] Failed to add to gallery: " . $galleryError->getMessage());
+                }
+            }
         }
     }
 

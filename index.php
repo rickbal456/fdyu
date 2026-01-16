@@ -702,6 +702,22 @@ $invitationEnabled = ($siteSettings['invitation_enabled'] ?? '0') === '1';
                     </button>
                 </div>
 
+                <!-- Gallery Tabs -->
+                <div class="flex border-b border-dark-700">
+                    <button
+                        class="gallery-tab flex-1 py-2 px-4 text-sm font-medium text-dark-50 border-b-2 border-primary-500"
+                        data-tab="manual">
+                        <i data-lucide="mouse-pointer-click" class="w-4 h-4 inline mr-1"></i>
+                        Manual
+                    </button>
+                    <button
+                        class="gallery-tab flex-1 py-2 px-4 text-sm font-medium text-dark-400 hover:text-dark-200 border-b-2 border-transparent"
+                        data-tab="api">
+                        <i data-lucide="code" class="w-4 h-4 inline mr-1"></i>
+                        API
+                    </button>
+                </div>
+
                 <!-- Gallery Content -->
                 <div id="gallery-content" class="flex-1 overflow-y-auto custom-scrollbar p-4">
                     <div id="gallery-grid" class="grid grid-cols-2 gap-3">

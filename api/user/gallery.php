@@ -44,6 +44,7 @@ switch ($method) {
 function handleGet(array $user): void
 {
     $workflowId = isset($_GET['workflow_id']) ? (int) $_GET['workflow_id'] : null;
+    $source = isset($_GET['source']) ? $_GET['source'] : null; // 'manual' or 'api'
     $limit = min(100, max(1, (int) ($_GET['limit'] ?? 50)));
     $offset = max(0, (int) ($_GET['offset'] ?? 0));
 
@@ -56,8 +57,14 @@ function handleGet(array $user): void
             $params['workflow_id'] = $workflowId;
         }
 
+        // Filter by source if specified
+        if ($source && in_array($source, ['manual', 'api'])) {
+            $whereClause .= ' AND source = :source';
+            $params['source'] = $source;
+        }
+
         $items = Database::fetchAll(
-            "SELECT id, workflow_id, item_type as type, url, node_id, node_type, metadata, created_at
+            "SELECT id, workflow_id, item_type as type, url, node_id, node_type, source, metadata, created_at
              FROM user_gallery 
              WHERE {$whereClause}
              ORDER BY created_at DESC
@@ -69,6 +76,7 @@ function handleGet(array $user): void
         foreach ($items as &$item) {
             $item['id'] = (int) $item['id'];
             $item['workflow_id'] = $item['workflow_id'] ? (int) $item['workflow_id'] : null;
+            $item['source'] = $item['source'] ?? 'manual';
             $item['metadata'] = $item['metadata'] ? json_decode($item['metadata'], true) : null;
         }
 
@@ -81,7 +89,8 @@ function handleGet(array $user): void
             'items' => $items,
             'total' => (int) $total,
             'limit' => $limit,
-            'offset' => $offset
+            'offset' => $offset,
+            'source' => $source
         ]);
 
     } catch (Exception $e) {
@@ -120,6 +129,11 @@ function handlePost(array $user): void
             }
         }
 
+        // Determine source (manual or api)
+        $source = isset($input['source']) && in_array($input['source'], ['manual', 'api'])
+            ? $input['source']
+            : 'manual';
+
         $id = Database::insert('user_gallery', [
             'user_id' => $user['id'],
             'workflow_id' => $workflowId,
@@ -127,6 +141,7 @@ function handlePost(array $user): void
             'url' => sanitizeString($input['url'], 512),
             'node_id' => isset($input['nodeId']) ? sanitizeString($input['nodeId'], 50) : null,
             'node_type' => isset($input['nodeType']) ? sanitizeString($input['nodeType'], 50) : null,
+            'source' => $source,
             'metadata' => isset($input['metadata']) ? json_encode($input['metadata']) : null
         ]);
 
