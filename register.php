@@ -456,6 +456,10 @@ $csrfToken = Auth::getCsrfToken();
         .iti__selected-dial-code {
             color: rgb(209 213 219 / var(--tw-text-opacity, 1)) !important;
         }
+
+        .h-captcha iframe {
+            width: 100% !important;
+        }
     </style>
 </head>
 
