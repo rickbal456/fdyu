@@ -510,6 +510,13 @@ class Editor {
             });
         });
 
+        // Keyboard Shortcuts
+        document.getElementById('menu-shortcuts')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            userDropdown?.classList.add('hidden');
+            Modals.open('modal-shortcuts');
+        });
+
         // Settings
         document.getElementById('menu-settings')?.addEventListener('click', (e) => {
             e.preventDefault();

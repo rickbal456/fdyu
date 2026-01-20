@@ -159,6 +159,7 @@
         "my_workflows": "My Workflows",
         "api_keys": "API Keys",
         "invite_friends": "Invite Friends",
+        "keyboard_shortcuts": "Keyboard Shortcuts",
         "settings": "Settings",
         "administration": "Administration",
         "language": "Language",
@@ -552,5 +553,27 @@
         "node_status": "Node Status",
         "input": "Input",
         "output": "Output"
+    },
+    "shortcuts": {
+        "title": "Keyboard Shortcuts",
+        "workflow": "Workflow",
+        "editing": "Editing",
+        "navigation": "Navigation",
+        "canvas": "Canvas",
+        "new_workflow": "New Workflow",
+        "open_workflow": "Open Workflow",
+        "save_workflow": "Save Workflow",
+        "save_as": "Save As",
+        "export_workflow": "Export Workflow",
+        "run_workflow": "Run Workflow",
+        "undo": "Undo",
+        "redo": "Redo",
+        "delete_node": "Delete Selected Node",
+        "toggle_properties": "Toggle Properties Panel",
+        "cycle_nodes_forward": "Cycle Through Nodes (Forward)",
+        "cycle_nodes_backward": "Cycle Through Nodes (Backward)",
+        "pan_canvas": "Pan Canvas",
+        "zoom": "Zoom In/Out",
+        "select_multiple": "Select Multiple Nodes"
     }
 }

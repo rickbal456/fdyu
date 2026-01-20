@@ -3638,3 +3638,33 @@ body {
 [dir="rtl"] #temp-connection {
     direction: ltr;
 }
+
+/* ============================================
+   Keyboard Shortcut Keys (kbd)
+   ============================================ */
+.kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    padding: 0.25rem 0.5rem;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--color-dark-200);
+    background-color: var(--color-dark-800);
+    border: 1px solid var(--color-dark-600);
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 0 0 var(--color-dark-700), 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+html.light-mode .kbd {
+    color: var(--color-dark-100);
+    background-color: var(--color-dark-900);
+    border-color: var(--color-dark-700);
+    box-shadow: 0 1px 0 0 var(--color-dark-800), 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
