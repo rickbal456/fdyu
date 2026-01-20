@@ -603,8 +603,8 @@ class Editor {
         });
 
         // Save settings button
-        document.getElementById('btn-save-settings')?.addEventListener('click', () => {
-            this.saveSettingsFromModal();
+        document.getElementById('btn-save-settings')?.addEventListener('click', async () => {
+            await this.saveSettingsFromModal();
             Modals.closeActive();
             Toast.success('Settings saved');
         });
@@ -1976,7 +1976,8 @@ class Editor {
     /**
      * Save settings from modal
      */
-    saveSettingsFromModal() {
+    async saveSettingsFromModal() {
+        // Save general editor settings
         this.settings.autoSave = parseInt(document.getElementById('setting-autosave').value) || 0;
         this.settings.confirmDelete = document.getElementById('setting-confirm-delete').checked;
         this.settings.snapToGrid = document.getElementById('setting-snap-grid').checked;
@@ -1985,6 +1986,56 @@ class Editor {
 
         this.saveSettings();
         this.applySettings();
+
+        // Save profile data if changed
+        const username = document.getElementById('profile-username')?.value?.trim();
+        const email = document.getElementById('profile-email')?.value?.trim();
+        const currentPassword = document.getElementById('profile-current-password')?.value;
+        const newPassword = document.getElementById('profile-new-password')?.value;
+
+        try {
+            // Update profile (username/email) if provided
+            if (username || email) {
+                const profileData = {};
+                if (username) profileData.username = username;
+                if (email) profileData.email = email;
+
+                const response = await fetch(`${window.AIKAFLOW.apiUrl}/user/settings.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(profileData)
+                });
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to update profile');
+                }
+            }
+
+            // Change password if provided
+            if (currentPassword && newPassword) {
+                const pwResponse = await fetch(`${window.AIKAFLOW.apiUrl}/user/change-password.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+
+                const pwResult = await pwResponse.json();
+                if (!pwResult.success) {
+                    throw new Error(pwResult.error || 'Failed to change password');
+                }
+
+                // Clear password fields
+                document.getElementById('profile-current-password').value = '';
+                document.getElementById('profile-new-password').value = '';
+            }
+        } catch (error) {
+            console.error('Profile update error:', error);
+            Toast.error('Error', error.message || 'Failed to update profile');
+        }
     }
 
     /**
