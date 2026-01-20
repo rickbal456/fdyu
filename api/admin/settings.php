@@ -99,6 +99,7 @@ switch ($method) {
             'qris_string',
             // Workflow Settings
             'max_repeat_count',
+            'content_retention_days',
             // Invitation System
             'invitation_enabled',
             'invitation_referrer_credits',
