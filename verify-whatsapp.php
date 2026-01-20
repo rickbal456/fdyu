@@ -386,19 +386,46 @@ $csrfToken = Auth::getCsrfToken();
                 let cooldownTimer = null;
                 let isVerified = false;
 
+                function updateStatus(element, msg, type) {
+                    if (!element) return;
+                    element.textContent = msg;
+                    if (type === 'error') {
+                        element.classList.remove('text-green-400', 'text-gray-500');
+                        element.classList.add('text-red-400');
+                    } else if (type === 'success') {
+                        element.classList.remove('text-red-400', 'text-gray-500');
+                        element.classList.add('text-green-400');
+                    } else {
+                        element.classList.remove('text-red-400', 'text-green-400');
+                        element.classList.add('text-gray-500');
+                    }
+                }
+
+                function showPhoneError(msg) {
+                    updateStatus(phoneHint, msg, 'error');
+                }
+
+                function showOtpStatus(msg, type = 'neutral') {
+                    updateStatus(otpStatus, msg, type);
+                }
+
                 // Send verification code
                 sendBtn.addEventListener('click', async function () {
                     const phone = getFullPhone();
 
                     if (!phone) {
-                        showError('Please enter your WhatsApp number');
+                        showPhoneError('Please enter your WhatsApp number');
                         return;
                     }
 
                     if (iti && !iti.isValidNumber()) {
-                        showError('Please enter a valid phone number');
+                        showPhoneError('Please enter a valid phone number');
                         return;
                     }
+
+                    // Reset errors
+                    updateStatus(phoneHint, 'Select your country and enter your phone number', 'neutral');
+                    updateStatus(otpStatus, '', 'neutral');
 
                     sendBtn.disabled = true;
                     sendBtn.textContent = 'Sending...';
@@ -413,21 +440,31 @@ $csrfToken = Auth::getCsrfToken();
                         const data = await response.json();
 
                         if (data.success) {
-                            otpSection.classList.remove('hidden');
-                            otpInput.value = '';
-                            otpInput.focus();
-                            showSuccess('Verification code sent to your WhatsApp');
+                            if (otpSection) otpSection.classList.remove('hidden');
+                            if (otpInput) {
+                                otpInput.value = '';
+                                otpInput.focus();
+                            }
+
+                            showOtpStatus('Verification code sent to your WhatsApp', 'success');
                             startCooldown(60);
-                            phoneInput.disabled = true;
-                            if (iti) iti.setDisabled(true);
+
+                            if (phoneInput) phoneInput.disabled = true;
+
+                            try {
+                                if (iti) iti.setDisabled(true);
+                            } catch (e) {
+                                console.warn('Could not disable phone input:', e);
+                            }
                         } else {
-                            showError(data.error || 'Failed to send code');
+                            showPhoneError(data.error || 'Failed to send code');
                             sendBtn.disabled = false;
                             sendBtn.textContent = 'Send Code';
                         }
                     } catch (error) {
                         console.error('Send code error:', error);
-                        showError('Failed to send code. Please try again.');
+                        // Determine if it was a network error or script error
+                        showPhoneError('Failed to send code. Please try again.');
                         sendBtn.disabled = false;
                         sendBtn.textContent = 'Send Code';
                     }
@@ -435,11 +472,11 @@ $csrfToken = Auth::getCsrfToken();
 
                 // Verify code
                 verifyBtn.addEventListener('click', async function () {
-                    const code = otpInput.value.trim();
+                    const code = otpInput ? otpInput.value.trim() : '';
                     const phone = getFullPhone();
 
                     if (!code || code.length !== 6) {
-                        showError('Please enter the 6-digit code');
+                        showOtpStatus('Please enter the 6-digit code', 'error');
                         return;
                     }
 
@@ -457,29 +494,34 @@ $csrfToken = Auth::getCsrfToken();
 
                         if (data.success) {
                             isVerified = true;
-                            otpSection.classList.add('hidden');
-                            verifiedBadge.classList.remove('hidden');
-                            sendBtn.classList.add('hidden');
-                            verifiedHidden.value = '1';
-                            continueBtn.disabled = false;
-                            showSuccess('WhatsApp number verified! Click Continue to proceed.');
+                            if (otpSection) otpSection.classList.add('hidden');
+                            if (verifiedBadge) verifiedBadge.classList.remove('hidden');
+                            if (sendBtn) sendBtn.classList.add('hidden');
+                            if (verifiedHidden) verifiedHidden.value = '1';
+                            if (continueBtn) continueBtn.disabled = false;
+
+                            showOtpStatus('WhatsApp number verified!', 'success');
+                            // Clear phone hint as it's verified
+                            if (phoneHint) phoneHint.textContent = '';
                         } else {
-                            showError(data.error || 'Invalid code');
+                            showOtpStatus(data.error || 'Invalid code', 'error');
                             verifyBtn.disabled = false;
                             verifyBtn.textContent = 'Verify';
                         }
                     } catch (error) {
                         console.error('Verify code error:', error);
-                        showError('Verification failed. Please try again.');
+                        showOtpStatus('Verification failed. Please try again.', 'error');
                         verifyBtn.disabled = false;
                         verifyBtn.textContent = 'Verify';
                     }
                 });
 
-                // Only digits in OTP
-                otpInput.addEventListener('input', function () {
-                    this.value = this.value.replace(/[^0-9]/g, '');
-                });
+                // Rest of initialization...
+                if (otpInput) {
+                    otpInput.addEventListener('input', function () {
+                        this.value = this.value.replace(/[^0-9]/g, '');
+                    });
+                }
 
                 // Reset on phone change
                 phoneInput?.addEventListener('countrychange', resetVerification);
