@@ -1847,6 +1847,10 @@
                 document.getElementById('admin-credit-expiry-days').value = result.settings.credit_default_expiry_days || '365';
                 document.getElementById('admin-qris-string').value = result.settings.qris_string || '';
 
+                // Workflow Settings
+                document.getElementById('admin-max-repeat-count').value = result.settings.max_repeat_count || '100';
+                document.getElementById('admin-content-retention-days').value = result.settings.content_retention_days || '0';
+
                 // PayPal settings
                 const paypalEnabled = document.getElementById('admin-paypal-enabled');
                 if (paypalEnabled) paypalEnabled.checked = result.settings.paypal_enabled === '1';
@@ -1919,6 +1923,7 @@
                     qris_string: document.getElementById('admin-qris-string')?.value,
                     // Workflow Settings
                     max_repeat_count: document.getElementById('admin-max-repeat-count')?.value,
+                    content_retention_days: document.getElementById('admin-content-retention-days')?.value,
                     // PayPal Settings
                     paypal_enabled: document.getElementById('admin-paypal-enabled')?.checked ? '1' : '0',
                     paypal_sandbox: document.getElementById('admin-paypal-sandbox')?.checked ? '1' : '0',

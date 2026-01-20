@@ -401,7 +401,9 @@ INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES
 ('paypal_sandbox', '1'),
 ('paypal_client_id', NULL),
 ('paypal_secret_key', NULL),
-('paypal_usd_rate', NULL);
+('paypal_usd_rate', NULL),
+-- Content Retention (0 = disabled, files never expire)
+('content_retention_days', '0');
 
 -- Bank accounts for payment
 CREATE TABLE IF NOT EXISTS payment_bank_accounts (
