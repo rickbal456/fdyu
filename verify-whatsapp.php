@@ -71,7 +71,8 @@ $error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $phone = trim($_POST['whatsapp_phone'] ?? '');
+    // Use whatsapp_phone_full (hidden field) since the main input is disabled after sending code
+    $phone = trim($_POST['whatsapp_phone_full'] ?? $_POST['whatsapp_phone'] ?? '');
 
     if (empty($phone)) {
         $error = 'WhatsApp number is required.';
