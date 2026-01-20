@@ -514,7 +514,7 @@ class Editor {
         document.getElementById('menu-shortcuts')?.addEventListener('click', (e) => {
             e.preventDefault();
             userDropdown?.classList.add('hidden');
-            Modals.open('modal-shortcuts');
+            window.Modals.open('modal-shortcuts');
         });
 
         // Settings

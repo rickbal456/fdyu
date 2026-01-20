@@ -159,6 +159,7 @@
         "my_workflows": "Workflow Saya",
         "api_keys": "Kunci API",
         "invite_friends": "Undang Teman",
+        "keyboard_shortcuts": "Pintasan Keyboard",
         "settings": "Pengaturan",
         "administration": "Administrasi",
         "language": "Bahasa",
@@ -552,5 +553,27 @@
         "node_status": "Status Node",
         "input": "Input",
         "output": "Output"
+    },
+    "shortcuts": {
+        "title": "Pintasan Keyboard",
+        "workflow": "Workflow",
+        "editing": "Pengeditan",
+        "navigation": "Navigasi",
+        "canvas": "Kanvas",
+        "new_workflow": "Workflow Baru",
+        "open_workflow": "Buka Workflow",
+        "save_workflow": "Simpan Workflow",
+        "save_as": "Simpan Sebagai",
+        "export_workflow": "Ekspor Workflow",
+        "run_workflow": "Jalankan Workflow",
+        "undo": "Urungkan",
+        "redo": "Ulangi",
+        "delete_node": "Hapus Node Terpilih",
+        "toggle_properties": "Tampilkan/Sembunyikan Panel Properti",
+        "cycle_nodes_forward": "Siklus Melalui Node (Maju)",
+        "cycle_nodes_backward": "Siklus Melalui Node (Mundur)",
+        "pan_canvas": "Geser Kanvas",
+        "zoom": "Perbesar/Perkecil",
+        "select_multiple": "Pilih Beberapa Node"
     }
 }

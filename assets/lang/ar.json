@@ -159,6 +159,7 @@
         "my_workflows": "سير العمل الخاص بي",
         "api_keys": "مفاتيح API",
         "invite_friends": "دعوة الأصدقاء",
+        "keyboard_shortcuts": "اختصارات لوحة المفاتيح",
         "settings": "الإعدادات",
         "administration": "الإدارة",
         "language": "اللغة",
@@ -552,5 +553,27 @@
         "node_status": "حالة العقدة",
         "input": "الإدخال",
         "output": "الإخراج"
+    },
+    "shortcuts": {
+        "title": "اختصارات لوحة المفاتيح",
+        "workflow": "سير العمل",
+        "editing": "التحرير",
+        "navigation": "التنقل",
+        "canvas": "اللوحة",
+        "new_workflow": "سير عمل جديد",
+        "open_workflow": "فتح سير العمل",
+        "save_workflow": "حفظ سير العمل",
+        "save_as": "حفظ باسم",
+        "export_workflow": "تصدير سير العمل",
+        "run_workflow": "تشغيل سير العمل",
+        "undo": "تراجع",
+        "redo": "إعادة",
+        "delete_node": "حذف العقدة المحددة",
+        "toggle_properties": "إظهار/إخفاء لوحة الخصائص",
+        "cycle_nodes_forward": "التنقل بين العقد (للأمام)",
+        "cycle_nodes_backward": "التنقل بين العقد (للخلف)",
+        "pan_canvas": "تحريك اللوحة",
+        "zoom": "تكبير/تصغير",
+        "select_multiple": "تحديد عدة عقد"
     }
 }
