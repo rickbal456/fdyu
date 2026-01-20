@@ -55,7 +55,7 @@ $invitationEnabled = ($siteSettings['invitation_enabled'] ?? '0') === '1';
 $whatsappVerificationEnabled = ($siteSettings['whatsapp_verification_enabled'] ?? '0') === '1';
 
 // Redirect to WhatsApp verification if enabled and user doesn't have a verified number
-if ($whatsappVerificationEnabled && empty($user['whatsapp_phone'])) {
+if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['whatsapp_phone'] === '')) {
     header('Location: verify-whatsapp.php');
     exit;
 }

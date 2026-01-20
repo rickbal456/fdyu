@@ -185,7 +185,7 @@ if ($existingUser) {
     Auth::clearFailedLogins($email);
 
     // Check if WhatsApp verification is required and user doesn't have a verified number
-    if ($whatsappVerificationEnabled && empty($existingUser['whatsapp_phone'])) {
+    if ($whatsappVerificationEnabled && ($existingUser['whatsapp_phone'] === null || $existingUser['whatsapp_phone'] === '')) {
         header('Location: ../../verify-whatsapp.php');
         exit;
     }
