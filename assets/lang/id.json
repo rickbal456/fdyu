@@ -552,7 +552,10 @@
         "start_execution": "Mulai Eksekusi",
         "node_status": "Status Node",
         "input": "Input",
-        "output": "Output"
+        "output": "Output",
+        "content_retention_notice": "File disimpan selama {{days}} hari sebelum dihapus otomatis",
+        "expires_in": "Kedaluwarsa dalam {{days}} hari",
+        "expiring_soon": "Segera kedaluwarsa"
     },
     "shortcuts": {
         "title": "Pintasan Keyboard",

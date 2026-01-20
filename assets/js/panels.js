@@ -36,6 +36,7 @@
             this.hasMoreGallery = { manual: false, api: false };
             this.isLoadingGallery = false;
             this.currentGalleryTab = 'manual';  // Default tab
+            this.contentRetentionDays = 0;  // Content retention setting
 
             this.init();
         }
@@ -296,6 +297,9 @@
 
             grid.innerHTML = items.map(item => {
                 const isVideo = item.type === 'video' || item.url?.includes('.mp4') || item.url?.includes('.webm');
+                const daysRemaining = item.days_remaining;
+                const showExpiryBadge = this.contentRetentionDays > 0 && daysRemaining !== null && daysRemaining !== undefined;
+                const expiryClass = daysRemaining <= 3 ? 'bg-red-500/80' : daysRemaining <= 7 ? 'bg-amber-500/80' : 'bg-dark-700/80';
 
                 return `
                     <div class="gallery-item" data-item-id="${item.id}">
@@ -303,6 +307,12 @@
                         ? `<video src="${item.url}" class="gallery-item-media" muted loop></video>`
                         : `<img src="${item.url}" class="gallery-item-media" loading="lazy" alt="Generated content">`
                     }
+                        ${showExpiryBadge ? `
+                            <div class="absolute top-1 left-1 ${expiryClass} text-white text-[10px] px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                                <i data-lucide="clock" class="w-2.5 h-2.5"></i>
+                                ${daysRemaining}d
+                            </div>
+                        ` : ''}
                         <div class="gallery-item-overlay">
                             <button class="gallery-item-btn" data-action="view" title="View">
                                 <i data-lucide="external-link" class="w-4 h-4"></i>
@@ -374,6 +384,34 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        updateRetentionNotice() {
+            const notice = document.getElementById('gallery-retention-notice');
+            const daysValue = document.getElementById('retention-days-value');
+            const retentionText = document.getElementById('gallery-retention-text');
+
+            if (!notice) return;
+
+            if (this.contentRetentionDays > 0) {
+                notice.classList.remove('hidden');
+                if (daysValue) {
+                    daysValue.textContent = this.contentRetentionDays;
+                }
+                // Update text with translation if available
+                if (retentionText && window.t) {
+                    const translated = window.t('panels.content_retention_notice', { days: this.contentRetentionDays });
+                    if (translated && !translated.includes('panels.')) {
+                        retentionText.innerHTML = translated.replace('{{days}}', `<strong>${this.contentRetentionDays}</strong>`);
+                    }
+                }
+                // Initialize clock icon
+                if (window.lucide) {
+                    lucide.createIcons({ nodes: [notice] });
+                }
+            } else {
+                notice.classList.add('hidden');
+            }
         }
 
         // ========== History (Database-backed) ==========
@@ -811,6 +849,10 @@
                     }
                     this.galleryTotal[tab] = response.total || 0;
                     this.hasMoreGallery[tab] = this.galleryData[tab].length < this.galleryTotal[tab];
+
+                    // Store retention days setting
+                    this.contentRetentionDays = response.retention_days || 0;
+                    this.updateRetentionNotice();
                 }
             } catch (error) {
                 console.error('Failed to load gallery from database:', error);

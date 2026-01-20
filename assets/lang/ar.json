@@ -552,7 +552,10 @@
         "start_execution": "بدء التنفيذ",
         "node_status": "حالة العقدة",
         "input": "الإدخال",
-        "output": "الإخراج"
+        "output": "الإخراج",
+        "content_retention_notice": "يتم تخزين الملفات لمدة {{days}} يوم قبل الحذف التلقائي",
+        "expires_in": "تنتهي صلاحيته في {{days}} يوم",
+        "expiring_soon": "ستنتهي صلاحيته قريباً"
     },
     "shortcuts": {
         "title": "اختصارات لوحة المفاتيح",

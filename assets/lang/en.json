@@ -552,7 +552,10 @@
         "start_execution": "Start Execution",
         "node_status": "Node Status",
         "input": "Input",
-        "output": "Output"
+        "output": "Output",
+        "content_retention_notice": "Files are stored for {{days}} days before auto-deletion",
+        "expires_in": "Expires in {{days}} days",
+        "expiring_soon": "Expiring soon"
     },
     "shortcuts": {
         "title": "Keyboard Shortcuts",

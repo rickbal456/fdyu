@@ -405,6 +405,7 @@
 
                 // Workflow Settings
                 setFieldValue('admin-max-repeat-count', result.settings.max_repeat_count || '100');
+                setFieldValue('admin-content-retention-days', result.settings.content_retention_days || '0');
 
                 // Invitation System Settings
                 const invitationToggle = document.getElementById('admin-invitation-enabled');
@@ -684,6 +685,7 @@
 
                     // Workflow Settings
                     max_repeat_count: document.getElementById('admin-max-repeat-count')?.value,
+                    content_retention_days: document.getElementById('admin-content-retention-days')?.value,
                     // Invitation System
                     invitation_enabled: document.getElementById('admin-invitation-enabled')?.checked ? '1' : '0',
                     invitation_referrer_credits: document.getElementById('admin-invitation-referrer-credits')?.value,
