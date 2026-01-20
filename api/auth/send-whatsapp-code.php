@@ -96,9 +96,13 @@ try {
 
     // Prepare API URL with placeholders
     $apiMethod = strtoupper($config['whatsapp_api_method'] ?? 'GET');
+
+    // Remove + sign for API compatibility
+    $apiPhone = ltrim($phone, '+');
+
     $finalUrl = str_replace(
         ['{{destination_number}}', '{{message}}'],
-        [urlencode($phone), urlencode($message)],
+        [urlencode($apiPhone), urlencode($message)],
         $apiUrl
     );
 
