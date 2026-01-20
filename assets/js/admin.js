@@ -732,6 +732,7 @@
         document.getElementById('admin-user-id').value = '';
         document.getElementById('admin-user-username').value = '';
         document.getElementById('admin-user-email').value = '';
+        document.getElementById('admin-user-whatsapp').value = '';
         document.getElementById('admin-user-password').value = '';
         document.getElementById('admin-user-password').placeholder = 'Required for new users';
         document.getElementById('admin-user-role').value = 'user';
@@ -753,6 +754,18 @@
         document.getElementById('admin-user-password').placeholder = 'Leave blank to keep current';
         document.getElementById('admin-user-role').value = role;
         document.getElementById('admin-user-credits').value = '';
+
+        // Fetch and populate WhatsApp number
+        try {
+            const userResponse = await fetch(`${window.AIKAFLOW.apiUrl}/admin/users.php?action=get&id=${id}`);
+            const userData = await userResponse.json();
+            if (userData.success && userData.user) {
+                document.getElementById('admin-user-whatsapp').value = userData.user.whatsapp_phone || '';
+            }
+        } catch (error) {
+            console.error('Failed to fetch user WhatsApp:', error);
+            document.getElementById('admin-user-whatsapp').value = '';
+        }
 
         // Show credits container and fetch current balance
         document.getElementById('admin-user-credits-container')?.classList.remove('hidden');
@@ -825,6 +838,7 @@
         const data = {
             username: document.getElementById('admin-user-username')?.value?.trim(),
             email: document.getElementById('admin-user-email')?.value?.trim(),
+            whatsapp_phone: document.getElementById('admin-user-whatsapp')?.value?.trim(),
             role: document.getElementById('admin-user-role')?.value,
             password: document.getElementById('admin-user-password')?.value
         };

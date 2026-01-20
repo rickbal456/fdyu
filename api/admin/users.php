@@ -35,6 +35,27 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
     case 'GET':
+        // Check if requesting single user
+        if (isset($_GET['action']) && $_GET['action'] === 'get' && isset($_GET['id'])) {
+            $userId = (int) $_GET['id'];
+            try {
+                $user = Database::fetchOne(
+                    "SELECT id, email, username, whatsapp_phone, role, is_active, created_at, last_login FROM users WHERE id = ?",
+                    [$userId]
+                );
+
+                if (!$user) {
+                    errorResponse('User not found', 404);
+                }
+
+                successResponse(['user' => $user]);
+            } catch (Exception $e) {
+                error_log('Admin get user error: ' . $e->getMessage());
+                errorResponse('Failed to fetch user', 500);
+            }
+            break;
+        }
+
         // List users with pagination and search
         try {
             $search = trim($_GET['search'] ?? '');
@@ -83,6 +104,7 @@ switch ($method) {
         $email = trim($input['email'] ?? '');
         $username = trim($input['username'] ?? '');
         $password = $input['password'] ?? '';
+        $whatsappPhone = trim($input['whatsapp_phone'] ?? '');
         $role = $input['role'] ?? 'user';
 
         // Validate
@@ -103,6 +125,14 @@ switch ($method) {
                     Database::query(
                         "UPDATE users SET role = 'admin' WHERE id = ?",
                         [$result['user_id']]
+                    );
+                }
+
+                // Update WhatsApp phone if provided
+                if (!empty($whatsappPhone)) {
+                    Database::query(
+                        "UPDATE users SET whatsapp_phone = ? WHERE id = ?",
+                        [$whatsappPhone, $result['user_id']]
                     );
                 }
 
@@ -163,6 +193,12 @@ switch ($method) {
             if ($userId !== 1) {
                 $updates['is_active'] = $input['is_active'] ? 1 : 0;
             }
+        }
+
+        if (isset($input['whatsapp_phone'])) {
+            $whatsappPhone = trim($input['whatsapp_phone']);
+            // Allow empty string to clear the field
+            $updates['whatsapp_phone'] = $whatsappPhone !== '' ? $whatsappPhone : null;
         }
 
         if (isset($input['password']) && !empty($input['password'])) {
