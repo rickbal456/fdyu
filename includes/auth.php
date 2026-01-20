@@ -327,7 +327,7 @@ class Auth
         }
 
         self::$currentUser = Database::fetchOne(
-            "SELECT id, email, username, api_key, created_at, last_login FROM users WHERE id = ? AND is_active = 1",
+            "SELECT id, email, username, api_key, whatsapp_phone, created_at, last_login FROM users WHERE id = ? AND is_active = 1",
             [$_SESSION['user_id']]
         );
 
