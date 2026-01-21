@@ -26,7 +26,7 @@ try {
     $start = microtime(true);
     Database::query("SELECT 1");
     $dbLatency = round((microtime(true) - $start) * 1000);
-    
+
     $status['services']['database'] = [
         'status' => 'healthy',
         'latency_ms' => $dbLatency
@@ -40,7 +40,7 @@ try {
 
 // Check external APIs (basic connectivity)
 $externalApis = [
-    'runninghub' => RUNNINGHUB_API_URL,
+    'rhub' => RUNNINGHUB_API_URL,
     'kie' => KIE_API_URL,
     'jsoncut' => JSONCUT_API_URL
 ];
@@ -50,20 +50,20 @@ foreach ($externalApis as $name => $url) {
         $status['services'][$name] = ['status' => 'not_configured'];
         continue;
     }
-    
+
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 5,
         CURLOPT_NOBODY => true
     ]);
-    
+
     $start = microtime(true);
     curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $latency = round((microtime(true) - $start) * 1000);
     curl_close($ch);
-    
+
     $status['services'][$name] = [
         'status' => $httpCode > 0 ? 'reachable' : 'unreachable',
         'latency_ms' => $latency

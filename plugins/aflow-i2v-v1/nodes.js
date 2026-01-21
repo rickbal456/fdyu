@@ -23,8 +23,8 @@
         // First check plugin-specific key status
         if (PluginManager.hasApiKey(`plugin_${PLUGIN_ID}`)) return true;
 
-        // Then check if any generation provider key is available
-        return PluginManager.hasApiKey('generation');
+        // Then check main provider key status (obfuscated name)
+        return PluginManager.hasApiKey('rhub');
     }
 
     /**
@@ -36,7 +36,7 @@
         const pluginKey = PluginManager.getAiKey(`plugin_${PLUGIN_ID}`);
         if (pluginKey) return pluginKey;
 
-        return PluginManager.getAiKey('generation');
+        return PluginManager.getAiKey('rhub');
     }
 
     // Build fields - API key field is always included but hidden when configured

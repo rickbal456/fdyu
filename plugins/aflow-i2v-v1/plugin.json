@@ -17,7 +17,7 @@
     ],
     "executionType": "api",
     "apiConfig": {
-        "provider": "runninghub",
+        "provider": "rhub",
         "endpoint": "https:\/\/www.runninghub.ai\/task\/openapi\/ai-app\/run"
     },
     "apiMapping": {

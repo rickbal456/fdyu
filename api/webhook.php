@@ -90,7 +90,7 @@ try {
     $error = null;
 
     switch ($source) {
-        case 'runninghub':
+        case 'rhub':
             // Check for AI App format (eventData)
             if (isset($payload['eventData'])) {
                 $taskId = $payload['taskId'] ?? null;

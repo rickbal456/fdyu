@@ -417,7 +417,7 @@ class PluginManager
             case 'jsoncut':
                 $baseUrl = defined('JSONCUT_API_URL') ? JSONCUT_API_URL : 'https://api.jsoncut.com';
                 break;
-            case 'runninghub':
+            case 'rhub':
                 $baseUrl = defined('RUNNINGHUB_API_URL') ? RUNNINGHUB_API_URL : 'https://api.runninghub.ai';
                 break;
             case 'kie':
@@ -472,8 +472,8 @@ class PluginManager
             if ($response['success'] && isset($response['data'])) {
                 $apiData = $response['data'];
 
-                // RunningHub returns code != 0 on error
-                if ($provider === 'runninghub' && isset($apiData['code']) && $apiData['code'] != 0) {
+                // Provider-specific error handling
+                if ($provider === 'rhub' && isset($apiData['code']) && $apiData['code'] != 0) {
                     $errorMsg = $apiData['msg'] ?? 'API error';
                     // Try to extract a cleaner error message
                     if (is_string($errorMsg) && strpos($errorMsg, 'required_input_missing') !== false) {
@@ -481,7 +481,7 @@ class PluginManager
                     }
                     return [
                         'success' => false,
-                        'error' => "RunningHub API error (code {$apiData['code']}): $errorMsg",
+                        'error' => "API error (code {$apiData['code']}): $errorMsg",
                         'data' => $apiData
                     ];
                 }

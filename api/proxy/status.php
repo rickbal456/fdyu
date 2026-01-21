@@ -24,7 +24,7 @@ requireMethod('GET');
 $user = requireAuth();
 
 $taskId = $_GET['task_id'] ?? '';
-$provider = $_GET['provider'] ?? 'runninghub';
+$provider = $_GET['provider'] ?? 'rhub';
 $apiKey = $_GET['api_key'] ?? '';
 
 if (!$taskId) {
@@ -40,7 +40,7 @@ try {
     $baseUrl = '';
 
     switch ($provider) {
-        case 'runninghub':
+        case 'rhub':
             $baseUrl = defined('RUNNINGHUB_API_URL') ? RUNNINGHUB_API_URL : 'https://api.runninghub.ai';
             break;
 

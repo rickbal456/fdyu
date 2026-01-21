@@ -303,7 +303,7 @@ class APIClient {
     // ============================================
 
     /**
-     * Proxy request to RunningHub.ai
+     * Proxy request to AI provider
      */
     async runningHubRequest(action, data) {
         return this.post('/proxy/runninghub.php', { action, ...data });
@@ -326,7 +326,7 @@ class APIClient {
     /**
      * Check task status (for async operations)
      */
-    async checkTaskStatus(taskId, provider = 'runninghub') {
+    async checkTaskStatus(taskId, provider = 'rhub') {
         return this.get(`/proxy/status.php?task_id=${taskId}&provider=${provider}`);
     }
 
