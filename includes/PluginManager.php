@@ -217,9 +217,9 @@ class PluginManager
 
         return ['success' => true, 'output' => $inputData];
     }
-
     /**
-     * Execute API node using mapping
+     * Execute API node using mapping or direct passthrough
+     * API configuration is read from plugin.json (never from client-side)
      */
     private static function executeApiNode($nodeType, $inputData, $definition)
     {
@@ -227,15 +227,16 @@ class PluginManager
         $ts = date('Y-m-d H:i:s');
         @file_put_contents($debugLog, "[$ts] [executeApiNode] START for: $nodeType\n", FILE_APPEND);
 
-        if (!isset($definition['apiConfig']) || !isset($definition['apiMapping'])) {
-            @file_put_contents($debugLog, "[$ts] [executeApiNode] Missing API config\n", FILE_APPEND);
-            return ['success' => false, 'error' => "Missing API configuration for $nodeType"];
+        // Only apiConfig is required - apiMapping is optional
+        if (!isset($definition['apiConfig'])) {
+            @file_put_contents($debugLog, "[$ts] [executeApiNode] Missing apiConfig in plugin.json\n", FILE_APPEND);
+            return ['success' => false, 'error' => "Missing API configuration for $nodeType - check plugin.json"];
         }
 
         $apiConfig = $definition['apiConfig'];
-        $mapping = $definition['apiMapping'];
+        $mapping = $definition['apiMapping'] ?? null; // Optional - will use direct passthrough if missing
         $provider = $apiConfig['provider'] ?? 'custom';
-        @file_put_contents($debugLog, "[$ts] [executeApiNode] Provider: $provider\n", FILE_APPEND);
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] Provider: $provider, hasMapping: " . ($mapping ? 'yes' : 'no') . "\n", FILE_APPEND);
 
         // Get API key - either from user input or from admin configuration
         $apiKey = $inputData['apiKey'] ?? '';
@@ -294,9 +295,16 @@ class PluginManager
             @file_put_contents($debugLog, "[$ts] [executeApiNode] Mapped 'text' input to 'prompt' field: " . substr($inputData['prompt'], 0, 50) . "...\n", FILE_APPEND);
         }
 
-        // Prepare request body using mapping
-        $requestBody = self::mapData($mapping['request'], $inputData);
-        $requestBody = self::processSpecialValues($requestBody);
+        // Prepare request body - use mapping if available, otherwise use inputData directly
+        if ($mapping && isset($mapping['request'])) {
+            $requestBody = self::mapData($mapping['request'], $inputData);
+            $requestBody = self::processSpecialValues($requestBody);
+        } else {
+            // Direct passthrough - use inputData as request body (without internal fields)
+            $requestBody = array_filter($inputData, function ($key) {
+                return !str_starts_with($key, '_'); // Remove internal fields like _user_id, _workflow_run_id
+            }, ARRAY_FILTER_USE_KEY);
+        }
         @file_put_contents($debugLog, "[$ts] [executeApiNode] Request body prepared, keys: " . implode(', ', array_keys($requestBody)) . "\n", FILE_APPEND);
 
         // Acquire rate limit slot before making the API call
@@ -333,14 +341,25 @@ class PluginManager
 
         // Map response
         $result = [];
-        if (isset($mapping['response'])) {
+        if ($mapping && isset($mapping['response'])) {
             $result = self::mapResponse($mapping['response'], $apiResponse);
             @file_put_contents($debugLog, "[$ts] [executeApiNode] Mapped result: " . json_encode($result) . "\n", FILE_APPEND);
+        } else {
+            // Try common API response patterns for taskId extraction
+            $result['taskId'] = $apiResponse['data']['taskId']
+                ?? $apiResponse['taskId']
+                ?? $apiResponse['data']['id']
+                ?? $apiResponse['id']
+                ?? null;
+            @file_put_contents($debugLog, "[$ts] [executeApiNode] Auto-extracted taskId: " . ($result['taskId'] ?? 'NULL') . "\n", FILE_APPEND);
         }
 
         $output = [];
-        if (isset($mapping['result'])) {
+        if ($mapping && isset($mapping['result'])) {
             $output = self::mapResponse($mapping['result'], $apiResponse);
+        } else {
+            // Pass through the API response as output
+            $output = $apiResponse;
         }
 
         // Update the rate limit slot with the actual task ID from API response

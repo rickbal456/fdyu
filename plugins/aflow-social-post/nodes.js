@@ -2,14 +2,16 @@
  * AIKAFLOW - Social Media Post Plugin
  * 
  * This file defines the Social Post node for publishing content to social media platforms.
- * Uses Postforme API with async webhook-based execution.
+ * 
+ * SECURITY NOTE: All API configuration (endpoints, provider details) are stored
+ * server-side in plugin.json and resolved by the worker.
+ * This client-side file only handles UI and node registration.
  */
 
 (function () {
     'use strict';
 
     const PLUGIN_ID = 'aflow-social-post';
-    const POSTFORME_API_BASE = 'https://api.postforme.dev/v1';
 
     // Platform configurations with icons and colors
     const PLATFORMS = {
@@ -267,11 +269,10 @@
             }
 
             // Return the payload for server-side execution
-            // The worker will handle the actual API call and return taskId
+            // Server will resolve endpoint from plugin.json
             return {
-                action: 'social-post',
-                payload: payload,
-                endpoint: POSTFORME_API_BASE + '/social-posts'
+                action: PLUGIN_ID,
+                payload: payload
             };
         }
     });

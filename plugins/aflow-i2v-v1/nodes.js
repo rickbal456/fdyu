@@ -1,28 +1,30 @@
 /**
- * RunningHub AI App Plugin - Image to Video V1
+ * AIKAFLOW Plugin - Image to Video V1
  * 
  * This file defines the custom nodes provided by this plugin.
  * It will be loaded automatically when the plugin is enabled.
+ * 
+ * SECURITY NOTE: All API configuration (endpoints, webapp IDs, provider details)
+ * are stored server-side in plugin.json and resolved by the worker.
+ * This client-side file only handles UI and node registration.
  */
 
 (function () {
     'use strict';
 
-    // Hardcoded Webapp ID for this specific RunningHub workflow
-    const WEBAPP_ID = '1973555366057390081';
     const PLUGIN_ID = 'aflow-i2v-v1';
 
     /**
-     * Check if RunningHub API key is configured (either plugin-specific or main)
+     * Check if API key is configured (either plugin-specific or main provider)
      * This checks STATUS only, not the actual key value (for security)
      * @returns {boolean}
      */
-    function hasRunningHubApiKey() {
+    function hasApiKeyConfigured() {
         // First check plugin-specific key status
         if (PluginManager.hasApiKey(`plugin_${PLUGIN_ID}`)) return true;
 
-        // Then check main RunningHub key status
-        return PluginManager.hasApiKey('runninghub');
+        // Then check if any generation provider key is available
+        return PluginManager.hasApiKey('generation');
     }
 
     /**
@@ -34,7 +36,7 @@
         const pluginKey = PluginManager.getAiKey(`plugin_${PLUGIN_ID}`);
         if (pluginKey) return pluginKey;
 
-        return PluginManager.getAiKey('runninghub');
+        return PluginManager.getAiKey('generation');
     }
 
     // Build fields - API key field is always included but hidden when configured
@@ -43,10 +45,10 @@
             id: 'apiKey',
             type: 'text',
             label: window.t ? window.t('generation.api_key') : 'API Key',
-            placeholder: window.t ? window.t('generation.your_api_key') : 'Your RunningHub API key',
+            placeholder: window.t ? window.t('generation.your_api_key') : 'Your API key',
             description: window.t ? window.t('generation.configure_in_settings') : 'Or configure in Settings → Integrations',
             // Hide this field if API key is already configured in admin settings
-            showIf: () => !hasRunningHubApiKey()
+            showIf: () => !hasApiKeyConfigured()
         },
         {
             id: 'model',
@@ -108,6 +110,7 @@
             duration_seconds: '10'
         },
         // Custom execution handler (used by worker)
+        // Returns only node data - server resolves API config from plugin.json
         execute: async function (node, inputs, context) {
             const { apiKey, model, prompt, duration_seconds } = node.data;
             const imageUrl = inputs.image || '';
@@ -115,56 +118,30 @@
             // Use connected text input or fall back to node's prompt field
             const finalPrompt = (inputs.text && inputs.text.trim()) ? inputs.text.trim() : prompt;
 
-            // Determine API key source:
-            // 1. User provided key in node field
-            // 2. User's own saved key in their settings
-            // 3. Admin-configured key (checked on server-side, not exposed here)
+            // Determine API key source
             const userProvidedKey = apiKey || getUserApiKey();
-            const adminHasKey = hasRunningHubApiKey();
+            const adminHasKey = hasApiKeyConfigured();
 
             if (!userProvidedKey && !adminHasKey) {
-                throw new Error(window.t ? window.t('generation.api_key_required') : 'RunningHub API Key is required. Set it in Settings → Integrations or in the node field.');
+                throw new Error(window.t ? window.t('generation.api_key_required') : 'API Key is required. Set it in Settings → Integrations or in the node field.');
             }
 
             if (!finalPrompt) {
                 throw new Error(window.t ? window.t('generation.prompt_required') : 'Motion prompt is required. Either connect a Text Input node or enter a prompt manually.');
             }
 
-            // Build the API payload
-            // Note: If userProvidedKey is empty, the server will use the admin-configured key
-            const payload = {
-                webappId: WEBAPP_ID,
-                apiKey: userProvidedKey, // Empty string signals server to use admin key
-                useAdminKey: !userProvidedKey && adminHasKey, // Flag for server
-                nodeInfoList: [
-                    {
-                        nodeId: '2',
-                        fieldName: 'image',
-                        fieldValue: imageUrl
-                    },
-                    {
-                        nodeId: '1',
-                        fieldName: 'model',
-                        fieldValue: model
-                    },
-                    {
-                        nodeId: '1',
-                        fieldName: 'prompt',
-                        fieldValue: finalPrompt
-                    },
-                    {
-                        nodeId: '1',
-                        fieldName: 'duration_seconds',
-                        fieldValue: String(duration_seconds)
-                    }
-                ]
-            };
-
-            // Return the payload for server-side execution
+            // Return payload for server-side execution
+            // Server will resolve endpoint and provider config from plugin.json
             return {
-                action: 'aflow-i2v-v1',
-                payload: payload,
-                endpoint: 'https://www.runninghub.ai/task/openapi/ai-app/run'
+                action: PLUGIN_ID,
+                payload: {
+                    apiKey: userProvidedKey,
+                    useAdminKey: !userProvidedKey && adminHasKey,
+                    image: imageUrl,
+                    model: model,
+                    prompt: finalPrompt,
+                    duration_seconds: String(duration_seconds)
+                }
             };
         }
     });

@@ -720,10 +720,12 @@ if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['
                 </div>
 
                 <!-- Content Retention Notice (shown when enabled) -->
-                <div id="gallery-retention-notice" class="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 hidden">
+                <div id="gallery-retention-notice"
+                    class="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 hidden">
                     <p class="text-xs text-amber-400 flex items-center gap-2">
                         <i data-lucide="clock" class="w-3.5 h-3.5 flex-shrink-0"></i>
-                        <span id="gallery-retention-text" data-i18n="panels.content_retention_notice">Files are stored for <strong id="retention-days-value">0</strong> days</span>
+                        <span id="gallery-retention-text" data-i18n="panels.content_retention_notice">Files are stored
+                            for <strong id="retention-days-value">0</strong> days</span>
                     </p>
                 </div>
 
@@ -969,7 +971,7 @@ if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['
                             data-i18n="settings.profile">Profile</button>
                         <button class="settings-tab" data-tab="general" data-i18n="settings.general">General</button>
                         <?php if (!PluginManager::isPluginEnabled('aflow-api')): ?>
-                                <button class="settings-tab" data-tab="api" data-i18n="settings.api_keys">API Keys</button>
+                            <button class="settings-tab" data-tab="api" data-i18n="settings.api_keys">API Keys</button>
                         <?php endif; ?>
                         <button class="settings-tab" data-tab="appearance"
                             data-i18n="settings.appearance">Appearance</button>
@@ -1048,32 +1050,32 @@ if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['
                     </div>
 
                     <?php if (!PluginManager::isPluginEnabled('aflow-api')): ?>
-                            <!-- API Keys Tab -->
-                            <div id="settings-api" class="settings-content hidden">
-                                <div class="space-y-4">
-                                    <div class="bg-dark-800 rounded-lg">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <label class="text-sm font-medium text-dark-300"
-                                                data-i18n="settings.your_api_key">Your API Key</label>
-                                            <button id="btn-regenerate-api"
-                                                class="text-xs text-primary-400 hover:text-primary-300"
-                                                data-i18n="settings.regenerate">Regenerate</button>
-                                        </div>
-                                        <div class="flex gap-2">
-                                            <input type="password" id="user-api-key" class="form-input flex-1 font-mono text-sm"
-                                                value="<?= htmlspecialchars($user['api_key'] ?? '') ?>" readonly>
-                                            <button id="btn-copy-api" class="btn-secondary px-3" title="Copy">
-                                                <i data-lucide="copy" class="w-4 h-4"></i>
-                                            </button>
-                                            <button id="btn-toggle-api" class="btn-secondary px-3" title="Show/Hide">
-                                                <i data-lucide="eye" class="w-4 h-4"></i>
-                                            </button>
-                                        </div>
+                        <!-- API Keys Tab -->
+                        <div id="settings-api" class="settings-content hidden">
+                            <div class="space-y-4">
+                                <div class="bg-dark-800 rounded-lg">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <label class="text-sm font-medium text-dark-300"
+                                            data-i18n="settings.your_api_key">Your API Key</label>
+                                        <button id="btn-regenerate-api"
+                                            class="text-xs text-primary-400 hover:text-primary-300"
+                                            data-i18n="settings.regenerate">Regenerate</button>
                                     </div>
-                                    <p class="text-xs text-gray-500" data-i18n="settings.api_key_hint">Use this API key to
-                                        execute workflows programmatically.</p>
+                                    <div class="flex gap-2">
+                                        <input type="password" id="user-api-key" class="form-input flex-1 font-mono text-sm"
+                                            value="<?= htmlspecialchars($user['api_key'] ?? '') ?>" readonly>
+                                        <button id="btn-copy-api" class="btn-secondary px-3" title="Copy">
+                                            <i data-lucide="copy" class="w-4 h-4"></i>
+                                        </button>
+                                        <button id="btn-toggle-api" class="btn-secondary px-3" title="Show/Hide">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
                                 </div>
+                                <p class="text-xs text-gray-500" data-i18n="settings.api_key_hint">Use this API key to
+                                    execute workflows programmatically.</p>
                             </div>
+                        </div>
                     <?php endif; ?>
 
 
@@ -1371,1008 +1373,1008 @@ if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['
     </div>
 
     <?php if ((int) $user['id'] === 1 || ($user['role'] ?? '') === 'admin'): ?>
-            <!-- Administration Modal -->
-            <div id="modal-admin" class="modal hidden">
-                <div class="modal-backdrop"></div>
-                <div class="modal-content w-full max-w-4xl">
-                    <div class="modal-header">
-                        <h3 class="text-lg font-semibold text-dark-50 flex items-center gap-2">
-                            <i data-lucide="shield" class="w-5 h-5 text-primary-400"></i>
-                            <span data-i18n="admin.administration">Administration</span>
-                        </h3>
-                        <button class="modal-close">
-                            <i data-lucide="x" class="w-5 h-5"></i>
-                        </button>
+        <!-- Administration Modal -->
+        <div id="modal-admin" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content w-full max-w-4xl">
+                <div class="modal-header">
+                    <h3 class="text-lg font-semibold text-dark-50 flex items-center gap-2">
+                        <i data-lucide="shield" class="w-5 h-5 text-primary-400"></i>
+                        <span data-i18n="admin.administration">Administration</span>
+                    </h3>
+                    <button class="modal-close">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="modal-body max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    <!-- Admin Tabs -->
+                    <div class="flex border-b border-dark-600 mb-4 overflow-x-auto">
+                        <button class="admin-tab active" data-tab="users" data-i18n="admin.users">Users</button>
+                        <button class="admin-tab" data-tab="site" data-i18n="admin.site_settings">Site Settings</button>
+                        <button class="admin-tab" data-tab="credits" data-i18n="admin.credits_tab">Credits</button>
+                        <button class="admin-tab" data-tab="integrations"
+                            data-i18n="admin.integrations">Integrations</button>
                     </div>
-                    <div class="modal-body max-h-[70vh] overflow-y-auto custom-scrollbar">
-                        <!-- Admin Tabs -->
-                        <div class="flex border-b border-dark-600 mb-4 overflow-x-auto">
-                            <button class="admin-tab active" data-tab="users" data-i18n="admin.users">Users</button>
-                            <button class="admin-tab" data-tab="site" data-i18n="admin.site_settings">Site Settings</button>
-                            <button class="admin-tab" data-tab="credits" data-i18n="admin.credits_tab">Credits</button>
-                            <button class="admin-tab" data-tab="integrations"
-                                data-i18n="admin.integrations">Integrations</button>
-                        </div>
 
-                        <!-- Users Tab -->
-                        <div id="admin-users" class="admin-content">
-                            <div class="flex items-center justify-between mb-4 gap-4">
-                                <div class="flex items-center gap-3 flex-1">
-                                    <h4 class="text-sm font-medium text-dark-300 whitespace-nowrap"
-                                        data-i18n="admin.user_management">User Management</h4>
-                                    <div class="relative flex-1 max-w-xs">
-                                        <input type="text" id="admin-user-search" class="form-input w-full text-sm pl-8"
-                                            placeholder="Search users...">
-                                        <i data-lucide="search"
-                                            class="w-4 h-4 text-dark-500 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
-                                    </div>
-                                </div>
-                                <button id="btn-admin-add-user" class="btn-primary text-sm px-3 py-1">
-                                    <i data-lucide="user-plus" class="w-4 h-4 inline mr-1"></i>
-                                    <span data-i18n="admin.add_user">Add User</span>
-                                </button>
-                            </div>
-                            <div id="admin-users-list" class="space-y-2">
-                                <div class="text-center py-8 text-dark-400">
-                                    <i data-lucide="loader" class="w-6 h-6 mx-auto animate-spin"></i>
-                                    <p class="mt-2 text-sm" data-i18n="common.loading">Loading users...</p>
+                    <!-- Users Tab -->
+                    <div id="admin-users" class="admin-content">
+                        <div class="flex items-center justify-between mb-4 gap-4">
+                            <div class="flex items-center gap-3 flex-1">
+                                <h4 class="text-sm font-medium text-dark-300 whitespace-nowrap"
+                                    data-i18n="admin.user_management">User Management</h4>
+                                <div class="relative flex-1 max-w-xs">
+                                    <input type="text" id="admin-user-search" class="form-input w-full text-sm pl-8"
+                                        placeholder="Search users...">
+                                    <i data-lucide="search"
+                                        class="w-4 h-4 text-dark-500 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
                                 </div>
                             </div>
+                            <button id="btn-admin-add-user" class="btn-primary text-sm px-3 py-1">
+                                <i data-lucide="user-plus" class="w-4 h-4 inline mr-1"></i>
+                                <span data-i18n="admin.add_user">Add User</span>
+                            </button>
                         </div>
+                        <div id="admin-users-list" class="space-y-2">
+                            <div class="text-center py-8 text-dark-400">
+                                <i data-lucide="loader" class="w-6 h-6 mx-auto animate-spin"></i>
+                                <p class="mt-2 text-sm" data-i18n="common.loading">Loading users...</p>
+                            </div>
+                        </div>
+                    </div>
 
-                        <!-- Site Settings Tab -->
-                        <div id="admin-site" class="admin-content hidden">
-                            <div class="space-y-6">
-                                <!-- General -->
-                                <div class="space-y-4">
-                                    <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">General</h4>
+                    <!-- Site Settings Tab -->
+                    <div id="admin-site" class="admin-content hidden">
+                        <div class="space-y-6">
+                            <!-- General -->
+                            <div class="space-y-4">
+                                <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">General</h4>
+                                <div>
+                                    <label class="block text-sm font-medium text-dark-300 mb-2">Site Title</label>
+                                    <input type="text" id="admin-site-title" class="form-input w-full" value="AIKAFLOW">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-dark-300 mb-2">Logo (Dark Mode)</label>
+                                    <p class="text-xs text-dark-500 mb-2">Used when site is in dark mode - typically a
+                                        light/white logo</p>
+                                    <div class="flex items-center gap-3">
+                                        <input type="text" id="admin-logo-url-dark" class="form-input flex-1"
+                                            placeholder="Logo URL for dark mode">
+                                        <button type="button" id="btn-upload-logo-dark" class="btn-secondary px-3">
+                                            <i data-lucide="upload" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                    <input type="file" id="logo-dark-file-input" accept="image/*" class="hidden">
+                                    <div id="logo-dark-preview" class="mt-2 hidden bg-dark-800 p-2 rounded inline-block">
+                                        <img src="" alt="Dark mode logo preview" class="h-10 object-contain">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-dark-300 mb-2">Logo (Light Mode)</label>
+                                    <p class="text-xs text-dark-500 mb-2">Used when site is in light mode - typically a
+                                        dark/colored logo</p>
+                                    <div class="flex items-center gap-3">
+                                        <input type="text" id="admin-logo-url-light" class="form-input flex-1"
+                                            placeholder="Logo URL for light mode">
+                                        <button type="button" id="btn-upload-logo-light" class="btn-secondary px-3">
+                                            <i data-lucide="upload" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                    <input type="file" id="logo-light-file-input" accept="image/*" class="hidden">
+                                    <div id="logo-light-preview" class="mt-2 hidden bg-dark-200 p-2 rounded inline-block">
+                                        <img src="" alt="Light mode logo preview" class="h-10 object-contain">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-dark-300 mb-2">Favicon</label>
+                                    <div class="flex items-center gap-3">
+                                        <input type="text" id="admin-favicon-url" class="form-input flex-1"
+                                            placeholder="Favicon URL">
+                                        <button type="button" id="btn-upload-favicon" class="btn-secondary px-3">
+                                            <i data-lucide="upload" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                    <input type="file" id="favicon-file-input" accept=".ico,.png,.svg,image/*"
+                                        class="hidden">
+                                    <div id="favicon-preview" class="mt-2 hidden bg-dark-800 p-2 rounded inline-block">
+                                        <img src="" alt="Favicon preview" class="h-8 object-contain">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-dark-300 mb-2">Default Theme</label>
+                                    <select id="admin-default-theme" class="form-select w-full">
+                                        <option value="dark">Dark Mode</option>
+                                        <option value="light">Light Mode</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- hCaptcha -->
+                            <div class="space-y-4">
+                                <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">hCaptcha</h4>
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
+                                        <input type="checkbox" id="admin-hcaptcha-enabled" class="form-checkbox">
+                                        <span>Enable hCaptcha on Login & Register</span>
+                                    </label>
+                                </div>
+                                <div id="hcaptcha-fields" class="space-y-4 hidden">
                                     <div>
-                                        <label class="block text-sm font-medium text-dark-300 mb-2">Site Title</label>
-                                        <input type="text" id="admin-site-title" class="form-input w-full" value="AIKAFLOW">
+                                        <label class="block text-sm font-medium text-dark-300 mb-2">hCaptcha Site
+                                            Key</label>
+                                        <input type="text" id="admin-hcaptcha-site-key" class="form-input w-full"
+                                            placeholder="Enter your hCaptcha site key">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-dark-300 mb-2">Logo (Dark Mode)</label>
-                                        <p class="text-xs text-dark-500 mb-2">Used when site is in dark mode - typically a
-                                            light/white logo</p>
-                                        <div class="flex items-center gap-3">
-                                            <input type="text" id="admin-logo-url-dark" class="form-input flex-1"
-                                                placeholder="Logo URL for dark mode">
-                                            <button type="button" id="btn-upload-logo-dark" class="btn-secondary px-3">
-                                                <i data-lucide="upload" class="w-4 h-4"></i>
-                                            </button>
-                                        </div>
-                                        <input type="file" id="logo-dark-file-input" accept="image/*" class="hidden">
-                                        <div id="logo-dark-preview" class="mt-2 hidden bg-dark-800 p-2 rounded inline-block">
-                                            <img src="" alt="Dark mode logo preview" class="h-10 object-contain">
-                                        </div>
+                                        <label class="block text-sm font-medium text-dark-300 mb-2">hCaptcha Secret
+                                            Key</label>
+                                        <input type="password" id="admin-hcaptcha-secret-key" class="form-input w-full"
+                                            placeholder="Enter your hCaptcha secret key">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Google OAuth -->
+                            <div class="space-y-4">
+                                <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">Google OAuth
+                                    Login</h4>
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
+                                        <input type="checkbox" id="admin-google-auth-enabled" class="form-checkbox">
+                                        <span>Enable Google Login/Register</span>
+                                    </label>
+                                    <p class="text-xs text-dark-500 mt-1">Allow users to sign in using their Google account
+                                    </p>
+                                </div>
+                                <div id="google-auth-fields" class="space-y-4 hidden">
+                                    <div>
+                                        <label class="block text-sm font-medium text-dark-300 mb-2">Google Client ID</label>
+                                        <input type="text" id="admin-google-client-id" class="form-input w-full"
+                                            placeholder="Enter your Google OAuth Client ID">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-dark-300 mb-2">Logo (Light Mode)</label>
-                                        <p class="text-xs text-dark-500 mb-2">Used when site is in light mode - typically a
-                                            dark/colored logo</p>
-                                        <div class="flex items-center gap-3">
-                                            <input type="text" id="admin-logo-url-light" class="form-input flex-1"
-                                                placeholder="Logo URL for light mode">
-                                            <button type="button" id="btn-upload-logo-light" class="btn-secondary px-3">
-                                                <i data-lucide="upload" class="w-4 h-4"></i>
-                                            </button>
+                                        <label class="block text-sm font-medium text-dark-300 mb-2">Google Client
+                                            Secret</label>
+                                        <input type="password" id="admin-google-client-secret" class="form-input w-full"
+                                            placeholder="Enter your Google OAuth Client Secret">
+                                    </div>
+                                    <div class="bg-dark-800 p-3 rounded-lg text-xs text-dark-400">
+                                        <p class="font-medium text-dark-300 mb-1">Setup Instructions:</p>
+                                        <ol class="list-decimal list-inside space-y-1">
+                                            <li>Go to <a href="https://console.cloud.google.com/apis/credentials"
+                                                    target="_blank" class="text-primary-400 hover:underline">Google Cloud
+                                                    Console</a></li>
+                                            <li>Create OAuth 2.0 Client ID</li>
+                                            <li>Set authorized redirect URI to: <code
+                                                    class="bg-dark-700 px-1 rounded"><?= htmlspecialchars(APP_URL) ?>/api/auth/google-callback.php</code>
+                                            </li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Invitation System -->
+                            <div class="space-y-4">
+                                <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">Invitation
+                                    System</h4>
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
+                                        <input type="checkbox" id="admin-invitation-enabled" class="form-checkbox">
+                                        <span>Enable Invitation/Referral System</span>
+                                    </label>
+                                    <p class="text-xs text-dark-500 mt-1">Allow users to share invitation codes for organic
+                                        growth</p>
+                                </div>
+                                <div id="invitation-fields" class="space-y-4 hidden">
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-dark-300 mb-2">Referrer
+                                                Credits</label>
+                                            <input type="number" id="admin-invitation-referrer-credits"
+                                                class="form-input w-full" placeholder="50" min="0">
+                                            <p class="text-xs text-dark-500 mt-1">Credits given to code owner</p>
                                         </div>
-                                        <input type="file" id="logo-light-file-input" accept="image/*" class="hidden">
-                                        <div id="logo-light-preview" class="mt-2 hidden bg-dark-200 p-2 rounded inline-block">
-                                            <img src="" alt="Light mode logo preview" class="h-10 object-contain">
+                                        <div>
+                                            <label class="block text-sm font-medium text-dark-300 mb-2">New User
+                                                Credits</label>
+                                            <input type="number" id="admin-invitation-referee-credits"
+                                                class="form-input w-full" placeholder="50" min="0">
+                                            <p class="text-xs text-dark-500 mt-1">Credits given to new user</p>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- WhatsApp Verification -->
+                            <div class="space-y-4">
+                                <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">WhatsApp
+                                    Verification</h4>
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
+                                        <input type="checkbox" id="admin-whatsapp-verification-enabled"
+                                            class="form-checkbox">
+                                        <span>Enable WhatsApp Verification on Registration</span>
+                                    </label>
+                                    <p class="text-xs text-dark-500 mt-1">Require users to verify their WhatsApp number
+                                        during registration</p>
+                                </div>
+                                <div id="whatsapp-verification-fields" class="space-y-4 hidden">
                                     <div>
-                                        <label class="block text-sm font-medium text-dark-300 mb-2">Favicon</label>
-                                        <div class="flex items-center gap-3">
-                                            <input type="text" id="admin-favicon-url" class="form-input flex-1"
-                                                placeholder="Favicon URL">
-                                            <button type="button" id="btn-upload-favicon" class="btn-secondary px-3">
-                                                <i data-lucide="upload" class="w-4 h-4"></i>
-                                            </button>
-                                        </div>
-                                        <input type="file" id="favicon-file-input" accept=".ico,.png,.svg,image/*"
-                                            class="hidden">
-                                        <div id="favicon-preview" class="mt-2 hidden bg-dark-800 p-2 rounded inline-block">
-                                            <img src="" alt="Favicon preview" class="h-8 object-contain">
-                                        </div>
+                                        <label class="block text-sm font-medium text-dark-300 mb-2">API URL
+                                            Template</label>
+                                        <input type="text" id="admin-whatsapp-api-url"
+                                            class="form-input w-full font-mono text-sm"
+                                            placeholder="https://api.example.com/send.php?number={{destination_number}}&message={{message}}&token=xxx">
+                                        <p class="text-xs text-dark-500 mt-1">Use <code
+                                                class="bg-dark-700 px-1 rounded">{{destination_number}}</code> and <code
+                                                class="bg-dark-700 px-1 rounded">{{message}}</code> as placeholders</p>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-dark-300 mb-2">Default Theme</label>
-                                        <select id="admin-default-theme" class="form-select w-full">
-                                            <option value="dark">Dark Mode</option>
-                                            <option value="light">Light Mode</option>
+                                        <label class="block text-sm font-medium text-dark-300 mb-2">HTTP Method</label>
+                                        <select id="admin-whatsapp-api-method" class="form-select w-full">
+                                            <option value="GET">GET</option>
+                                            <option value="POST">POST</option>
                                         </select>
                                     </div>
-                                </div>
-
-                                <!-- hCaptcha -->
-                                <div class="space-y-4">
-                                    <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">hCaptcha</h4>
                                     <div>
-                                        <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
-                                            <input type="checkbox" id="admin-hcaptcha-enabled" class="form-checkbox">
-                                            <span>Enable hCaptcha on Login & Register</span>
-                                        </label>
+                                        <label class="block text-sm font-medium text-dark-300 mb-2">Verification Message
+                                            Template</label>
+                                        <textarea id="admin-whatsapp-verification-message"
+                                            class="form-textarea w-full text-sm" rows="3"
+                                            placeholder="Your verification code for {{site_title}} is: {{code}}. This code expires in 10 minutes."></textarea>
+                                        <p class="text-xs text-dark-500 mt-1">Use <code
+                                                class="bg-dark-700 px-1 rounded">{{code}}</code> and <code
+                                                class="bg-dark-700 px-1 rounded">{{site_title}}</code> as placeholders</p>
                                     </div>
-                                    <div id="hcaptcha-fields" class="space-y-4 hidden">
-                                        <div>
-                                            <label class="block text-sm font-medium text-dark-300 mb-2">hCaptcha Site
-                                                Key</label>
-                                            <input type="text" id="admin-hcaptcha-site-key" class="form-input w-full"
-                                                placeholder="Enter your hCaptcha site key">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-dark-300 mb-2">hCaptcha Secret
-                                                Key</label>
-                                            <input type="password" id="admin-hcaptcha-secret-key" class="form-input w-full"
-                                                placeholder="Enter your hCaptcha secret key">
-                                        </div>
+                                    <div class="bg-dark-800 p-3 rounded-lg text-xs text-dark-400">
+                                        <p class="font-medium text-dark-300 mb-1">Example API URL:</p>
+                                        <code
+                                            class="block text-dark-400 break-all">https://x2.woonotif.com/api/send.php?number={{destination_number}}&type=text&message={{message}}&instance_id=YOUR_ID&access_token=YOUR_TOKEN</code>
                                     </div>
                                 </div>
+                            </div>
 
-                                <!-- Google OAuth -->
-                                <div class="space-y-4">
-                                    <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">Google OAuth
-                                        Login</h4>
+                            <!-- SMTP Email -->
+                            <div class="space-y-4">
+                                <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">SMTP Email</h4>
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
+                                        <input type="checkbox" id="admin-smtp-enabled" class="form-checkbox">
+                                        <span>Enable SMTP Email</span>
+                                    </label>
+                                </div>
+                                <div id="smtp-fields" class="space-y-4 hidden">
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-dark-300 mb-2">SMTP Host</label>
+                                            <input type="text" id="admin-smtp-host" class="form-input w-full"
+                                                placeholder="smtp.example.com">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-dark-300 mb-2">Port</label>
+                                            <input type="number" id="admin-smtp-port" class="form-input w-full" value="587">
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-dark-300 mb-2">Username</label>
+                                            <input type="text" id="admin-smtp-username" class="form-input w-full">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-dark-300 mb-2">Password</label>
+                                            <input type="password" id="admin-smtp-password" class="form-input w-full">
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-dark-300 mb-2">From Email</label>
+                                            <input type="email" id="admin-smtp-from-email" class="form-input w-full"
+                                                placeholder="noreply@example.com">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-dark-300 mb-2">From Name</label>
+                                            <input type="text" id="admin-smtp-from-name" class="form-input w-full"
+                                                value="AIKAFLOW">
+                                        </div>
+                                    </div>
                                     <div>
-                                        <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
-                                            <input type="checkbox" id="admin-google-auth-enabled" class="form-checkbox">
-                                            <span>Enable Google Login/Register</span>
-                                        </label>
-                                        <p class="text-xs text-dark-500 mt-1">Allow users to sign in using their Google account
+                                        <label class="block text-sm font-medium text-dark-300 mb-2">Encryption</label>
+                                        <select id="admin-smtp-encryption" class="form-select w-full">
+                                            <option value="tls">TLS</option>
+                                            <option value="ssl">SSL</option>
+                                            <option value="none">None</option>
+                                        </select>
+                                    </div>
+                                    <!-- Test Email -->
+                                    <div class="pt-4 mt-4 border-t border-dark-600">
+                                        <label class="block text-sm font-medium text-dark-300 mb-2">Test SMTP
+                                            Configuration</label>
+                                        <div class="flex gap-2">
+                                            <input type="email" id="admin-smtp-test-email" class="form-input flex-1"
+                                                placeholder="Enter email to send test">
+                                            <button type="button" id="btn-smtp-test-email"
+                                                class="btn-secondary px-4 py-2 whitespace-nowrap flex items-center gap-2">
+                                                <i data-lucide="send" class="w-4 h-4"></i>
+                                                Send Test
+                                            </button>
+                                        </div>
+                                        <p class="text-xs text-dark-500 mt-2">Save settings first, then test to verify your
+                                            configuration.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Email Templates -->
+                            <div class="space-y-4">
+                                <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">Email Templates
+                                </h4>
+                                <p class="text-xs text-dark-400">Use placeholders: {{username}}, {{verification_link}},
+                                    {{login_link}}, {{reset_link}}</p>
+
+                                <!-- Welcome Email -->
+                                <details class="bg-dark-700 rounded-lg">
+                                    <summary class="p-3 cursor-pointer text-sm font-medium text-dark-200">Welcome Email
+                                    </summary>
+                                    <div class="p-3 space-y-3 border-t border-dark-600">
+                                        <div>
+                                            <label class="block text-xs text-dark-400 mb-1">Subject</label>
+                                            <input type="text" id="admin-email-welcome-subject"
+                                                class="form-input w-full text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-dark-400 mb-1">Body</label>
+                                            <textarea id="admin-email-welcome-body" class="form-textarea w-full text-sm"
+                                                rows="4"></textarea>
+                                        </div>
+                                    </div>
+                                </details>
+
+                                <!-- Forgot Password Email -->
+                                <details class="bg-dark-700 rounded-lg">
+                                    <summary class="p-3 cursor-pointer text-sm font-medium text-dark-200">Password Reset
+                                        Email</summary>
+                                    <div class="p-3 space-y-3 border-t border-dark-600">
+                                        <div>
+                                            <label class="block text-xs text-dark-400 mb-1">Subject</label>
+                                            <input type="text" id="admin-email-forgot-subject"
+                                                class="form-input w-full text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-dark-400 mb-1">Body</label>
+                                            <textarea id="admin-email-forgot-body" class="form-textarea w-full text-sm"
+                                                rows="4"></textarea>
+                                        </div>
+                                    </div>
+                                </details>
+                                <!-- Email Verification -->
+                                <details class="bg-dark-700 rounded-lg">
+                                    <summary class="p-3 cursor-pointer text-sm font-medium text-dark-200">Email Verification
+                                    </summary>
+                                    <div class="p-3 space-y-3 border-t border-dark-600">
+                                        <div class="flex items-center justify-between p-3 bg-dark-800 rounded-lg">
+                                            <div>
+                                                <label class="text-sm font-medium text-dark-200">Require Email
+                                                    Verification</label>
+                                                <p class="text-xs text-dark-400">Users must verify their email before
+                                                    logging in</p>
+                                            </div>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" id="admin-email-verification-enabled"
+                                                    class="sr-only peer">
+                                                <div
+                                                    class="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600">
+                                                </div>
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-dark-400 mb-1">Subject</label>
+                                            <input type="text" id="admin-email-verification-subject"
+                                                class="form-input w-full text-sm"
+                                                placeholder="Verify your email - AIKAFLOW">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-dark-400 mb-1">Body</label>
+                                            <textarea id="admin-email-verification-body"
+                                                class="form-textarea w-full text-sm" rows="5"
+                                                placeholder="Hello {{username}},&#10;&#10;Please click the link below to verify your email:&#10;{{verification_link}}"></textarea>
+                                        </div>
+                                        <p class="text-xs text-dark-500">
+                                            <i data-lucide="info" class="w-3 h-3 inline"></i>
+                                            Only works when SMTP is properly configured above.
                                         </p>
                                     </div>
-                                    <div id="google-auth-fields" class="space-y-4 hidden">
-                                        <div>
-                                            <label class="block text-sm font-medium text-dark-300 mb-2">Google Client ID</label>
-                                            <input type="text" id="admin-google-client-id" class="form-input w-full"
-                                                placeholder="Enter your Google OAuth Client ID">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-dark-300 mb-2">Google Client
-                                                Secret</label>
-                                            <input type="password" id="admin-google-client-secret" class="form-input w-full"
-                                                placeholder="Enter your Google OAuth Client Secret">
-                                        </div>
-                                        <div class="bg-dark-800 p-3 rounded-lg text-xs text-dark-400">
-                                            <p class="font-medium text-dark-300 mb-1">Setup Instructions:</p>
-                                            <ol class="list-decimal list-inside space-y-1">
-                                                <li>Go to <a href="https://console.cloud.google.com/apis/credentials"
-                                                        target="_blank" class="text-primary-400 hover:underline">Google Cloud
-                                                        Console</a></li>
-                                                <li>Create OAuth 2.0 Client ID</li>
-                                                <li>Set authorized redirect URI to: <code
-                                                        class="bg-dark-700 px-1 rounded"><?= htmlspecialchars(APP_URL) ?>/api/auth/google-callback.php</code>
-                                                </li>
-                                            </ol>
-                                        </div>
+                                </details>
+                            </div>
+
+                            <!-- Legal Pages -->
+                            <div class="space-y-4">
+                                <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">Legal Pages</h4>
+
+                                <details class="bg-dark-700 rounded-lg">
+                                    <summary class="p-3 cursor-pointer text-sm font-medium text-dark-200">Terms of Service
+                                    </summary>
+                                    <div class="p-3 pt-0">
+                                        <textarea id="admin-terms-of-service" class="form-textarea w-full text-sm" rows="6"
+                                            placeholder="Enter your Terms of Service (Markdown supported)"></textarea>
                                     </div>
-                                </div>
+                                </details>
 
-                                <!-- Invitation System -->
-                                <div class="space-y-4">
-                                    <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">Invitation
-                                        System</h4>
-                                    <div>
-                                        <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
-                                            <input type="checkbox" id="admin-invitation-enabled" class="form-checkbox">
-                                            <span>Enable Invitation/Referral System</span>
-                                        </label>
-                                        <p class="text-xs text-dark-500 mt-1">Allow users to share invitation codes for organic
-                                            growth</p>
+                                <details class="bg-dark-700 rounded-lg">
+                                    <summary class="p-3 cursor-pointer text-sm font-medium text-dark-200">Privacy Policy
+                                    </summary>
+                                    <div class="p-3 pt-0">
+                                        <textarea id="admin-privacy-policy" class="form-textarea w-full text-sm" rows="6"
+                                            placeholder="Enter your Privacy Policy (Markdown supported)"></textarea>
                                     </div>
-                                    <div id="invitation-fields" class="space-y-4 hidden">
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-sm font-medium text-dark-300 mb-2">Referrer
-                                                    Credits</label>
-                                                <input type="number" id="admin-invitation-referrer-credits"
-                                                    class="form-input w-full" placeholder="50" min="0">
-                                                <p class="text-xs text-dark-500 mt-1">Credits given to code owner</p>
-                                            </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-dark-300 mb-2">New User
-                                                    Credits</label>
-                                                <input type="number" id="admin-invitation-referee-credits"
-                                                    class="form-input w-full" placeholder="50" min="0">
-                                                <p class="text-xs text-dark-500 mt-1">Credits given to new user</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                </details>
+                            </div>
 
-                                <!-- WhatsApp Verification -->
-                                <div class="space-y-4">
-                                    <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">WhatsApp
-                                        Verification</h4>
-                                    <div>
-                                        <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
-                                            <input type="checkbox" id="admin-whatsapp-verification-enabled"
-                                                class="form-checkbox">
-                                            <span>Enable WhatsApp Verification on Registration</span>
-                                        </label>
-                                        <p class="text-xs text-dark-500 mt-1">Require users to verify their WhatsApp number
-                                            during registration</p>
-                                    </div>
-                                    <div id="whatsapp-verification-fields" class="space-y-4 hidden">
-                                        <div>
-                                            <label class="block text-sm font-medium text-dark-300 mb-2">API URL
-                                                Template</label>
-                                            <input type="text" id="admin-whatsapp-api-url"
-                                                class="form-input w-full font-mono text-sm"
-                                                placeholder="https://api.example.com/send.php?number={{destination_number}}&message={{message}}&token=xxx">
-                                            <p class="text-xs text-dark-500 mt-1">Use <code
-                                                    class="bg-dark-700 px-1 rounded">{{destination_number}}</code> and <code
-                                                    class="bg-dark-700 px-1 rounded">{{message}}</code> as placeholders</p>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-dark-300 mb-2">HTTP Method</label>
-                                            <select id="admin-whatsapp-api-method" class="form-select w-full">
-                                                <option value="GET">GET</option>
-                                                <option value="POST">POST</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-dark-300 mb-2">Verification Message
-                                                Template</label>
-                                            <textarea id="admin-whatsapp-verification-message"
-                                                class="form-textarea w-full text-sm" rows="3"
-                                                placeholder="Your verification code for {{site_title}} is: {{code}}. This code expires in 10 minutes."></textarea>
-                                            <p class="text-xs text-dark-500 mt-1">Use <code
-                                                    class="bg-dark-700 px-1 rounded">{{code}}</code> and <code
-                                                    class="bg-dark-700 px-1 rounded">{{site_title}}</code> as placeholders</p>
-                                        </div>
-                                        <div class="bg-dark-800 p-3 rounded-lg text-xs text-dark-400">
-                                            <p class="font-medium text-dark-300 mb-1">Example API URL:</p>
-                                            <code
-                                                class="block text-dark-400 break-all">https://x2.woonotif.com/api/send.php?number={{destination_number}}&type=text&message={{message}}&instance_id=YOUR_ID&access_token=YOUR_TOKEN</code>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- SMTP Email -->
-                                <div class="space-y-4">
-                                    <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">SMTP Email</h4>
-                                    <div>
-                                        <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
-                                            <input type="checkbox" id="admin-smtp-enabled" class="form-checkbox">
-                                            <span>Enable SMTP Email</span>
-                                        </label>
-                                    </div>
-                                    <div id="smtp-fields" class="space-y-4 hidden">
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-sm font-medium text-dark-300 mb-2">SMTP Host</label>
-                                                <input type="text" id="admin-smtp-host" class="form-input w-full"
-                                                    placeholder="smtp.example.com">
-                                            </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-dark-300 mb-2">Port</label>
-                                                <input type="number" id="admin-smtp-port" class="form-input w-full" value="587">
-                                            </div>
-                                        </div>
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-sm font-medium text-dark-300 mb-2">Username</label>
-                                                <input type="text" id="admin-smtp-username" class="form-input w-full">
-                                            </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-dark-300 mb-2">Password</label>
-                                                <input type="password" id="admin-smtp-password" class="form-input w-full">
-                                            </div>
-                                        </div>
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-sm font-medium text-dark-300 mb-2">From Email</label>
-                                                <input type="email" id="admin-smtp-from-email" class="form-input w-full"
-                                                    placeholder="noreply@example.com">
-                                            </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-dark-300 mb-2">From Name</label>
-                                                <input type="text" id="admin-smtp-from-name" class="form-input w-full"
-                                                    value="AIKAFLOW">
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-dark-300 mb-2">Encryption</label>
-                                            <select id="admin-smtp-encryption" class="form-select w-full">
-                                                <option value="tls">TLS</option>
-                                                <option value="ssl">SSL</option>
-                                                <option value="none">None</option>
-                                            </select>
-                                        </div>
-                                        <!-- Test Email -->
-                                        <div class="pt-4 mt-4 border-t border-dark-600">
-                                            <label class="block text-sm font-medium text-dark-300 mb-2">Test SMTP
-                                                Configuration</label>
-                                            <div class="flex gap-2">
-                                                <input type="email" id="admin-smtp-test-email" class="form-input flex-1"
-                                                    placeholder="Enter email to send test">
-                                                <button type="button" id="btn-smtp-test-email"
-                                                    class="btn-secondary px-4 py-2 whitespace-nowrap flex items-center gap-2">
-                                                    <i data-lucide="send" class="w-4 h-4"></i>
-                                                    Send Test
-                                                </button>
-                                            </div>
-                                            <p class="text-xs text-dark-500 mt-2">Save settings first, then test to verify your
-                                                configuration.</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Email Templates -->
-                                <div class="space-y-4">
-                                    <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">Email Templates
-                                    </h4>
-                                    <p class="text-xs text-dark-400">Use placeholders: {{username}}, {{verification_link}},
-                                        {{login_link}}, {{reset_link}}</p>
-
-                                    <!-- Welcome Email -->
-                                    <details class="bg-dark-700 rounded-lg">
-                                        <summary class="p-3 cursor-pointer text-sm font-medium text-dark-200">Welcome Email
-                                        </summary>
-                                        <div class="p-3 space-y-3 border-t border-dark-600">
-                                            <div>
-                                                <label class="block text-xs text-dark-400 mb-1">Subject</label>
-                                                <input type="text" id="admin-email-welcome-subject"
-                                                    class="form-input w-full text-sm">
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs text-dark-400 mb-1">Body</label>
-                                                <textarea id="admin-email-welcome-body" class="form-textarea w-full text-sm"
-                                                    rows="4"></textarea>
-                                            </div>
-                                        </div>
-                                    </details>
-
-                                    <!-- Forgot Password Email -->
-                                    <details class="bg-dark-700 rounded-lg">
-                                        <summary class="p-3 cursor-pointer text-sm font-medium text-dark-200">Password Reset
-                                            Email</summary>
-                                        <div class="p-3 space-y-3 border-t border-dark-600">
-                                            <div>
-                                                <label class="block text-xs text-dark-400 mb-1">Subject</label>
-                                                <input type="text" id="admin-email-forgot-subject"
-                                                    class="form-input w-full text-sm">
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs text-dark-400 mb-1">Body</label>
-                                                <textarea id="admin-email-forgot-body" class="form-textarea w-full text-sm"
-                                                    rows="4"></textarea>
-                                            </div>
-                                        </div>
-                                    </details>
-                                    <!-- Email Verification -->
-                                    <details class="bg-dark-700 rounded-lg">
-                                        <summary class="p-3 cursor-pointer text-sm font-medium text-dark-200">Email Verification
-                                        </summary>
-                                        <div class="p-3 space-y-3 border-t border-dark-600">
-                                            <div class="flex items-center justify-between p-3 bg-dark-800 rounded-lg">
-                                                <div>
-                                                    <label class="text-sm font-medium text-dark-200">Require Email
-                                                        Verification</label>
-                                                    <p class="text-xs text-dark-400">Users must verify their email before
-                                                        logging in</p>
-                                                </div>
-                                                <label class="relative inline-flex items-center cursor-pointer">
-                                                    <input type="checkbox" id="admin-email-verification-enabled"
-                                                        class="sr-only peer">
-                                                    <div
-                                                        class="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600">
-                                                    </div>
-                                                </label>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs text-dark-400 mb-1">Subject</label>
-                                                <input type="text" id="admin-email-verification-subject"
-                                                    class="form-input w-full text-sm"
-                                                    placeholder="Verify your email - AIKAFLOW">
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs text-dark-400 mb-1">Body</label>
-                                                <textarea id="admin-email-verification-body"
-                                                    class="form-textarea w-full text-sm" rows="5"
-                                                    placeholder="Hello {{username}},&#10;&#10;Please click the link below to verify your email:&#10;{{verification_link}}"></textarea>
-                                            </div>
-                                            <p class="text-xs text-dark-500">
-                                                <i data-lucide="info" class="w-3 h-3 inline"></i>
-                                                Only works when SMTP is properly configured above.
-                                            </p>
-                                        </div>
-                                    </details>
-                                </div>
-
-                                <!-- Legal Pages -->
-                                <div class="space-y-4">
-                                    <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">Legal Pages</h4>
-
-                                    <details class="bg-dark-700 rounded-lg">
-                                        <summary class="p-3 cursor-pointer text-sm font-medium text-dark-200">Terms of Service
-                                        </summary>
-                                        <div class="p-3 pt-0">
-                                            <textarea id="admin-terms-of-service" class="form-textarea w-full text-sm" rows="6"
-                                                placeholder="Enter your Terms of Service (Markdown supported)"></textarea>
-                                        </div>
-                                    </details>
-
-                                    <details class="bg-dark-700 rounded-lg">
-                                        <summary class="p-3 cursor-pointer text-sm font-medium text-dark-200">Privacy Policy
-                                        </summary>
-                                        <div class="p-3 pt-0">
-                                            <textarea id="admin-privacy-policy" class="form-textarea w-full text-sm" rows="6"
-                                                placeholder="Enter your Privacy Policy (Markdown supported)"></textarea>
-                                        </div>
-                                    </details>
-                                </div>
-
-                                <!-- Custom Scripts -->
-                                <div class="space-y-4">
-                                    <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">Custom Scripts
-                                    </h4>
-                                    <div>
-                                        <label class="block text-sm font-medium text-dark-300 mb-2">Footer JavaScript</label>
-                                        <textarea id="admin-custom-footer-js" class="form-textarea w-full font-mono text-sm"
-                                            rows="6" placeholder="<!-- Add tracking, analytics, or chat widget code here -->
+                            <!-- Custom Scripts -->
+                            <div class="space-y-4">
+                                <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">Custom Scripts
+                                </h4>
+                                <div>
+                                    <label class="block text-sm font-medium text-dark-300 mb-2">Footer JavaScript</label>
+                                    <textarea id="admin-custom-footer-js" class="form-textarea w-full font-mono text-sm"
+                                        rows="6" placeholder="<!-- Add tracking, analytics, or chat widget code here -->
 <script>
   // Your custom JavaScript code
 </script>"></textarea>
-                                        <p class="text-xs text-dark-500 mt-1">
-                                            <i data-lucide="info" class="w-3 h-3 inline"></i>
-                                            This code will be injected before the closing &lt;/body&gt; tag. Use for analytics,
-                                            chat widgets, or custom tracking.
-                                        </p>
-                                    </div>
+                                    <p class="text-xs text-dark-500 mt-1">
+                                        <i data-lucide="info" class="w-3 h-3 inline"></i>
+                                        This code will be injected before the closing &lt;/body&gt; tag. Use for analytics,
+                                        chat widgets, or custom tracking.
+                                    </p>
                                 </div>
-
-                                <!-- Headway Widget -->
-                                <div class="space-y-4">
-                                    <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">Changelog Widget
-                                        (Headway)</h4>
-                                    <div>
-                                        <label class="block text-sm font-medium text-dark-300 mb-2">Headway Widget ID</label>
-                                        <input type="text" id="admin-headway-widget-id" class="form-input w-full"
-                                            placeholder="e.g. abcd1234">
-                                        <p class="text-xs text-dark-500 mt-1">Get your widget ID from <a
-                                                href="https://headwayapp.co" target="_blank"
-                                                class="text-primary-400 hover:underline">headwayapp.co</a></p>
-                                    </div>
-                                </div>
-
-                                <button id="btn-admin-save-site" class="btn-primary">Save Site Settings</button>
                             </div>
+
+                            <!-- Headway Widget -->
+                            <div class="space-y-4">
+                                <h4 class="text-sm font-medium text-dark-200 border-b border-dark-600 pb-2">Changelog Widget
+                                    (Headway)</h4>
+                                <div>
+                                    <label class="block text-sm font-medium text-dark-300 mb-2">Headway Widget ID</label>
+                                    <input type="text" id="admin-headway-widget-id" class="form-input w-full"
+                                        placeholder="e.g. abcd1234">
+                                    <p class="text-xs text-dark-500 mt-1">Get your widget ID from <a
+                                            href="https://headwayapp.co" target="_blank"
+                                            class="text-primary-400 hover:underline">headwayapp.co</a></p>
+                                </div>
+                            </div>
+
+                            <button id="btn-admin-save-site" class="btn-primary">Save Site Settings</button>
+                        </div>
+                    </div>
+
+                    <!-- Credits Tab -->
+                    <div id="admin-credits" class="admin-content hidden">
+                        <!-- Sub-tabs (Pills) -->
+                        <div class="flex flex-wrap gap-2 mb-6 bg-dark-800/50 p-2 rounded-lg">
+                            <button class="credit-subtab active px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                                data-subtab="requests">
+                                <i data-lucide="inbox" class="w-4 h-4 inline mr-1"></i>Requests
+                            </button>
+                            <button class="credit-subtab px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                                data-subtab="settings">
+                                <i data-lucide="settings" class="w-4 h-4 inline mr-1"></i>Settings
+                            </button>
+                            <button class="credit-subtab px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                                data-subtab="packages">
+                                <i data-lucide="package" class="w-4 h-4 inline mr-1"></i>Packages
+                            </button>
+                            <button class="credit-subtab px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                                data-subtab="nodecosts">
+                                <i data-lucide="cpu" class="w-4 h-4 inline mr-1"></i>Node Costs
+                            </button>
+                            <button class="credit-subtab px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                                data-subtab="coupons">
+                                <i data-lucide="ticket" class="w-4 h-4 inline mr-1"></i>Coupons
+                            </button>
+                            <button class="credit-subtab px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                                data-subtab="banks">
+                                <i data-lucide="landmark" class="w-4 h-4 inline mr-1"></i>Banks
+                            </button>
                         </div>
 
-                        <!-- Credits Tab -->
-                        <div id="admin-credits" class="admin-content hidden">
-                            <!-- Sub-tabs (Pills) -->
-                            <div class="flex flex-wrap gap-2 mb-6 bg-dark-800/50 p-2 rounded-lg">
-                                <button class="credit-subtab active px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                                    data-subtab="requests">
-                                    <i data-lucide="inbox" class="w-4 h-4 inline mr-1"></i>Requests
-                                </button>
-                                <button class="credit-subtab px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                                    data-subtab="settings">
-                                    <i data-lucide="settings" class="w-4 h-4 inline mr-1"></i>Settings
-                                </button>
-                                <button class="credit-subtab px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                                    data-subtab="packages">
-                                    <i data-lucide="package" class="w-4 h-4 inline mr-1"></i>Packages
-                                </button>
-                                <button class="credit-subtab px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                                    data-subtab="nodecosts">
-                                    <i data-lucide="cpu" class="w-4 h-4 inline mr-1"></i>Node Costs
-                                </button>
-                                <button class="credit-subtab px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                                    data-subtab="coupons">
-                                    <i data-lucide="ticket" class="w-4 h-4 inline mr-1"></i>Coupons
-                                </button>
-                                <button class="credit-subtab px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                                    data-subtab="banks">
-                                    <i data-lucide="landmark" class="w-4 h-4 inline mr-1"></i>Banks
-                                </button>
-                            </div>
-
-                            <!-- Requests Subtab -->
-                            <div id="credit-subtab-requests" class="credit-subtab-content">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h4 class="text-base font-semibold text-dark-100">Top-up Requests</h4>
-                                    <div class="flex items-center gap-2">
-                                        <select id="topup-request-filter"
-                                            class="form-select text-xs py-1 px-2 bg-dark-700 border-dark-600 rounded"
-                                            onchange="window.filterTopupRequests?.()">
-                                            <option value="all">All Requests</option>
-                                            <option value="pending">Pending</option>
-                                            <option value="approved">Approved</option>
-                                            <option value="rejected">Rejected</option>
-                                        </select>
-                                        <button class="btn-secondary text-xs px-3 py-1"
-                                            onclick="window.loadAdminPendingRequests?.()">
-                                            <i data-lucide="refresh-cw" class="w-3 h-3 inline mr-1"></i>Refresh
-                                        </button>
-                                    </div>
-                                </div>
-                                <div id="admin-pending-requests" class="space-y-3">
-                                    <div class="text-center py-8 text-dark-400">
-                                        <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
-                                        <p>No requests found</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Settings Subtab -->
-                            <div id="credit-subtab-settings" class="credit-subtab-content hidden">
-                                <div class="space-y-6">
-                                    <!-- General Settings -->
-                                    <div class="bg-dark-800/30 rounded-xl p-5 border border-dark-600">
-                                        <h4 class="text-base font-semibold text-dark-100 mb-4 flex items-center gap-2">
-                                            <i data-lucide="sliders" class="w-4 h-4 text-primary-400"></i>
-                                            General Settings
-                                        </h4>
-                                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            <div>
-                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Currency</label>
-                                                <select id="admin-credit-currency" class="form-select w-full"
-                                                    onchange="updateCurrencySymbol()">
-                                                    <option value="USD" data-symbol="$">USD - US Dollar</option>
-                                                    <option value="EUR" data-symbol="€">EUR - Euro</option>
-                                                    <option value="GBP" data-symbol="£">GBP - British Pound</option>
-                                                    <option value="JPY" data-symbol="¥">JPY - Japanese Yen</option>
-                                                    <option value="CNY" data-symbol="¥">CNY - Chinese Yuan</option>
-                                                    <option value="IDR" data-symbol="Rp">IDR - Indonesian Rupiah</option>
-                                                    <option value="MYR" data-symbol="RM">MYR - Malaysian Ringgit</option>
-                                                    <option value="SGD" data-symbol="S$">SGD - Singapore Dollar</option>
-                                                    <option value="THB" data-symbol="฿">THB - Thai Baht</option>
-                                                    <option value="PHP" data-symbol="₱">PHP - Philippine Peso</option>
-                                                    <option value="VND" data-symbol="₫">VND - Vietnamese Dong</option>
-                                                    <option value="INR" data-symbol="₹">INR - Indian Rupee</option>
-                                                    <option value="KRW" data-symbol="₩">KRW - South Korean Won</option>
-                                                    <option value="AUD" data-symbol="A$">AUD - Australian Dollar</option>
-                                                    <option value="CAD" data-symbol="C$">CAD - Canadian Dollar</option>
-                                                    <option value="BRL" data-symbol="R$">BRL - Brazilian Real</option>
-                                                    <option value="MXN" data-symbol="$">MXN - Mexican Peso</option>
-                                                    <option value="AED" data-symbol="د.إ">AED - UAE Dirham</option>
-                                                    <option value="SAR" data-symbol="﷼">SAR - Saudi Riyal</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Currency
-                                                    Symbol</label>
-                                                <input type="text" id="admin-credit-symbol" class="form-input w-full" value="$"
-                                                    readonly>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Welcome
-                                                    Credits</label>
-                                                <input type="number" id="admin-credit-welcome" class="form-input w-full"
-                                                    value="100">
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Low Balance
-                                                    Alert</label>
-                                                <input type="number" id="admin-credit-threshold" class="form-input w-full"
-                                                    value="100">
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Expiry
-                                                    Days</label>
-                                                <input type="number" id="admin-credit-expiry-days" class="form-input w-full"
-                                                    value="365">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Workflow Settings -->
-                                    <div class="bg-dark-800/30 rounded-xl p-5 border border-dark-600">
-                                        <h4 class="text-base font-semibold text-dark-100 mb-4 flex items-center gap-2">
-                                            <i data-lucide="refresh-cw" class="w-4 h-4 text-cyan-400"></i>
-                                            Workflow Settings
-                                        </h4>
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Max Repeat
-                                                    Count</label>
-                                                <input type="number" id="admin-max-repeat-count" class="form-input w-full"
-                                                    value="100" min="1" max="1000">
-                                                <p class="text-xs text-dark-500 mt-1">Maximum times users can repeat a flow
-                                                    (1-1000)</p>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Content Retention
-                                                    (Days)</label>
-                                                <input type="number" id="admin-content-retention-days" class="form-input w-full"
-                                                    value="0" min="0" max="365">
-                                                <p class="text-xs text-dark-500 mt-1">How long to keep generated files. Set to 0
-                                                    to disable auto-deletion.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-
-                                    <!-- QRIS Settings -->
-                                    <div class="bg-dark-800/30 rounded-xl p-5 border border-dark-600">
-                                        <h4 class="text-base font-semibold text-dark-100 mb-4 flex items-center gap-2">
-                                            <i data-lucide="qr-code" class="w-4 h-4 text-purple-400"></i>
-                                            QRIS Payment
-                                        </h4>
-                                        <div class="space-y-4">
-                                            <div>
-                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">QRIS
-                                                    String</label>
-                                                <textarea id="admin-qris-string"
-                                                    class="form-input w-full h-24 font-mono text-xs"
-                                                    placeholder="Paste your QRIS string here..."></textarea>
-                                                <p class="text-xs text-dark-500 mt-1">This will enable QRIS payment option for
-                                                    users. Leave empty to disable.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- PayPal Payment Gateway -->
-                                    <div class="bg-dark-800/30 rounded-xl p-5 border border-dark-600">
-                                        <h4 class="text-base font-semibold text-dark-100 mb-4 flex items-center gap-2">
-                                            <i data-lucide="credit-card" class="w-4 h-4 text-blue-400"></i>
-                                            PayPal Payment Gateway
-                                        </h4>
-                                        <div class="space-y-4">
-                                            <div>
-                                                <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
-                                                    <input type="checkbox" id="admin-paypal-enabled" class="form-checkbox">
-                                                    <span>Enable PayPal Payments</span>
-                                                </label>
-                                                <p class="text-xs text-dark-500 mt-1">Accept instant payments via PayPal
-                                                    (credits granted immediately)</p>
-                                            </div>
-                                            <div id="paypal-fields" class="space-y-4 hidden">
-                                                <div>
-                                                    <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
-                                                        <input type="checkbox" id="admin-paypal-sandbox" class="form-checkbox">
-                                                        <span>Sandbox Mode (Testing)</span>
-                                                    </label>
-                                                    <p class="text-xs text-dark-500 mt-1">Use PayPal sandbox for testing</p>
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Client
-                                                        ID</label>
-                                                    <input type="text" id="admin-paypal-client-id" class="form-input w-full"
-                                                        placeholder="PayPal Client ID from developer.paypal.com">
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Secret
-                                                        Key</label>
-                                                    <input type="password" id="admin-paypal-secret-key"
-                                                        class="form-input w-full" placeholder="PayPal Secret Key">
-                                                </div>
-                                                <div id="paypal-usd-rate-field">
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">USD Conversion
-                                                        Rate</label>
-                                                    <div class="flex items-center gap-2">
-                                                        <span class="text-dark-300 text-sm">1 USD =</span>
-                                                        <input type="number" id="admin-paypal-usd-rate" class="form-input w-32"
-                                                            placeholder="17000" step="0.01">
-                                                        <span class="text-dark-400 text-sm"
-                                                            id="usd-rate-currency-label">IDR</span>
-                                                    </div>
-                                                    <p class="text-xs text-dark-500 mt-1">Required for non-USD currencies.
-                                                        PayPal only accepts USD.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <button id="btn-save-credit-settings" class="btn-primary">
-                                        <i data-lucide="save" class="w-4 h-4 inline mr-1"></i>
-                                        Save Settings
+                        <!-- Requests Subtab -->
+                        <div id="credit-subtab-requests" class="credit-subtab-content">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="text-base font-semibold text-dark-100">Top-up Requests</h4>
+                                <div class="flex items-center gap-2">
+                                    <select id="topup-request-filter"
+                                        class="form-select text-xs py-1 px-2 bg-dark-700 border-dark-600 rounded"
+                                        onchange="window.filterTopupRequests?.()">
+                                        <option value="all">All Requests</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="approved">Approved</option>
+                                        <option value="rejected">Rejected</option>
+                                    </select>
+                                    <button class="btn-secondary text-xs px-3 py-1"
+                                        onclick="window.loadAdminPendingRequests?.()">
+                                        <i data-lucide="refresh-cw" class="w-3 h-3 inline mr-1"></i>Refresh
                                     </button>
                                 </div>
                             </div>
-
-                            <!-- Packages Subtab -->
-                            <div id="credit-subtab-packages" class="credit-subtab-content hidden">
-                                <div class="space-y-4">
-                                    <!-- Add Package Form (Accordion) -->
-                                    <details class="bg-dark-800/30 rounded-xl border border-dark-600 group">
-                                        <summary
-                                            class="p-4 cursor-pointer flex items-center justify-between text-dark-100 font-medium hover:bg-dark-700/30 rounded-xl">
-                                            <span class="flex items-center gap-2">
-                                                <i data-lucide="plus-circle" class="w-4 h-4 text-primary-400"></i>
-                                                Add New Package
-                                            </span>
-                                            <i data-lucide="chevron-down"
-                                                class="w-4 h-4 transition-transform group-open:rotate-180"></i>
-                                        </summary>
-                                        <div class="p-4 border-t border-dark-600">
-                                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                                <div class="col-span-2">
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Package
-                                                        Name</label>
-                                                    <input type="text" id="new-package-name" class="form-input w-full"
-                                                        placeholder="e.g. Starter">
-                                                </div>
-                                                <div>
-                                                    <label
-                                                        class="block text-xs font-medium text-dark-400 mb-1.5">Credits</label>
-                                                    <input type="number" id="new-package-credits" class="form-input w-full"
-                                                        placeholder="500">
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Price</label>
-                                                    <input type="number" id="new-package-price" class="form-input w-full"
-                                                        placeholder="50000">
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Bonus
-                                                        Credits</label>
-                                                    <input type="number" id="new-package-bonus" class="form-input w-full"
-                                                        placeholder="0" value="0">
-                                                </div>
-                                                <div class="col-span-2 md:col-span-3">
-                                                    <label
-                                                        class="block text-xs font-medium text-dark-400 mb-1.5">Description</label>
-                                                    <input type="text" id="new-package-description" class="form-input w-full"
-                                                        placeholder="Short description">
-                                                </div>
-                                            </div>
-                                            <div class="flex gap-2">
-                                                <button id="btn-create-package" class="btn-primary text-sm">
-                                                    <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i>Create Package
-                                                </button>
-                                                <button type="button" onclick="window.cancelEditPackage?.()"
-                                                    class="btn-secondary text-sm">
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </details>
-
-                                    <!-- Packages List -->
-                                    <div id="admin-packages-list" class="space-y-2">
-                                        <div class="text-center py-8 text-dark-400">Loading packages...</div>
-                                    </div>
+                            <div id="admin-pending-requests" class="space-y-3">
+                                <div class="text-center py-8 text-dark-400">
+                                    <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                                    <p>No requests found</p>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Node Costs Subtab -->
-                            <div id="credit-subtab-nodecosts" class="credit-subtab-content hidden">
-                                <div class="space-y-4">
-                                    <!-- Add Node Cost Form -->
-                                    <div class="bg-dark-800/30 rounded-xl p-4 border border-dark-600">
-                                        <h4 class="text-sm font-medium text-dark-200 mb-3">Add Node Cost</h4>
-                                        <div class="flex gap-3 items-end">
-                                            <div class="flex-1">
-                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Select Node
-                                                    Type</label>
-                                                <select id="new-node-type-select" class="form-select w-full">
-                                                    <option value="">-- Select a node --</option>
+                        <!-- Settings Subtab -->
+                        <div id="credit-subtab-settings" class="credit-subtab-content hidden">
+                            <div class="space-y-6">
+                                <!-- General Settings -->
+                                <div class="bg-dark-800/30 rounded-xl p-5 border border-dark-600">
+                                    <h4 class="text-base font-semibold text-dark-100 mb-4 flex items-center gap-2">
+                                        <i data-lucide="sliders" class="w-4 h-4 text-primary-400"></i>
+                                        General Settings
+                                    </h4>
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-medium text-dark-400 mb-1.5">Currency</label>
+                                            <select id="admin-credit-currency" class="form-select w-full"
+                                                onchange="updateCurrencySymbol()">
+                                                <option value="USD" data-symbol="$">USD - US Dollar</option>
+                                                <option value="EUR" data-symbol="€">EUR - Euro</option>
+                                                <option value="GBP" data-symbol="£">GBP - British Pound</option>
+                                                <option value="JPY" data-symbol="¥">JPY - Japanese Yen</option>
+                                                <option value="CNY" data-symbol="¥">CNY - Chinese Yuan</option>
+                                                <option value="IDR" data-symbol="Rp">IDR - Indonesian Rupiah</option>
+                                                <option value="MYR" data-symbol="RM">MYR - Malaysian Ringgit</option>
+                                                <option value="SGD" data-symbol="S$">SGD - Singapore Dollar</option>
+                                                <option value="THB" data-symbol="฿">THB - Thai Baht</option>
+                                                <option value="PHP" data-symbol="₱">PHP - Philippine Peso</option>
+                                                <option value="VND" data-symbol="₫">VND - Vietnamese Dong</option>
+                                                <option value="INR" data-symbol="₹">INR - Indian Rupee</option>
+                                                <option value="KRW" data-symbol="₩">KRW - South Korean Won</option>
+                                                <option value="AUD" data-symbol="A$">AUD - Australian Dollar</option>
+                                                <option value="CAD" data-symbol="C$">CAD - Canadian Dollar</option>
+                                                <option value="BRL" data-symbol="R$">BRL - Brazilian Real</option>
+                                                <option value="MXN" data-symbol="$">MXN - Mexican Peso</option>
+                                                <option value="AED" data-symbol="د.إ">AED - UAE Dirham</option>
+                                                <option value="SAR" data-symbol="﷼">SAR - Saudi Riyal</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-dark-400 mb-1.5">Currency
+                                                Symbol</label>
+                                            <input type="text" id="admin-credit-symbol" class="form-input w-full" value="$"
+                                                readonly>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-dark-400 mb-1.5">Welcome
+                                                Credits</label>
+                                            <input type="number" id="admin-credit-welcome" class="form-input w-full"
+                                                value="100">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-dark-400 mb-1.5">Low Balance
+                                                Alert</label>
+                                            <input type="number" id="admin-credit-threshold" class="form-input w-full"
+                                                value="100">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-dark-400 mb-1.5">Expiry
+                                                Days</label>
+                                            <input type="number" id="admin-credit-expiry-days" class="form-input w-full"
+                                                value="365">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Workflow Settings -->
+                                <div class="bg-dark-800/30 rounded-xl p-5 border border-dark-600">
+                                    <h4 class="text-base font-semibold text-dark-100 mb-4 flex items-center gap-2">
+                                        <i data-lucide="refresh-cw" class="w-4 h-4 text-cyan-400"></i>
+                                        Workflow Settings
+                                    </h4>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-medium text-dark-400 mb-1.5">Max Repeat
+                                                Count</label>
+                                            <input type="number" id="admin-max-repeat-count" class="form-input w-full"
+                                                value="100" min="1" max="1000">
+                                            <p class="text-xs text-dark-500 mt-1">Maximum times users can repeat a flow
+                                                (1-1000)</p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-dark-400 mb-1.5">Content Retention
+                                                (Days)</label>
+                                            <input type="number" id="admin-content-retention-days" class="form-input w-full"
+                                                value="0" min="0" max="365">
+                                            <p class="text-xs text-dark-500 mt-1">How long to keep generated files. Set to 0
+                                                to disable auto-deletion.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <!-- QRIS Settings -->
+                                <div class="bg-dark-800/30 rounded-xl p-5 border border-dark-600">
+                                    <h4 class="text-base font-semibold text-dark-100 mb-4 flex items-center gap-2">
+                                        <i data-lucide="qr-code" class="w-4 h-4 text-purple-400"></i>
+                                        QRIS Payment
+                                    </h4>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="block text-xs font-medium text-dark-400 mb-1.5">QRIS
+                                                String</label>
+                                            <textarea id="admin-qris-string"
+                                                class="form-input w-full h-24 font-mono text-xs"
+                                                placeholder="Paste your QRIS string here..."></textarea>
+                                            <p class="text-xs text-dark-500 mt-1">This will enable QRIS payment option for
+                                                users. Leave empty to disable.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- PayPal Payment Gateway -->
+                                <div class="bg-dark-800/30 rounded-xl p-5 border border-dark-600">
+                                    <h4 class="text-base font-semibold text-dark-100 mb-4 flex items-center gap-2">
+                                        <i data-lucide="credit-card" class="w-4 h-4 text-blue-400"></i>
+                                        PayPal Payment Gateway
+                                    </h4>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
+                                                <input type="checkbox" id="admin-paypal-enabled" class="form-checkbox">
+                                                <span>Enable PayPal Payments</span>
+                                            </label>
+                                            <p class="text-xs text-dark-500 mt-1">Accept instant payments via PayPal
+                                                (credits granted immediately)</p>
+                                        </div>
+                                        <div id="paypal-fields" class="space-y-4 hidden">
+                                            <div>
+                                                <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
+                                                    <input type="checkbox" id="admin-paypal-sandbox" class="form-checkbox">
+                                                    <span>Sandbox Mode (Testing)</span>
+                                                </label>
+                                                <p class="text-xs text-dark-500 mt-1">Use PayPal sandbox for testing</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Client
+                                                    ID</label>
+                                                <input type="text" id="admin-paypal-client-id" class="form-input w-full"
+                                                    placeholder="PayPal Client ID from developer.paypal.com">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Secret
+                                                    Key</label>
+                                                <input type="password" id="admin-paypal-secret-key"
+                                                    class="form-input w-full" placeholder="PayPal Secret Key">
+                                            </div>
+                                            <div id="paypal-usd-rate-field">
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">USD Conversion
+                                                    Rate</label>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-dark-300 text-sm">1 USD =</span>
+                                                    <input type="number" id="admin-paypal-usd-rate" class="form-input w-32"
+                                                        placeholder="17000" step="0.01">
+                                                    <span class="text-dark-400 text-sm"
+                                                        id="usd-rate-currency-label">IDR</span>
+                                                </div>
+                                                <p class="text-xs text-dark-500 mt-1">Required for non-USD currencies.
+                                                    PayPal only accepts USD.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button id="btn-save-credit-settings" class="btn-primary">
+                                    <i data-lucide="save" class="w-4 h-4 inline mr-1"></i>
+                                    Save Settings
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Packages Subtab -->
+                        <div id="credit-subtab-packages" class="credit-subtab-content hidden">
+                            <div class="space-y-4">
+                                <!-- Add Package Form (Accordion) -->
+                                <details class="bg-dark-800/30 rounded-xl border border-dark-600 group">
+                                    <summary
+                                        class="p-4 cursor-pointer flex items-center justify-between text-dark-100 font-medium hover:bg-dark-700/30 rounded-xl">
+                                        <span class="flex items-center gap-2">
+                                            <i data-lucide="plus-circle" class="w-4 h-4 text-primary-400"></i>
+                                            Add New Package
+                                        </span>
+                                        <i data-lucide="chevron-down"
+                                            class="w-4 h-4 transition-transform group-open:rotate-180"></i>
+                                    </summary>
+                                    <div class="p-4 border-t border-dark-600">
+                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                            <div class="col-span-2">
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Package
+                                                    Name</label>
+                                                <input type="text" id="new-package-name" class="form-input w-full"
+                                                    placeholder="e.g. Starter">
+                                            </div>
+                                            <div>
+                                                <label
+                                                    class="block text-xs font-medium text-dark-400 mb-1.5">Credits</label>
+                                                <input type="number" id="new-package-credits" class="form-input w-full"
+                                                    placeholder="500">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Price</label>
+                                                <input type="number" id="new-package-price" class="form-input w-full"
+                                                    placeholder="50000">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Bonus
+                                                    Credits</label>
+                                                <input type="number" id="new-package-bonus" class="form-input w-full"
+                                                    placeholder="0" value="0">
+                                            </div>
+                                            <div class="col-span-2 md:col-span-3">
+                                                <label
+                                                    class="block text-xs font-medium text-dark-400 mb-1.5">Description</label>
+                                                <input type="text" id="new-package-description" class="form-input w-full"
+                                                    placeholder="Short description">
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button id="btn-create-package" class="btn-primary text-sm">
+                                                <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i>Create Package
+                                            </button>
+                                            <button type="button" onclick="window.cancelEditPackage?.()"
+                                                class="btn-secondary text-sm">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                </details>
+
+                                <!-- Packages List -->
+                                <div id="admin-packages-list" class="space-y-2">
+                                    <div class="text-center py-8 text-dark-400">Loading packages...</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Node Costs Subtab -->
+                        <div id="credit-subtab-nodecosts" class="credit-subtab-content hidden">
+                            <div class="space-y-4">
+                                <!-- Add Node Cost Form -->
+                                <div class="bg-dark-800/30 rounded-xl p-4 border border-dark-600">
+                                    <h4 class="text-sm font-medium text-dark-200 mb-3">Add Node Cost</h4>
+                                    <div class="flex gap-3 items-end">
+                                        <div class="flex-1">
+                                            <label class="block text-xs font-medium text-dark-400 mb-1.5">Select Node
+                                                Type</label>
+                                            <select id="new-node-type-select" class="form-select w-full">
+                                                <option value="">-- Select a node --</option>
+                                            </select>
+                                        </div>
+                                        <div class="w-32">
+                                            <label class="block text-xs font-medium text-dark-400 mb-1.5">Cost per
+                                                Call</label>
+                                            <input type="number" id="new-node-cost" class="form-input w-full"
+                                                placeholder="0.00" step="0.01">
+                                        </div>
+                                        <button id="btn-add-node-cost" class="btn-primary px-4">
+                                            <i data-lucide="plus" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Node Costs List -->
+                                <div id="admin-node-costs" class="space-y-2">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Coupons Subtab -->
+                        <div id="credit-subtab-coupons" class="credit-subtab-content hidden">
+                            <div class="space-y-4">
+                                <!-- Add Coupon Form (Accordion) -->
+                                <details class="bg-dark-800/30 rounded-xl border border-dark-600 group">
+                                    <summary
+                                        class="p-4 cursor-pointer flex items-center justify-between text-dark-100 font-medium hover:bg-dark-700/30 rounded-xl">
+                                        <span class="flex items-center gap-2">
+                                            <i data-lucide="plus-circle" class="w-4 h-4 text-primary-400"></i>
+                                            Add New Coupon
+                                        </span>
+                                        <i data-lucide="chevron-down"
+                                            class="w-4 h-4 transition-transform group-open:rotate-180"></i>
+                                    </summary>
+                                    <div class="p-4 border-t border-dark-600">
+                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Coupon
+                                                    Code</label>
+                                                <input type="text" id="new-coupon-code" class="form-input w-full font-mono"
+                                                    placeholder="SAVE20">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Type</label>
+                                                <select id="new-coupon-type" class="form-select w-full">
+                                                    <option value="percentage">Percentage (%)</option>
+                                                    <option value="fixed_discount">Fixed Discount</option>
+                                                    <option value="bonus_credits">Bonus Credits</option>
                                                 </select>
                                             </div>
-                                            <div class="w-32">
-                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Cost per
-                                                    Call</label>
-                                                <input type="number" id="new-node-cost" class="form-input w-full"
-                                                    placeholder="0.00" step="0.01">
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Value</label>
+                                                <input type="number" id="new-coupon-value" class="form-input w-full"
+                                                    placeholder="20">
                                             </div>
-                                            <button id="btn-add-node-cost" class="btn-primary px-4">
-                                                <i data-lucide="plus" class="w-4 h-4"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Node Costs List -->
-                                    <div id="admin-node-costs" class="space-y-2">
-                                        <!-- Populated by JS -->
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Coupons Subtab -->
-                            <div id="credit-subtab-coupons" class="credit-subtab-content hidden">
-                                <div class="space-y-4">
-                                    <!-- Add Coupon Form (Accordion) -->
-                                    <details class="bg-dark-800/30 rounded-xl border border-dark-600 group">
-                                        <summary
-                                            class="p-4 cursor-pointer flex items-center justify-between text-dark-100 font-medium hover:bg-dark-700/30 rounded-xl">
-                                            <span class="flex items-center gap-2">
-                                                <i data-lucide="plus-circle" class="w-4 h-4 text-primary-400"></i>
-                                                Add New Coupon
-                                            </span>
-                                            <i data-lucide="chevron-down"
-                                                class="w-4 h-4 transition-transform group-open:rotate-180"></i>
-                                        </summary>
-                                        <div class="p-4 border-t border-dark-600">
-                                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Coupon
-                                                        Code</label>
-                                                    <input type="text" id="new-coupon-code" class="form-input w-full font-mono"
-                                                        placeholder="SAVE20">
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Type</label>
-                                                    <select id="new-coupon-type" class="form-select w-full">
-                                                        <option value="percentage">Percentage (%)</option>
-                                                        <option value="fixed_discount">Fixed Discount</option>
-                                                        <option value="bonus_credits">Bonus Credits</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Value</label>
-                                                    <input type="number" id="new-coupon-value" class="form-input w-full"
-                                                        placeholder="20">
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Max
-                                                        Uses</label>
-                                                    <input type="number" id="new-coupon-max-uses" class="form-input w-full"
-                                                        placeholder="Unlimited">
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Valid
-                                                        From</label>
-                                                    <input type="date" id="new-coupon-valid-from" class="form-input w-full">
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Valid
-                                                        Until</label>
-                                                    <input type="date" id="new-coupon-valid-until" class="form-input w-full">
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Min
-                                                        Purchase</label>
-                                                    <input type="number" id="new-coupon-min-purchase" class="form-input w-full"
-                                                        placeholder="0" value="0">
-                                                </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Max
+                                                    Uses</label>
+                                                <input type="number" id="new-coupon-max-uses" class="form-input w-full"
+                                                    placeholder="Unlimited">
                                             </div>
-                                            <button id="btn-create-coupon" class="btn-primary text-sm">
-                                                <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i>Create Coupon
-                                            </button>
-                                        </div>
-                                    </details>
-
-                                    <!-- Coupons List -->
-                                    <div id="admin-coupons-list" class="space-y-2">
-                                        <div class="text-center py-8 text-dark-400">Loading coupons...</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Banks Subtab -->
-                            <div id="credit-subtab-banks" class="credit-subtab-content hidden">
-                                <div class="space-y-4">
-                                    <!-- Add Bank Form (Accordion) -->
-                                    <details class="bg-dark-800/30 rounded-xl border border-dark-600 group">
-                                        <summary
-                                            class="p-4 cursor-pointer flex items-center justify-between text-dark-100 font-medium hover:bg-dark-700/30 rounded-xl">
-                                            <span class="flex items-center gap-2">
-                                                <i data-lucide="plus-circle" class="w-4 h-4 text-primary-400"></i>
-                                                Add New Bank Account
-                                            </span>
-                                            <i data-lucide="chevron-down"
-                                                class="w-4 h-4 transition-transform group-open:rotate-180"></i>
-                                        </summary>
-                                        <div class="p-4 border-t border-dark-600">
-                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Bank
-                                                        Name</label>
-                                                    <input type="text" id="new-bank-name" class="form-input w-full"
-                                                        placeholder="e.g. Bank Central Asia">
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Account
-                                                        Number</label>
-                                                    <input type="text" id="new-bank-account" class="form-input w-full"
-                                                        placeholder="e.g. 1234567890">
-                                                </div>
-                                                <div>
-                                                    <label class="block text-xs font-medium text-dark-400 mb-1.5">Account
-                                                        Holder</label>
-                                                    <input type="text" id="new-bank-holder" class="form-input w-full"
-                                                        placeholder="e.g. PT AIKAFLOW">
-                                                </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Valid
+                                                    From</label>
+                                                <input type="date" id="new-coupon-valid-from" class="form-input w-full">
                                             </div>
-                                            <div class="flex gap-2">
-                                                <button id="btn-create-bank" class="btn-primary text-sm">
-                                                    <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i>Add Bank
-                                                </button>
-                                                <button type="button" onclick="window.cancelEditBank?.()"
-                                                    class="btn-secondary text-sm">
-                                                    Cancel
-                                                </button>
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Valid
+                                                    Until</label>
+                                                <input type="date" id="new-coupon-valid-until" class="form-input w-full">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Min
+                                                    Purchase</label>
+                                                <input type="number" id="new-coupon-min-purchase" class="form-input w-full"
+                                                    placeholder="0" value="0">
                                             </div>
                                         </div>
-                                    </details>
-
-                                    <p class="text-xs text-dark-500">
-                                        <i data-lucide="grip-vertical" class="w-3 h-3 inline mr-1"></i>
-                                        Drag banks to reorder. Users will see banks in this order during top-up.
-                                    </p>
-
-                                    <!-- Banks List -->
-                                    <div id="admin-banks-list" class="space-y-2">
-                                        <div class="text-center py-8 text-dark-400">Loading banks...</div>
+                                        <button id="btn-create-coupon" class="btn-primary text-sm">
+                                            <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i>Create Coupon
+                                        </button>
                                     </div>
+                                </details>
+
+                                <!-- Coupons List -->
+                                <div id="admin-coupons-list" class="space-y-2">
+                                    <div class="text-center py-8 text-dark-400">Loading coupons...</div>
                                 </div>
                             </div>
                         </div>
-                        <!-- Integrations Tab -->
-                        <div id="admin-integrations" class="admin-content hidden">
+                        <!-- Banks Subtab -->
+                        <div id="credit-subtab-banks" class="credit-subtab-content hidden">
                             <div class="space-y-4">
-                                <div>
-                                    <h4 class="text-sm font-medium text-dark-50 mb-2">Integration API Keys</h4>
-                                    <p class="text-xs text-dark-400 mb-4">Configure API keys for your installed plugins and
-                                        integrations.</p>
-                                </div>
-
-                                <!-- Dynamic Integration Keys Container -->
-                                <div id="integration-keys-container" class="space-y-3">
-                                    <div class="text-center py-4 text-gray-500">
-                                        <i data-lucide="loader" class="w-6 h-6 mx-auto mb-2 opacity-50 animate-spin"></i>
-                                        <p class="text-sm">Loading integrations...</p>
+                                <!-- Add Bank Form (Accordion) -->
+                                <details class="bg-dark-800/30 rounded-xl border border-dark-600 group">
+                                    <summary
+                                        class="p-4 cursor-pointer flex items-center justify-between text-dark-100 font-medium hover:bg-dark-700/30 rounded-xl">
+                                        <span class="flex items-center gap-2">
+                                            <i data-lucide="plus-circle" class="w-4 h-4 text-primary-400"></i>
+                                            Add New Bank Account
+                                        </span>
+                                        <i data-lucide="chevron-down"
+                                            class="w-4 h-4 transition-transform group-open:rotate-180"></i>
+                                    </summary>
+                                    <div class="p-4 border-t border-dark-600">
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Bank
+                                                    Name</label>
+                                                <input type="text" id="new-bank-name" class="form-input w-full"
+                                                    placeholder="e.g. Bank Central Asia">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Account
+                                                    Number</label>
+                                                <input type="text" id="new-bank-account" class="form-input w-full"
+                                                    placeholder="e.g. 1234567890">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-dark-400 mb-1.5">Account
+                                                    Holder</label>
+                                                <input type="text" id="new-bank-holder" class="form-input w-full"
+                                                    placeholder="e.g. PT AIKAFLOW">
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button id="btn-create-bank" class="btn-primary text-sm">
+                                                <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i>Add Bank
+                                            </button>
+                                            <button type="button" onclick="window.cancelEditBank?.()"
+                                                class="btn-secondary text-sm">
+                                                Cancel
+                                            </button>
+                                        </div>
                                     </div>
+                                </details>
+
+                                <p class="text-xs text-dark-500">
+                                    <i data-lucide="grip-vertical" class="w-3 h-3 inline mr-1"></i>
+                                    Drag banks to reorder. Users will see banks in this order during top-up.
+                                </p>
+
+                                <!-- Banks List -->
+                                <div id="admin-banks-list" class="space-y-2">
+                                    <div class="text-center py-8 text-dark-400">Loading banks...</div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Add/Edit User Modal -->
-            <div id="modal-admin-user" class="modal hidden">
-                <div class="modal-backdrop"></div>
-                <div class="modal-content w-full max-w-md">
-                    <div class="modal-header">
-                        <h3 class="text-lg font-semibold text-dark-50" id="admin-user-title">Add User</h3>
-                        <button class="modal-close">
-                            <i data-lucide="x" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="admin-user-id">
+                    <!-- Integrations Tab -->
+                    <div id="admin-integrations" class="admin-content hidden">
                         <div class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium text-dark-300 mb-1">Username</label>
-                                <input type="text" id="admin-user-username" class="form-input w-full">
+                                <h4 class="text-sm font-medium text-dark-50 mb-2">Integration API Keys</h4>
+                                <p class="text-xs text-dark-400 mb-4">Configure API keys for your installed plugins and
+                                    integrations.</p>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-dark-300 mb-1">Email</label>
-                                <input type="email" id="admin-user-email" class="form-input w-full">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-dark-300 mb-1">WhatsApp Number</label>
-                                <input type="tel" id="admin-user-whatsapp" class="form-input w-full"
-                                    placeholder="+628123456789">
-                                <p class="text-xs text-dark-500 mt-1">Include country code (e.g., +62 for Indonesia)</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-dark-300 mb-1">Password</label>
-                                <input type="password" id="admin-user-password" class="form-input w-full"
-                                    placeholder="Leave blank to keep current">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-dark-300 mb-1">Role</label>
-                                <select id="admin-user-role" class="form-select w-full">
-                                    <option value="user">User</option>
-                                    <option value="admin">Admin</option>
-                                </select>
-                            </div>
-                            <div id="admin-user-credits-container" class="hidden">
-                                <label class="block text-sm font-medium text-dark-300 mb-1">Adjust Credits</label>
-                                <div class="flex gap-2 items-center">
-                                    <input type="number" id="admin-user-credits" class="form-input flex-1"
-                                        placeholder="Amount (+/-)">
-                                    <span class="text-xs text-dark-400">Current: <span
-                                            id="admin-user-current-credits">0</span></span>
+
+                            <!-- Dynamic Integration Keys Container -->
+                            <div id="integration-keys-container" class="space-y-3">
+                                <div class="text-center py-4 text-gray-500">
+                                    <i data-lucide="loader" class="w-6 h-6 mx-auto mb-2 opacity-50 animate-spin"></i>
+                                    <p class="text-sm">Loading integrations...</p>
                                 </div>
-                                <p class="text-xs text-dark-500 mt-1">Enter positive to add, negative to deduct</p>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button class="btn-secondary modal-cancel">Cancel</button>
-                        <button id="btn-admin-save-user" class="btn-primary">Save User</button>
-                    </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Add/Edit User Modal -->
+        <div id="modal-admin-user" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content w-full max-w-md">
+                <div class="modal-header">
+                    <h3 class="text-lg font-semibold text-dark-50" id="admin-user-title">Add User</h3>
+                    <button class="modal-close">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="admin-user-id">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-dark-300 mb-1">Username</label>
+                            <input type="text" id="admin-user-username" class="form-input w-full">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-dark-300 mb-1">Email</label>
+                            <input type="email" id="admin-user-email" class="form-input w-full">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-dark-300 mb-1">WhatsApp Number</label>
+                            <input type="tel" id="admin-user-whatsapp" class="form-input w-full"
+                                placeholder="+628123456789">
+                            <p class="text-xs text-dark-500 mt-1">Include country code (e.g., +62 for Indonesia)</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-dark-300 mb-1">Password</label>
+                            <input type="password" id="admin-user-password" class="form-input w-full"
+                                placeholder="Leave blank to keep current">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-dark-300 mb-1">Role</label>
+                            <select id="admin-user-role" class="form-select w-full">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <div id="admin-user-credits-container" class="hidden">
+                            <label class="block text-sm font-medium text-dark-300 mb-1">Adjust Credits</label>
+                            <div class="flex gap-2 items-center">
+                                <input type="number" id="admin-user-credits" class="form-input flex-1"
+                                    placeholder="Amount (+/-)">
+                                <span class="text-xs text-dark-400">Current: <span
+                                        id="admin-user-current-credits">0</span></span>
+                            </div>
+                            <p class="text-xs text-dark-500 mt-1">Enter positive to add, negative to deduct</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary modal-cancel">Cancel</button>
+                    <button id="btn-admin-save-user" class="btn-primary">Save User</button>
+                </div>
+            </div>
+        </div>
     <?php endif; ?>
 
 
@@ -2449,7 +2451,9 @@ if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['
     <script src="assets/js/plugins.js"></script>
     <script src="assets/js/panels.js"></script>
     <script src="assets/js/editor.js"></script>
-    <script src="assets/js/admin.js?v=<?= time() ?>"></script>
+    <?php if ((int) $user['id'] === 1 || ($user['role'] ?? '') === 'admin'): ?>
+        <script src="assets/js/admin.js?v=<?= time() ?>"></script>
+    <?php endif; ?>
 
     <!-- Plugin Scripts -->
     <?php
@@ -2462,8 +2466,8 @@ if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['
                 $scriptPath = 'plugins/' . $plugin['id'] . '/' . $script;
                 if (file_exists(__DIR__ . '/' . $scriptPath)):
                     ?>
-                                    <script src="<?= htmlspecialchars($scriptPath) ?>"></script>
-                                    <?php
+                    <script src="<?= htmlspecialchars($scriptPath) ?>"></script>
+                    <?php
                 endif;
             endforeach;
         endif;
@@ -2471,14 +2475,14 @@ if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['
     ?>
 
     <?php if (!empty($headwayWidgetId)): ?>
-            <!-- Headway Changelog Widget -->
-            <script>
-                var HW_config = {
-                    selector: "#btn-notifications",
-                    account: "<?= htmlspecialchars($headwayWidgetId) ?>"
-                };
-            </script>
-            <script async src="https://cdn.headwayapp.co/widget.js"></script>
+        <!-- Headway Changelog Widget -->
+        <script>
+            var HW_config = {
+                selector: "#btn-notifications",
+                account: "<?= htmlspecialchars($headwayWidgetId) ?>"
+            };
+        </script>
+        <script async src="https://cdn.headwayapp.co/widget.js"></script>
     <?php endif; ?>
 
     <!-- Initialize Lucide Icons -->
@@ -2487,8 +2491,8 @@ if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['
     </script>
 
     <?php if (!empty($customFooterJs)): ?>
-            <!-- Custom Footer Scripts -->
-            <?= str_replace('\\n', "\n", $customFooterJs) ?>
+        <!-- Custom Footer Scripts -->
+        <?= str_replace('\\n', "\n", $customFooterJs) ?>
     <?php endif; ?>
 </body>
 
