@@ -1,8 +1,8 @@
 <?php
 /**
- * AIKAFLOW API - Text Enhancement via OpenRouter
+ * AIKAFLOW API - Text Enhancement via LLM API
  * 
- * Proxies text enhancement requests to OpenRouter API.
+ * Proxies text enhancement requests to LLM API provider.
  * API key is read from site_settings (admin-configured), never exposed to browser.
  * 
  * POST /api/ai/enhance.php
@@ -36,7 +36,7 @@ try {
         errorResponse('Text is required');
     }
 
-    // Get OpenRouter API key from site_settings
+    // Get LLM API key from site_settings
     $result = Database::fetchOne(
         "SELECT setting_value FROM site_settings WHERE setting_key = 'integration_keys'"
     );
@@ -44,23 +44,23 @@ try {
     $apiKey = '';
     if ($result && $result['setting_value']) {
         $keys = json_decode($result['setting_value'], true);
-        $apiKey = $keys['openrouter'] ?? '';
+        $apiKey = $keys['llm'] ?? '';
     }
 
     if (empty($apiKey)) {
-        errorResponse('OpenRouter API key not configured. Please configure it in Administration → Integrations.');
+        errorResponse('LLM API key not configured. Please configure it in Administration → Integrations.');
     }
 
-    // Get OpenRouter settings (model, system prompts)
-    $openRouterSettings = Database::fetchOne(
-        "SELECT setting_value FROM site_settings WHERE setting_key = 'openrouter_settings'"
+    // Get LLM settings (model, system prompts)
+    $llmSettings = Database::fetchOne(
+        "SELECT setting_value FROM site_settings WHERE setting_key = 'llm_settings'"
     );
 
     $model = 'openai/gpt-4o-mini';
     $systemPrompts = [];
 
-    if ($openRouterSettings && $openRouterSettings['setting_value']) {
-        $settings = json_decode($openRouterSettings['setting_value'], true);
+    if ($llmSettings && $llmSettings['setting_value']) {
+        $settings = json_decode($llmSettings['setting_value'], true);
         $model = $settings['model'] ?? 'openai/gpt-4o-mini';
         $systemPrompts = $settings['systemPrompts'] ?? [];
     }
@@ -82,7 +82,7 @@ try {
         }
     }
 
-    // Call OpenRouter API
+    // Call LLM API (using OpenRouter-compatible endpoint)
     $ch = curl_init('https://openrouter.ai/api/v1/chat/completions');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,

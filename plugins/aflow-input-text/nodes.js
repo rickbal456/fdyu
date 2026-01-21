@@ -1,7 +1,7 @@
 /**
  * AIKAFLOW Plugin - Text/Prompt Input with AI Enhancement
  * 
- * Provides text input for prompts with optional AI enhancement via OpenRouter.
+ * Provides text input for prompts with optional AI enhancement via LLM API.
  * The actual API call is proxied through the server to keep API keys secure.
  */
 
@@ -9,10 +9,10 @@
     'use strict';
 
     /**
-     * Get OpenRouter settings from the server
+     * Get LLM settings from the server
      * The API key is stored server-side, never exposed to browser
      */
-    async function getOpenRouterSettings() {
+    async function getLLMSettings() {
         try {
             // Fetch from public settings endpoint (safe for all users)
             const response = await fetch('./api/ai/prompts.php');
@@ -25,29 +25,29 @@
                 };
             }
         } catch (e) {
-            console.log('Could not load OpenRouter settings:', e);
+            console.log('Could not load LLM settings:', e);
         }
         return { isConfigured: false, model: 'openai/gpt-4o-mini', systemPrompts: [] };
     }
 
     /**
-     * Save OpenRouter settings - not used for regular users (admin only via plugins.js)
+     * Save LLM settings - not used for regular users (admin only via plugins.js)
      */
-    function saveOpenRouterSettings(settings) {
+    function saveLLMSettings(settings) {
         // Settings are saved by admin through plugins.js, not here
-        console.log('OpenRouter settings are managed by admin');
+        console.log('LLM settings are managed by admin');
     }
 
     /**
-     * Enhance text using server-side OpenRouter API proxy
+     * Enhance text using server-side LLM API proxy
      * API key is never exposed to browser
      */
     async function enhanceText(text, systemPromptId) {
         // Check if configured (sync check from cached status)
-        const isConfigured = window.pluginManager?.integrationStatus?.openrouter === true;
+        const isConfigured = window.pluginManager?.integrationStatus?.llm === true;
 
         if (!isConfigured) {
-            throw new Error('OpenRouter API key not configured. Please configure it in Administration → Integrations.');
+            throw new Error('LLM API key not configured. Please configure it in Administration → Integrations.');
         }
 
         // Call server-side endpoint
@@ -76,10 +76,10 @@
      */
     async function enhanceWithCustomPrompt(text, customPrompt) {
         // Check if configured
-        const isConfigured = window.pluginManager?.integrationStatus?.openrouter === true;
+        const isConfigured = window.pluginManager?.integrationStatus?.llm === true;
 
         if (!isConfigured) {
-            throw new Error('OpenRouter API key not configured. Please configure it in Administration → Integrations.');
+            throw new Error('LLM API key not configured. Please configure it in Administration → Integrations.');
         }
 
         // Call server-side endpoint with custom prompt
@@ -162,7 +162,7 @@
     window.AIKAFLOWTextEnhance = {
         enhance: enhanceText,
         enhanceWithCustomPrompt: enhanceWithCustomPrompt,
-        getSettings: getOpenRouterSettings,
-        saveSettings: saveOpenRouterSettings
+        getSettings: getLLMSettings,
+        saveSettings: saveLLMSettings
     };
 })();

@@ -27,16 +27,16 @@
     };
 
     /**
-     * Check if Postforme API key is configured (either plugin-specific or main)
+     * Check if Social API key is configured (either plugin-specific or main)
      * This checks STATUS only, not the actual key value (for security)
      * @returns {boolean}
      */
-    function hasPostformeApiKey() {
+    function hasSocialApiKey() {
         // First check plugin-specific key status
         if (PluginManager.hasApiKey(`plugin_${PLUGIN_ID}`)) return true;
 
-        // Then check main Postforme key status
-        return PluginManager.hasApiKey('postforme');
+        // Then check main Social API key status
+        return PluginManager.hasApiKey('sapi');
     }
 
     /**
@@ -48,7 +48,7 @@
         const pluginKey = PluginManager.getAiKey(`plugin_${PLUGIN_ID}`);
         if (pluginKey) return pluginKey;
 
-        return PluginManager.getAiKey('postforme');
+        return PluginManager.getAiKey('sapi');
     }
 
     /**
@@ -73,10 +73,10 @@
             id: 'apiKey',
             type: 'text',
             label: 'API Key',
-            placeholder: 'Your Postforme API key',
+            placeholder: 'Your Social API key',
             description: 'Or configure in Settings → Integrations',
             // Hide this field if API key is already configured in admin settings
-            showIf: () => !hasPostformeApiKey()
+            showIf: () => !hasSocialApiKey()
         }
     ];
 
@@ -230,10 +230,10 @@
             // 2. User's own saved key in their settings
             // 3. Admin-configured key (checked on server-side, not exposed here)
             const userProvidedKey = apiKey || getUserApiKey();
-            const adminHasKey = hasPostformeApiKey();
+            const adminHasKey = hasSocialApiKey();
 
             if (!userProvidedKey && !adminHasKey) {
-                throw new Error('Postforme API Key is required. Set it in Settings → Integrations or in the node field.');
+                throw new Error('Social API Key is required. Set it in Settings → Integrations or in the node field.');
             }
 
             if (!accounts || accounts.length === 0) {

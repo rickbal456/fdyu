@@ -414,7 +414,7 @@ class PluginManager
         $headerValuePrefix = 'Bearer ';
 
         switch ($provider) {
-            case 'jsoncut':
+            case 'jcut':
                 $baseUrl = defined('JSONCUT_API_URL') ? JSONCUT_API_URL : 'https://api.jsoncut.com';
                 break;
             case 'rhub':
@@ -423,7 +423,7 @@ class PluginManager
             case 'kie':
                 $baseUrl = defined('KIE_API_URL') ? KIE_API_URL : 'https://api.kie.ai';
                 break;
-            case 'postforme':
+            case 'sapi':
                 $baseUrl = defined('POSTFORME_API_URL') ? POSTFORME_API_URL : 'https://api.postforme.dev';
                 break;
             default:

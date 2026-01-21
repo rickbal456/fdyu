@@ -227,9 +227,9 @@
      */
     function showPlatformSelector() {
         // Check if API key is configured
-        const apiKey = PluginManager.getAiKey('postforme');
+        const apiKey = PluginManager.getAiKey('sapi');
         if (!apiKey) {
-            Toast.show('Please configure your Postforme API key in Administration → Integrations first.', 'warning');
+            Toast.show('Please configure your Social API key in Administration → Integrations first.', 'warning');
             return;
         }
 

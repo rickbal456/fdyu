@@ -28,14 +28,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 try {
     $settings = [];
 
-    // Get OpenRouter settings (model and system prompts - NOT the API key)
+    // Get LLM settings (model and system prompts - NOT the API key)
     $orResult = Database::fetchOne(
-        "SELECT setting_value FROM site_settings WHERE setting_key = 'openrouter_settings'"
+        "SELECT setting_value FROM site_settings WHERE setting_key = 'llm_settings'"
     );
     if ($orResult && $orResult['setting_value']) {
         $orSettings = json_decode($orResult['setting_value'], true);
         // Only expose model and system prompts, NOT any API keys
-        $settings['openrouter_settings'] = [
+        $settings['llm_settings'] = [
             'model' => $orSettings['model'] ?? 'openai/gpt-4o-mini',
             'systemPrompts' => $orSettings['systemPrompts'] ?? []
         ];

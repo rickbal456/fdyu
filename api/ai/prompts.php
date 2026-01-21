@@ -1,6 +1,6 @@
 <?php
 /**
- * AIKAFLOW API - Get OpenRouter System Prompts
+ * AIKAFLOW API - Get LLM System Prompts
  * 
  * Returns the list of system prompts configured by admin.
  * Used by the enhance dropdown to show available prompt options.
@@ -26,9 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 try {
-    // Get OpenRouter settings from site_settings
+    // Get LLM settings from site_settings
     $result = Database::fetchOne(
-        "SELECT setting_value FROM site_settings WHERE setting_key = 'openrouter_settings'"
+        "SELECT setting_value FROM site_settings WHERE setting_key = 'llm_settings'"
     );
 
     $prompts = [];
@@ -40,7 +40,7 @@ try {
         $model = $settings['model'] ?? 'openai/gpt-4o-mini';
     }
 
-    // Check if OpenRouter is configured
+    // Check if LLM API is configured
     $keysResult = Database::fetchOne(
         "SELECT setting_value FROM site_settings WHERE setting_key = 'integration_keys'"
     );
@@ -48,7 +48,7 @@ try {
     $isConfigured = false;
     if ($keysResult && $keysResult['setting_value']) {
         $keys = json_decode($keysResult['setting_value'], true);
-        $isConfigured = !empty($keys['openrouter']);
+        $isConfigured = !empty($keys['llm']);
     }
 
     successResponse([
@@ -58,6 +58,6 @@ try {
     ]);
 
 } catch (Exception $e) {
-    error_log('Get OpenRouter prompts error: ' . $e->getMessage());
+    error_log('Get LLM prompts error: ' . $e->getMessage());
     errorResponse('Failed to get prompts: ' . $e->getMessage(), 500);
 }

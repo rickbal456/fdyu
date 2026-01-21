@@ -2,7 +2,7 @@
     "id": "aflow-social-post",
     "name": "Social Media Post",
     "version": "1.0.0",
-    "description": "Publish content to social media platforms via Postforme API",
+    "description": "Publish content to social media platforms",
     "author": "AIKAFLOW",
     "category": "output",
     "enabled": true,
@@ -11,7 +11,7 @@
     "type": "api",
     "executionType": "api",
     "apiConfig": {
-        "provider": "postforme",
+        "provider": "sapi",
         "endpoint": "https://api.postforme.dev/v1/social-posts"
     },
     "nodeTypes": [

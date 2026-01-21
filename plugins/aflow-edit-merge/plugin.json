@@ -12,7 +12,7 @@
     ],
     "executionType": "api",
     "apiConfig": {
-        "provider": "jsoncut",
+        "provider": "jcut",
         "operation": "merge"
     },
     "apiMapping": {

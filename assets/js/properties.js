@@ -1408,7 +1408,7 @@ class PropertiesPanel {
                         return;
                     }
 
-                    // Check if OpenRouter is configured
+                    // Check if LLM API is configured
                     if (!window.AIKAFLOWTextEnhance) {
                         alert('Text enhancement not available');
                         return;
@@ -1422,7 +1422,7 @@ class PropertiesPanel {
                         if (data.success) {
                             prompts = data.systemPrompts || [];
                             if (!data.isConfigured) {
-                                alert('OpenRouter API key not configured');
+                                alert('LLM API key not configured');
                                 return;
                             }
                         }

@@ -42,7 +42,7 @@ try {
 $externalApis = [
     'rhub' => RUNNINGHUB_API_URL,
     'kie' => KIE_API_URL,
-    'jsoncut' => JSONCUT_API_URL
+    'jcut' => JSONCUT_API_URL
 ];
 
 foreach ($externalApis as $name => $url) {

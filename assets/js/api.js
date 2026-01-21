@@ -305,7 +305,7 @@ class APIClient {
     /**
      * Proxy request to AI provider
      */
-    async runningHubRequest(action, data) {
+    async rhubRequest(action, data) {
         return this.post('/proxy/runninghub.php', { action, ...data });
     }
 
@@ -317,9 +317,9 @@ class APIClient {
     }
 
     /**
-     * Proxy request to JsonCut.com
+     * Proxy request to processing API
      */
-    async jsonCutRequest(action, data) {
+    async jcutRequest(action, data) {
         return this.post('/proxy/jsoncut.php', { action, ...data });
     }
 

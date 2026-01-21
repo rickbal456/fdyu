@@ -12,7 +12,7 @@
     ],
     "executionType": "local",
     "optionalProviders": [
-        "openrouter"
+        "llm"
     ],
     "features": [
         "text-enhancement"

@@ -163,14 +163,14 @@ try {
             $error = $payload['error_message'] ?? null;
             break;
 
-        case 'jsoncut':
+        case 'jcut':
             $taskId = $payload['task_id'] ?? null;
             $status = $payload['status'] ?? null;
             $resultUrl = $payload['output_url'] ?? null;
             $error = $payload['error'] ?? null;
             break;
 
-        case 'postforme':
+        case 'sapi':
             // Postforme webhook for social post results
             // Verify webhook signature if secret is stored
             $webhookSecret = '';

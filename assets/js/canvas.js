@@ -1313,7 +1313,7 @@ class CanvasManager {
                         return;
                     }
 
-                    // Check if OpenRouter is configured
+                    // Check if LLM API is configured
                     if (!window.AIKAFLOWTextEnhance) {
                         Toast?.error('Text enhancement not available');
                         return;
@@ -1334,7 +1334,7 @@ class CanvasManager {
                         if (data.success) {
                             prompts = data.systemPrompts || [];
                             if (!data.isConfigured) {
-                                Toast?.error('OpenRouter API key not configured');
+                                Toast?.error('LLM API key not configured');
                                 return;
                             }
                         }

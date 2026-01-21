@@ -189,21 +189,28 @@ class PluginManager {
 
     /**
      * Render integration keys in settings
+     * ADMIN ONLY - This function should only be called for admin users
      */
     async renderIntegrationKeys() {
         const container = document.getElementById('integration-keys-container');
+        // Early return if container doesn't exist (non-admin users won't have this element)
         if (!container) return;
+
+        // Double-check user is admin (container should only exist for admins anyway)
+        if (window.AIKAFLOW?.user && !window.AIKAFLOW.user.isAdmin) {
+            return;
+        }
 
         // Collect all providers and which plugins use them
         const providers = new Map();
 
-        // Known provider metadata
-        // Note: BunnyCDN is configured as a storage plugin, not here
+        // Provider metadata - using obfuscated keys to avoid exposing third-party services
+        // This is only used for admin integration settings UI
         const providerMeta = {
-            'rhub': { name: 'AI Generation Provider', icon: 'cpu', color: 'purple', placeholder: 'Enter your API key' },
-            'jsoncut': { name: 'JsonCut', icon: 'scissors', color: 'blue', placeholder: 'Enter your JsonCut API key' },
-            'openrouter': { name: 'OpenRouter (LLM)', icon: 'bot', color: 'pink', placeholder: 'Enter your OpenRouter API key' },
-            'postforme': { name: 'Postforme (Social Media)', icon: 'share-2', color: 'pink', placeholder: 'Enter your Postforme API key' }
+            'rhub': { name: 'Generation API', icon: 'cpu', color: 'purple', placeholder: 'Enter API key' },
+            'jcut': { name: 'Processing API', icon: 'scissors', color: 'blue', placeholder: 'Enter API key' },
+            'llm': { name: 'LLM API', icon: 'bot', color: 'pink', placeholder: 'Enter API key' },
+            'sapi': { name: 'Social API', icon: 'share-2', color: 'pink', placeholder: 'Enter API key' }
         };
 
         // Scan plugins for providers
@@ -228,7 +235,7 @@ class PluginManager {
                 providers.get(storageProvider).plugins.push(plugin.name);
             }
 
-            // Check for optional providers (like openrouter for text enhancement)
+            // Check for optional providers (like llm for text enhancement)
             if (plugin.optionalProviders && Array.isArray(plugin.optionalProviders)) {
                 plugin.optionalProviders.forEach(p => {
                     if (!providers.has(p)) {
@@ -239,11 +246,11 @@ class PluginManager {
             }
         });
 
-        // Always include OpenRouter if text-input plugin is available (for enhancement feature)
-        if (!providers.has('openrouter')) {
+        // Always include LLM provider if text-input plugin is available (for enhancement feature)
+        if (!providers.has('llm')) {
             const hasTextInput = Array.from(this.plugins.values()).some(p => p.enabled && p.type === 'input-text');
             if (hasTextInput) {
-                providers.set('openrouter', { plugins: ['Text Input Enhancement'], type: 'api' });
+                providers.set('llm', { plugins: ['Text Input Enhancement'], type: 'api' });
             }
         }
 
@@ -261,10 +268,10 @@ class PluginManager {
         } else {
             const savedKeys = await this.loadUserIntegrationKeys();
 
-            // Pre-load OpenRouter settings if needed
-            let openRouterSettings = { model: 'openai/gpt-4o-mini', systemPrompts: [] };
-            if (providers.has('openrouter')) {
-                openRouterSettings = await this.loadOpenRouterSettings();
+            // Pre-load LLM settings if needed
+            let llmSettings = { model: 'openai/gpt-4o-mini', systemPrompts: [] };
+            if (providers.has('llm')) {
+                llmSettings = await this.loadLLMSettings();
             }
 
             for (const [provider, data] of providers) {
@@ -316,8 +323,8 @@ class PluginManager {
                             </div>
                         </div>
                     `;
-                } else if (provider === 'openrouter') {
-                    // Special rendering for OpenRouter with model selection and system prompts
+                } else if (provider === 'llm') {
+                    // Special rendering for LLM provider with model selection and system prompts
                     const savedValue = savedKeys[provider] || '';
 
                     html += `
@@ -343,14 +350,14 @@ class PluginManager {
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-dark-300 mb-1">Model</label>
-                                    <select id="openrouter-model" class="form-select openrouter-setting" data-setting="model">
-                                        <option value="openai/gpt-4o-mini" ${openRouterSettings.model === 'openai/gpt-4o-mini' ? 'selected' : ''}>GPT-4o Mini (Fast)</option>
-                                        <option value="openai/gpt-4o" ${openRouterSettings.model === 'openai/gpt-4o' ? 'selected' : ''}>GPT-4o</option>
-                                        <option value="openai/gpt-5-mini" ${openRouterSettings.model === 'openai/gpt-5-mini' ? 'selected' : ''}>GPT-5 Mini</option>
-                                        <option value="anthropic/claude-3.5-sonnet" ${openRouterSettings.model === 'anthropic/claude-3.5-sonnet' ? 'selected' : ''}>Claude 3.5 Sonnet</option>
-                                        <option value="anthropic/claude-3-haiku" ${openRouterSettings.model === 'anthropic/claude-3-haiku' ? 'selected' : ''}>Claude 3 Haiku (Fast)</option>
-                                        <option value="google/gemini-pro-1.5" ${openRouterSettings.model === 'google/gemini-pro-1.5' ? 'selected' : ''}>Gemini Pro 1.5</option>
-                                        <option value="meta-llama/llama-3.1-70b-instruct" ${openRouterSettings.model === 'meta-llama/llama-3.1-70b-instruct' ? 'selected' : ''}>Llama 3.1 70B</option>
+                                    <select id="llm-model" class="form-select llm-setting" data-setting="model">
+                                        <option value="openai/gpt-4o-mini" ${llmSettings.model === 'openai/gpt-4o-mini' ? 'selected' : ''}>GPT-4o Mini (Fast)</option>
+                                        <option value="openai/gpt-4o" ${llmSettings.model === 'openai/gpt-4o' ? 'selected' : ''}>GPT-4o</option>
+                                        <option value="openai/gpt-5-mini" ${llmSettings.model === 'openai/gpt-5-mini' ? 'selected' : ''}>GPT-5 Mini</option>
+                                        <option value="anthropic/claude-3.5-sonnet" ${llmSettings.model === 'anthropic/claude-3.5-sonnet' ? 'selected' : ''}>Claude 3.5 Sonnet</option>
+                                        <option value="anthropic/claude-3-haiku" ${llmSettings.model === 'anthropic/claude-3-haiku' ? 'selected' : ''}>Claude 3 Haiku (Fast)</option>
+                                        <option value="google/gemini-pro-1.5" ${llmSettings.model === 'google/gemini-pro-1.5' ? 'selected' : ''}>Gemini Pro 1.5</option>
+                                        <option value="meta-llama/llama-3.1-70b-instruct" ${llmSettings.model === 'meta-llama/llama-3.1-70b-instruct' ? 'selected' : ''}>Llama 3.1 70B</option>
                                     </select>
                                 </div>
                                 <div>
@@ -361,7 +368,7 @@ class PluginManager {
                                         </button>
                                     </div>
                                     <div id="system-prompts-list" class="space-y-2">
-                                        ${this.renderSystemPromptsList(openRouterSettings.systemPrompts || [])}
+                                        ${this.renderSystemPromptsList(llmSettings.systemPrompts || [])}
                                     </div>
                                 </div>
                             </div>
@@ -472,40 +479,40 @@ class PluginManager {
             });
         });
 
-        // Setup OpenRouter specific listeners
-        this.setupOpenRouterListeners(container);
+        // Setup LLM provider specific listeners
+        this.setupLLMListeners(container);
     }
 
     /**
-     * Load OpenRouter settings (model and system prompts)
+     * Load LLM settings (model and system prompts)
      * Uses public endpoint which is safe for all users
      */
-    async loadOpenRouterSettings() {
+    async loadLLMSettings() {
         try {
             const response = await fetch('./api/user/public-settings.php');
             const data = await response.json();
 
-            if (data.success && data.settings && data.settings.openrouter_settings) {
-                return data.settings.openrouter_settings;
+            if (data.success && data.settings && data.settings.llm_settings) {
+                return data.settings.llm_settings;
             }
         } catch (e) {
-            console.log('Could not load OpenRouter settings:', e);
+            console.log('Could not load LLM settings:', e);
         }
         return { model: 'openai/gpt-4o-mini', systemPrompts: [] };
     }
 
     /**
-     * Save OpenRouter settings to site_settings (global, admin only)
+     * Save LLM settings to site_settings (global, admin only)
      */
-    async saveOpenRouterSettings(settings) {
+    async saveLLMSettings(settings) {
         try {
             await fetch('./api/admin/settings.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ openrouter_settings: JSON.stringify(settings) })
+                body: JSON.stringify({ llm_settings: JSON.stringify(settings) })
             });
         } catch (e) {
-            console.error('Failed to save OpenRouter settings:', e);
+            console.error('Failed to save LLM settings:', e);
         }
     }
 
@@ -545,16 +552,16 @@ class PluginManager {
     }
 
     /**
-     * Setup OpenRouter specific event listeners
+     * Setup LLM provider specific event listeners
      */
-    setupOpenRouterListeners(container) {
+    setupLLMListeners(container) {
         // Model selection change
-        const modelSelect = container.querySelector('#openrouter-model');
+        const modelSelect = container.querySelector('#llm-model');
         if (modelSelect) {
             modelSelect.addEventListener('change', async () => {
-                const settings = await this.loadOpenRouterSettings();
+                const settings = await this.loadLLMSettings();
                 settings.model = modelSelect.value;
-                await this.saveOpenRouterSettings(settings);
+                await this.saveLLMSettings(settings);
             });
         }
 
@@ -563,7 +570,7 @@ class PluginManager {
         if (addBtn) {
             addBtn.addEventListener('click', async () => {
                 // Create new prompt with default values
-                const settings = await this.loadOpenRouterSettings();
+                const settings = await this.loadLLMSettings();
                 const newPrompt = {
                     id: 'prompt_' + Date.now(),
                     name: 'New Prompt',
@@ -571,7 +578,7 @@ class PluginManager {
                 };
                 settings.systemPrompts = settings.systemPrompts || [];
                 settings.systemPrompts.push(newPrompt);
-                await this.saveOpenRouterSettings(settings);
+                await this.saveLLMSettings(settings);
 
                 // Re-render prompts list
                 const listContainer = container.querySelector('#system-prompts-list');
@@ -646,11 +653,11 @@ class PluginManager {
 
             input.addEventListener('blur', async () => {
                 const promptId = input.dataset.promptId;
-                const settings = await this.loadOpenRouterSettings();
+                const settings = await this.loadLLMSettings();
                 const prompt = settings.systemPrompts?.find(p => p.id === promptId);
                 if (prompt) {
                     prompt.name = input.value;
-                    await this.saveOpenRouterSettings(settings);
+                    await this.saveLLMSettings(settings);
                 }
             });
         });
@@ -659,11 +666,11 @@ class PluginManager {
         container.querySelectorAll('.prompt-content-input').forEach(textarea => {
             textarea.addEventListener('blur', async () => {
                 const promptId = textarea.dataset.promptId;
-                const settings = await this.loadOpenRouterSettings();
+                const settings = await this.loadLLMSettings();
                 const prompt = settings.systemPrompts?.find(p => p.id === promptId);
                 if (prompt) {
                     prompt.content = textarea.value;
-                    await this.saveOpenRouterSettings(settings);
+                    await this.saveLLMSettings(settings);
                 }
             });
         });
@@ -689,9 +696,9 @@ class PluginManager {
 
                 if (!confirmed) return;
 
-                const settings = await this.loadOpenRouterSettings();
+                const settings = await this.loadLLMSettings();
                 settings.systemPrompts = settings.systemPrompts?.filter(p => p.id !== promptId) || [];
-                await this.saveOpenRouterSettings(settings);
+                await this.saveLLMSettings(settings);
 
                 // Re-render prompts list
                 const listContainer = container.querySelector('#system-prompts-list');
