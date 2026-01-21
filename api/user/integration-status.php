@@ -46,10 +46,18 @@ try {
     // Build status map - only return whether each key is configured, NOT the actual value
     // These are the API providers that use integration keys (not storage plugins)
     $status = [];
-    $providers = ['rhub', 'jcut', 'llm', 'sapi'];
 
-    foreach ($providers as $provider) {
-        $status[$provider] = !empty($siteKeys[$provider]);
+    // Provider mapping: new key => old key (for backward compatibility)
+    $providerMapping = [
+        'rhub' => 'runninghub',
+        'jcut' => 'jsoncut',
+        'llm' => 'openrouter',
+        'sapi' => 'postforme'
+    ];
+
+    foreach ($providerMapping as $newKey => $oldKey) {
+        // Check new key first, then fall back to old key
+        $status[$newKey] = !empty($siteKeys[$newKey]) || !empty($siteKeys[$oldKey]);
     }
 
     // Also check for plugin-specific keys (PHP 7 compatible)

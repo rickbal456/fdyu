@@ -29,9 +29,16 @@ try {
     $settings = [];
 
     // Get LLM settings (model and system prompts - NOT the API key)
+    // Check new key first, fall back to old key for backward compatibility
     $orResult = Database::fetchOne(
         "SELECT setting_value FROM site_settings WHERE setting_key = 'llm_settings'"
     );
+    // Backward compatibility: check old key if new key not found
+    if (!$orResult || !$orResult['setting_value']) {
+        $orResult = Database::fetchOne(
+            "SELECT setting_value FROM site_settings WHERE setting_key = 'openrouter_settings'"
+        );
+    }
     if ($orResult && $orResult['setting_value']) {
         $orSettings = json_decode($orResult['setting_value'], true);
         // Only expose model and system prompts, NOT any API keys

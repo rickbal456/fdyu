@@ -27,9 +27,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 try {
     // Get LLM settings from site_settings
+    // Check new key first, fall back to old key for backward compatibility
     $result = Database::fetchOne(
         "SELECT setting_value FROM site_settings WHERE setting_key = 'llm_settings'"
     );
+    // Backward compatibility: check old key if new key not found
+    if (!$result || !$result['setting_value']) {
+        $result = Database::fetchOne(
+            "SELECT setting_value FROM site_settings WHERE setting_key = 'openrouter_settings'"
+        );
+    }
 
     $prompts = [];
     $model = 'openai/gpt-4o-mini';
@@ -48,7 +55,8 @@ try {
     $isConfigured = false;
     if ($keysResult && $keysResult['setting_value']) {
         $keys = json_decode($keysResult['setting_value'], true);
-        $isConfigured = !empty($keys['llm']);
+        // Check new key first, fall back to old key for backward compatibility
+        $isConfigured = !empty($keys['llm']) || !empty($keys['openrouter']);
     }
 
     successResponse([
