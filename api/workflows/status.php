@@ -99,6 +99,21 @@ try {
         $allResults = $outputData['all_results'] ?? [];
     }
 
+    // Get count of queued executions for the same workflow
+    $queuedExecutions = [];
+    if ($execution['workflow_id']) {
+        $queuedExecutions = Database::fetchAll(
+            "SELECT id, status, created_at FROM workflow_executions 
+             WHERE workflow_id = ? 
+             AND user_id = ? 
+             AND status = 'pending' 
+             AND started_at IS NULL
+             AND id != ?
+             ORDER BY id ASC",
+            [$execution['workflow_id'], $user['id'], $executionId]
+        );
+    }
+
     successResponse([
         'executionId' => (int) $execution['id'],
         'status' => $execution['status'],
@@ -114,6 +129,14 @@ try {
             'outputs' => $iterationOutputs
         ],
         'allResults' => $allResults,
+        'queuedExecutions' => array_map(function ($exec) {
+            return [
+                'id' => (int) $exec['id'],
+                'status' => $exec['status'],
+                'createdAt' => $exec['created_at']
+            ];
+        }, $queuedExecutions),
+        'queuedCount' => count($queuedExecutions),
         'startedAt' => $execution['started_at'],
         'completedAt' => $execution['completed_at']
     ]);

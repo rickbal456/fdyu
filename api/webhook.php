@@ -91,6 +91,7 @@ try {
 
     switch ($source) {
         case 'rhub':
+        case 'runninghub': // Backward compatibility - external API sends this
             // Check for AI App format (eventData)
             if (isset($payload['eventData'])) {
                 $taskId = $payload['taskId'] ?? null;
@@ -164,6 +165,7 @@ try {
             break;
 
         case 'jcut':
+        case 'jsoncut': // Backward compatibility - external API sends this
             $taskId = $payload['task_id'] ?? null;
             $status = $payload['status'] ?? null;
             $resultUrl = $payload['output_url'] ?? null;
@@ -171,6 +173,7 @@ try {
             break;
 
         case 'sapi':
+        case 'postforme': // Backward compatibility - external API sends this
             // Postforme webhook for social post results
             // Verify webhook signature if secret is stored
             $webhookSecret = '';
