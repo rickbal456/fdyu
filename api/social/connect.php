@@ -42,15 +42,14 @@ if (!in_array($platform, $validPlatforms)) {
     jsonResponse(['success' => false, 'error' => 'Invalid platform']);
 }
 
-// Get Postforme API key
+// Get API key from site_settings (configured by admin in Administration → Integrations)
 $integrationKeys = [];
 try {
-    $pref = Database::fetchOne(
-        "SELECT value FROM user_preferences WHERE user_id = ? AND `key` = 'integration_keys'",
-        [$user['id']]
+    $result = Database::fetchOne(
+        "SELECT setting_value FROM site_settings WHERE setting_key = 'integration_keys'"
     );
-    if ($pref && $pref['value']) {
-        $integrationKeys = json_decode($pref['value'], true) ?: [];
+    if ($result && isset($result['setting_value']) && $result['setting_value']) {
+        $integrationKeys = json_decode($result['setting_value'], true) ?: [];
     }
 } catch (Exception $e) {
     // Ignore

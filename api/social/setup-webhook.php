@@ -23,18 +23,16 @@ require_once __DIR__ . '/../helpers.php';
 $input = json_decode(file_get_contents('php://input'), true) ?: [];
 $apiKey = $input['apiKey'] ?? '';
 
-// If no API key in request, this might be an admin check
+// If no API key in request, get from site_settings (configured by admin)
 if (empty($apiKey)) {
-    // Try to get from admin user's settings (for status check)
     $user = requireAuth();
     $integrationKeys = [];
     try {
-        $pref = Database::fetchOne(
-            "SELECT value FROM user_preferences WHERE user_id = ? AND `key` = 'integration_keys'",
-            [$user['id']]
+        $result = Database::fetchOne(
+            "SELECT setting_value FROM site_settings WHERE setting_key = 'integration_keys'"
         );
-        if ($pref && $pref['value']) {
-            $integrationKeys = json_decode($pref['value'], true) ?: [];
+        if ($result && isset($result['setting_value']) && $result['setting_value']) {
+            $integrationKeys = json_decode($result['setting_value'], true) ?: [];
         }
     } catch (Exception $e) {
         // Ignore
