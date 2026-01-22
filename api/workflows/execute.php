@@ -36,6 +36,13 @@ if ($maxRepeatSetting && $maxRepeatSetting['setting_value']) {
     $maxRepeatCount = max(1, min(1000, (int) $maxRepeatSetting['setting_value']));
 }
 
+// Get workflow execution mode: 'sequential' (one-by-one) or 'parallel' (all at once)
+$workflowExecutionMode = 'sequential'; // Default to sequential
+$executionModeSetting = Database::fetchOne("SELECT setting_value FROM site_settings WHERE setting_key = 'workflow_execution_mode'");
+if ($executionModeSetting && $executionModeSetting['setting_value']) {
+    $workflowExecutionMode = $executionModeSetting['setting_value'] === 'parallel' ? 'parallel' : 'sequential';
+}
+
 $repeatCount = isset($input['repeatCount']) ? max(1, min($maxRepeatCount, (int) $input['repeatCount'])) : 1;
 
 // Must provide either workflowId or workflowData
@@ -119,6 +126,9 @@ try {
     for ($i = 0; $i < $repeatCount; $i++) {
         $isFirst = ($i === 0);
 
+        // In parallel mode, all executions should start; in sequential mode, only the first
+        $shouldStart = ($workflowExecutionMode === 'parallel') || $isFirst;
+
         // Store execution metadata including source
         $inputData = [
             'inputs' => $input['inputs'] ?? [],
@@ -128,12 +138,12 @@ try {
         $executionId = Database::insert('workflow_executions', [
             'workflow_id' => $workflowId ?: null,  // Use NULL for unsaved workflows
             'user_id' => $user['id'],
-            'status' => 'pending',  // All start as pending, first one will be updated to running
+            'status' => 'pending',  // All start as pending, will be updated to running if starting
             'input_data' => json_encode($inputData),
             'repeat_count' => 1,  // Each execution is a single iteration now
             'current_iteration' => 1,
             'iteration_outputs' => json_encode([]),
-            'started_at' => $isFirst ? date('Y-m-d H:i:s') : null
+            'started_at' => $shouldStart ? date('Y-m-d H:i:s') : null
         ]);
 
         $executionIds[] = $executionId;
@@ -161,9 +171,9 @@ try {
                 'flow_id' => $flowId,
                 'entry_node_id' => $flowId,
                 'flow_name' => $flowName,
-                'status' => $isFirst ? 'queued' : 'queued',
+                'status' => 'queued',
                 'priority' => $priority,
-                'started_at' => $isFirst ? date('Y-m-d H:i:s') : null
+                'started_at' => $shouldStart ? date('Y-m-d H:i:s') : null
             ]);
         }
 
@@ -181,8 +191,8 @@ try {
             ]);
         }
 
-        // Only start the first execution immediately
-        if ($isFirst) {
+        // Start execution if in parallel mode OR if this is the first execution (sequential)
+        if ($shouldStart) {
             // Update execution status to running
             Database::update(
                 'workflow_executions',
@@ -206,6 +216,18 @@ try {
         }
     }
 
+    // Build message based on execution mode
+    $message = 'Workflow execution started';
+    if ($repeatCount > 1) {
+        if ($workflowExecutionMode === 'parallel') {
+            $message = "Started {$repeatCount} workflow executions (all running in parallel)";
+        } else {
+            $message = "Started {$repeatCount} workflow executions (" . ($repeatCount - 1) . " queued)";
+        }
+    } elseif ($flowId) {
+        $message = 'Single flow execution started';
+    }
+
     successResponse([
         'executionId' => $firstExecutionId,
         'executionIds' => $executionIds,
@@ -213,13 +235,12 @@ try {
         'flowId' => $flowId,
         'status' => 'running',
         'nodeCount' => count($nodes),
+        'executionMode' => $workflowExecutionMode,
         'iterations' => [
             'total' => $repeatCount,
             'current' => 1
         ],
-        'message' => $repeatCount > 1
-            ? "Started {$repeatCount} workflow executions (" . ($repeatCount - 1) . " queued)"
-            : ($flowId ? 'Single flow execution started' : 'Workflow execution started')
+        'message' => $message
     ]);
 
 

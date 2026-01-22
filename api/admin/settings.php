@@ -100,6 +100,7 @@ switch ($method) {
             // Workflow Settings
             'max_repeat_count',
             'content_retention_days',
+            'workflow_execution_mode',
             // Invitation System
             'invitation_enabled',
             'invitation_referrer_credits',

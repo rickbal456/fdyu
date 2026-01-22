@@ -1970,7 +1970,7 @@ if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['
                                         <i data-lucide="refresh-cw" class="w-4 h-4 text-cyan-400"></i>
                                         Workflow Settings
                                     </h4>
-                                    <div class="grid grid-cols-2 gap-4">
+                                    <div class="grid grid-cols-2 gap-4 mb-4">
                                         <div>
                                             <label class="block text-xs font-medium text-dark-400 mb-1.5">Max Repeat
                                                 Count</label>
@@ -1987,6 +1987,20 @@ if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['
                                             <p class="text-xs text-dark-500 mt-1">How long to keep generated files. Set to 0
                                                 to disable auto-deletion.</p>
                                         </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-dark-400 mb-1.5">Repeat Workflow
+                                            Execution Mode</label>
+                                        <select id="admin-workflow-execution-mode" class="form-select w-full">
+                                            <option value="sequential">Sequential (One-by-One)</option>
+                                            <option value="parallel">Parallel (All at Once)</option>
+                                        </select>
+                                        <p class="text-xs text-dark-500 mt-1">
+                                            <strong>Sequential:</strong> Repeat workflows run one after another. Safer, uses
+                                            less resources.<br>
+                                            <strong>Parallel:</strong> All repeat workflows run simultaneously. Faster, but
+                                            uses more resources.
+                                        </p>
                                     </div>
                                 </div>
 

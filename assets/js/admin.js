@@ -406,6 +406,7 @@
                 // Workflow Settings
                 setFieldValue('admin-max-repeat-count', result.settings.max_repeat_count || '100');
                 setFieldValue('admin-content-retention-days', result.settings.content_retention_days || '0');
+                setFieldValue('admin-workflow-execution-mode', result.settings.workflow_execution_mode || 'sequential');
 
                 // Invitation System Settings
                 const invitationToggle = document.getElementById('admin-invitation-enabled');
@@ -686,6 +687,7 @@
                     // Workflow Settings
                     max_repeat_count: document.getElementById('admin-max-repeat-count')?.value,
                     content_retention_days: document.getElementById('admin-content-retention-days')?.value,
+                    workflow_execution_mode: document.getElementById('admin-workflow-execution-mode')?.value,
                     // Invitation System
                     invitation_enabled: document.getElementById('admin-invitation-enabled')?.checked ? '1' : '0',
                     invitation_referrer_credits: document.getElementById('admin-invitation-referrer-credits')?.value,
@@ -1850,6 +1852,7 @@
                 // Workflow Settings
                 document.getElementById('admin-max-repeat-count').value = result.settings.max_repeat_count || '100';
                 document.getElementById('admin-content-retention-days').value = result.settings.content_retention_days || '0';
+                document.getElementById('admin-workflow-execution-mode').value = result.settings.workflow_execution_mode || 'sequential';
 
                 // PayPal settings
                 const paypalEnabled = document.getElementById('admin-paypal-enabled');
@@ -1924,6 +1927,7 @@
                     // Workflow Settings
                     max_repeat_count: document.getElementById('admin-max-repeat-count')?.value,
                     content_retention_days: document.getElementById('admin-content-retention-days')?.value,
+                    workflow_execution_mode: document.getElementById('admin-workflow-execution-mode')?.value,
                     // PayPal Settings
                     paypal_enabled: document.getElementById('admin-paypal-enabled')?.checked ? '1' : '0',
                     paypal_sandbox: document.getElementById('admin-paypal-sandbox')?.checked ? '1' : '0',

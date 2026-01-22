@@ -1374,6 +1374,9 @@ class PropertiesPanel {
                     textarea.value = enhanced;
                     textarea.dispatchEvent(new Event('input', { bubbles: true }));
                 }
+
+                // Update credits display
+                document.dispatchEvent(new CustomEvent('credits:update'));
             } catch (error) {
                 alert('Enhancement failed: ' + error.message);
             } finally {
@@ -1517,6 +1520,9 @@ class PropertiesPanel {
                                     textarea.value = enhanced;
                                     textarea.dispatchEvent(new Event('input', { bubbles: true }));
                                 }
+
+                                // Update credits display
+                                document.dispatchEvent(new CustomEvent('credits:update'));
                             } catch (error) {
                                 alert('Enhancement failed: ' + error.message);
                             } finally {

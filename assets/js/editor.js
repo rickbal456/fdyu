@@ -1182,14 +1182,9 @@ class Editor {
 
     /**
      * Open execution modal (clicking Run button in topbar)
+     * Always opens a new execution modal - app supports multiple concurrent workflows
      */
     async runWorkflow() {
-        // If already running, just open the execution modal to show progress
-        if (this.workflowManager?.isRunning()) {
-            Modals.open('modal-execution');
-            return;
-        }
-
         // Validate workflow
         const nodes = this.nodeManager?.getAllNodes() || [];
         if (nodes.length === 0) {
@@ -1197,7 +1192,7 @@ class Editor {
             return;
         }
 
-        // Open execution modal in pre-run state
+        // Open execution modal in pre-run state (always a new one)
         this.openExecutionModalPreRun();
     }
 
@@ -1250,6 +1245,9 @@ class Editor {
      * Actually start the workflow execution (called from modal button)
      */
     async startExecution() {
+        // Update run button to show running state
+        this.setRunButtonRunning();
+
         const result = await this.workflowManager?.executeWorkflow();
 
         if (result?.success) {
@@ -1260,6 +1258,12 @@ class Editor {
             if (window.PanelsManager) {
                 window.PanelsManager.openHistory();
             }
+
+            // Dispatch credit update event (credits are deducted on workflow start)
+            document.dispatchEvent(new CustomEvent('credits:update'));
+        } else {
+            // If execution failed to start, reset the button
+            this.resetRunButton();
         }
     }
 
@@ -1895,6 +1899,28 @@ class Editor {
             const timestamp = new Date().toLocaleTimeString();
             log.textContent += `[${timestamp}] ${message}\n`;
             log.scrollTop = log.scrollHeight;
+        }
+    }
+
+    /**
+     * Set run button to running state
+     */
+    setRunButtonRunning() {
+        const runBtn = document.getElementById('btn-run');
+        if (runBtn) {
+            runBtn.classList.add('is-running');
+            runBtn.innerHTML = `
+                <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+                <span class="hidden sm:inline">Running</span>
+            `;
+            if (window.lucide) {
+                lucide.createIcons({ nodes: [runBtn] });
+            }
+        }
+
+        const statusExecution = document.getElementById('status-execution');
+        if (statusExecution) {
+            statusExecution.classList.remove('hidden');
         }
     }
 
