@@ -37,10 +37,11 @@ try {
     // Ignore preference errors
 }
 
-$postformeApiKey = $integrationKeys['postforme'] ?? '';
+// Check for both new key 'sapi' and old key 'postforme' for backward compatibility
+$postformeApiKey = $integrationKeys['sapi'] ?? $integrationKeys['postforme'] ?? '';
 
 if (empty($postformeApiKey)) {
-    jsonResponse(['success' => false, 'error' => 'Postforme API key not configured. Please add it in Administration → Integrations.']);
+    jsonResponse(['success' => false, 'error' => 'API key not configured. Please add it in Administration → Integrations.']);
 }
 
 $method = $_SERVER['REQUEST_METHOD'];

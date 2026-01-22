@@ -39,7 +39,8 @@ if (empty($apiKey)) {
     } catch (Exception $e) {
         // Ignore
     }
-    $apiKey = $integrationKeys['postforme'] ?? '';
+    // Check for both new key 'sapi' and old key 'postforme' for backward compatibility
+    $apiKey = $integrationKeys['sapi'] ?? $integrationKeys['postforme'] ?? '';
 }
 
 if (empty($apiKey)) {
