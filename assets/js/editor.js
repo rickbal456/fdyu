@@ -1803,8 +1803,13 @@ class Editor {
      * Handle execution complete
      */
     handleExecutionComplete(data) {
-        // Dispatch complete event
-        document.dispatchEvent(new CustomEvent('workflow:run:complete', { detail: data }));
+        // Get workflow name for notification
+        const workflowName = this.workflowManager?.currentWorkflow?.name || 'Untitled Workflow';
+
+        // Dispatch complete event with workflow name
+        document.dispatchEvent(new CustomEvent('workflow:run:complete', {
+            detail: { ...data, workflowName }
+        }));
 
         // Cleanup timers
         this.cleanupNodeTimers();
@@ -1874,8 +1879,13 @@ class Editor {
      * Handle execution error
      */
     handleExecutionError(data) {
-        // Dispatch error event
-        document.dispatchEvent(new CustomEvent('workflow:run:error', { detail: data }));
+        // Get workflow name for notification
+        const workflowName = this.workflowManager?.currentWorkflow?.name || 'Untitled Workflow';
+
+        // Dispatch error event with workflow name
+        document.dispatchEvent(new CustomEvent('workflow:run:error', {
+            detail: { ...data, workflowName }
+        }));
 
         // Cleanup timers
         this.cleanupNodeTimers();

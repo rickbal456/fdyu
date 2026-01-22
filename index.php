@@ -1046,6 +1046,57 @@ if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['
                                     <span data-i18n="settings.snap_grid">Snap nodes to grid</span>
                                 </label>
                             </div>
+
+                            <!-- Desktop Notifications -->
+                            <div class="border-t border-dark-600 pt-4 mt-4">
+                                <h4 class="text-sm font-medium text-dark-200 mb-3 flex items-center gap-2">
+                                    <i data-lucide="bell" class="w-4 h-4"></i>
+                                    Desktop Notifications
+                                </h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="flex items-center gap-2 text-sm text-dark-300 cursor-pointer">
+                                            <input type="checkbox" class="form-checkbox"
+                                                id="setting-notifications-enabled">
+                                            <span>Enable desktop notifications</span>
+                                        </label>
+                                        <p class="text-xs text-dark-500 mt-1 ml-6">Get notified when workflows complete
+                                            or fail</p>
+                                    </div>
+                                    <div id="notification-permission-status" class="hidden ml-6">
+                                        <div id="notification-status-granted"
+                                            class="hidden flex items-center gap-2 text-sm text-green-400">
+                                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                            <span>Notifications allowed</span>
+                                        </div>
+                                        <div id="notification-status-denied" class="hidden">
+                                            <div class="flex items-center gap-2 text-sm text-red-400 mb-2">
+                                                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                                                <span>Notifications blocked by browser</span>
+                                            </div>
+                                            <div
+                                                class="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-xs text-dark-300">
+                                                <p class="font-medium text-red-400 mb-1">How to enable:</p>
+                                                <ol class="list-decimal list-inside space-y-1">
+                                                    <li>Click the lock icon <i data-lucide="lock"
+                                                            class="w-3 h-3 inline"></i> in your browser's address bar
+                                                    </li>
+                                                    <li>Find "Notifications" setting</li>
+                                                    <li>Change from "Block" to "Allow"</li>
+                                                    <li>Refresh this page</li>
+                                                </ol>
+                                            </div>
+                                        </div>
+                                        <div id="notification-status-default" class="hidden">
+                                            <button id="btn-request-notification"
+                                                class="btn-secondary text-sm px-3 py-1.5 flex items-center gap-2">
+                                                <i data-lucide="bell-ring" class="w-4 h-4"></i>
+                                                <span>Allow Notifications</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -2464,6 +2515,7 @@ if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['
     <script src="assets/js/api.js"></script>
     <script src="assets/js/plugins.js"></script>
     <script src="assets/js/panels.js"></script>
+    <script src="assets/js/notifications.js"></script>
     <script src="assets/js/editor.js"></script>
     <?php if ((int) $user['id'] === 1 || ($user['role'] ?? '') === 'admin'): ?>
         <script src="assets/js/admin.js?v=<?= time() ?>"></script>

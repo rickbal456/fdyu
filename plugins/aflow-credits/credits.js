@@ -32,14 +32,13 @@
         setupEventListeners();
 
         // Auto-refresh credits after workflow completes or node generates output
+        // Note: Notifications are now handled by NotificationManager
         document.addEventListener('workflow:run:complete', (e) => {
             loadBalance();
-            showPushNotification('Workflow Complete', 'Your workflow has finished successfully!', 'success');
         });
 
         document.addEventListener('workflow:run:error', (e) => {
             loadBalance(); // Still refresh - credits may have been refunded
-            showPushNotification('Workflow Failed', e.detail?.error || 'An error occurred during workflow execution.', 'error');
         });
 
         // Listen for explicit credit update requests (e.g., after workflow starts)
@@ -409,54 +408,6 @@
 
         // Submit top-up
         document.getElementById('btn-submit-topup')?.addEventListener('click', submitTopup);
-    }
-
-    /**
-     * Show a browser push notification (if enabled by user)
-     * @param {string} title - Notification title
-     * @param {string} body - Notification body
-     * @param {string} type - 'success' or 'error'
-     */
-    function showPushNotification(title, body, type = 'info') {
-        // Check if notifications are supported and permitted
-        if (!('Notification' in window)) {
-            return;
-        }
-
-        // Check if page is hidden (user is in another tab/app)
-        if (document.visibilityState === 'visible') {
-            // Page is visible, skip push notification (user can see the toast)
-            return;
-        }
-
-        if (Notification.permission === 'granted') {
-            const icon = type === 'success'
-                ? '/assets/images/success-icon.png'
-                : type === 'error'
-                    ? '/assets/images/error-icon.png'
-                    : '/assets/images/logo.png';
-
-            const notification = new Notification(title, {
-                body,
-                icon,
-                badge: '/assets/images/logo.png',
-                tag: 'aikaflow-workflow-status',
-                requireInteraction: false,
-                silent: false
-            });
-
-            // Focus the window when notification is clicked
-            notification.onclick = () => {
-                window.focus();
-                notification.close();
-            };
-
-            // Auto-close after 5 seconds
-            setTimeout(() => notification.close(), 5000);
-        } else if (Notification.permission === 'default') {
-            // Request permission for future notifications
-            Notification.requestPermission();
-        }
     }
 
     // State
