@@ -226,12 +226,8 @@
      * Show platform selector modal/dropdown
      */
     function showPlatformSelector() {
-        // Check if API key is configured
-        const apiKey = PluginManager.getAiKey('sapi');
-        if (!apiKey) {
-            Toast.show('Please configure your Social API key in Administration → Integrations first.', 'warning');
-            return;
-        }
+        // Note: Don't check API key here - let the backend validate and return a clear error
+        // This prevents UI issues if integrationStatus hasn't loaded yet
 
         // Create platform selector dropdown/modal
         const existingModal = document.getElementById('platform-selector-modal');
