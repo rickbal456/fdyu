@@ -2499,6 +2499,7 @@ if ($whatsappVerificationEnabled && ($user['whatsapp_phone'] === null || $user['
             csrf: <?= json_encode($csrfToken) ?>,
             apiUrl: <?= json_encode(APP_URL . '/api') ?>,
             baseUrl: <?= json_encode(APP_URL) ?>,
+            siteTitle: <?= json_encode($siteTitle) ?>,
             version: '1.0.0'
         };
     </script>

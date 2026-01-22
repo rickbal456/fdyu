@@ -126,7 +126,8 @@
     function showTestNotification() {
         if (Notification.permission !== 'granted') return;
 
-        const notification = new Notification('AIKAFLOW', {
+        const siteTitle = window.AIKAFLOW?.siteTitle || 'AIKAFLOW';
+        const notification = new Notification(siteTitle, {
             body: 'Desktop notifications are now enabled! 🎉',
             icon: getNotificationIcon('success'),
             badge: '/assets/images/logo.png',
