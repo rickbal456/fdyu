@@ -294,7 +294,7 @@
      */
     async function connectPlatform(platform) {
         try {
-            Toast.show(`Connecting to ${PLATFORMS[platform]?.name || platform}...`, 'info');
+            Toast.info(`Connecting to ${PLATFORMS[platform]?.name || platform}...`);
 
             const response = await fetch('./api/social/connect.php', {
                 method: 'POST',
@@ -323,7 +323,7 @@
                         clearInterval(pollTimer);
                         // Reload accounts list
                         loadSocialAccounts();
-                        Toast.show('Account connection completed. Check the list for your new account.', 'success');
+                        Toast.success('Account connection completed', 'Check the list for your new account.');
                     }
                 }, 500);
 
@@ -332,7 +332,7 @@
             }
         } catch (error) {
             console.error('Connect platform error:', error);
-            Toast.show(error.message || 'Failed to connect platform', 'error');
+            Toast.error('Connection Failed', error.message || 'Failed to connect platform');
         }
     }
 
@@ -363,14 +363,14 @@
             const data = await response.json();
 
             if (data.success) {
-                Toast.show('Account disconnected successfully', 'success');
+                Toast.success('Account disconnected');
                 loadSocialAccounts();
             } else {
                 throw new Error(data.error || 'Failed to disconnect account');
             }
         } catch (error) {
             console.error('Disconnect account error:', error);
-            Toast.show(error.message || 'Failed to disconnect account', 'error');
+            Toast.error('Disconnect Failed', error.message || 'Failed to disconnect account');
         }
     }
 

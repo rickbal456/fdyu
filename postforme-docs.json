@@ -1,0 +1,3704 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1/media/create-upload-url": {
+      "post": {
+        "description": "\nTo upload media to attach to your post, make a `POST` request to the `/media/create-upload-url` endpoint. \n\nYou'll receive the public url of your media item (which can be used when making a post) and will include an `upload_url` which is a signed URL of the storage location for uploading your file to. \n\nThis URL is unique and publicly signed for a short time, so make sure to upload your files in a timely manner.\n\n**Example flow using JavaScript and the Fetch API:**\n\n**Request an upload URL**\n\n   ```js\n   // Step 1: Request an upload URL from your API\n   const response = await fetch('https://api.postforme.dev/v1/media/create-upload-url', {\n     method: 'POST',\n     headers: {\n       'Content-Type': 'application/json'\n     }\n   });\n\n   const { media_url, upload_url } = await response.json();\n   ```\n\n**Upload your file to the signed URL**\n\n   ```js\n   // Step 2: Upload your file to the signed URL\n   const file = /* your File or Blob object, e.g., from an <input type=\"file\"> */;\n   await fetch(upload_url, {\n     method: 'PUT',\n     headers: {\n       'Content-Type': 'image/jpeg'\n     },\n     body: file\n   });\n   ```\n\n**Use the `media_url` when creating your post**\n\n    ```js\n    // Step 3: Use the `media_url` when creating your post\n    const response = await fetch('https://api.postforme.dev/v1/social-posts', {\n      method: 'POST',\n      headers: {\n        'Content-Type': 'application/json'\n      },\n      body: JSON.stringify({\n        social_accounts: ['spc_...', ...],\n        caption: 'My caption',\n        media: [\n          { \n            url: media_url \n          }\n        ]\n      })\n    });\n    ```\n",
+        "operationId": "MediaController_createUploadUrl_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Signed upload URL and media record created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateUploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload media",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/v1/social-posts": {
+      "get": {
+        "description": "Get a paginated result for posts based on the applied filters",
+        "operationId": "SocialPostsController_getAllPosts_v1",
+        "parameters": [
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "description": "Number of items to skip",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items to return",
+            "schema": {
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "platform",
+            "required": false,
+            "in": "query",
+            "description": "Filter by platforms. Multiple values imply OR logic.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "bluesky",
+                  "facebook",
+                  "instagram",
+                  "linkedin",
+                  "pinterest",
+                  "threads",
+                  "tiktok",
+                  "x",
+                  "youtube"
+                ]
+              }
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by post status. Multiple values imply OR logic.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "scheduled",
+                  "processing",
+                  "processed"
+                ]
+              }
+            }
+          },
+          {
+            "name": "external_id",
+            "required": false,
+            "in": "query",
+            "description": "Filter by external ID. Multiple values imply OR logic.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "social_account_id",
+            "required": false,
+            "in": "query",
+            "description": "Filter by social account ID. Multiple values imply OR logic.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated data set for posts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SocialPostDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number",
+                          "description": "Total number of items available."
+                        },
+                        "offset": {
+                          "type": "number",
+                          "description": "Number of items skipped."
+                        },
+                        "limit": {
+                          "type": "number",
+                          "description": "Maximum number of items returned."
+                        },
+                        "next": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "URL to the next page of results, or null if none.",
+                          "example": "https://api.postforme.dev/v1/items?offset=10&limit=10"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "offset",
+                        "limit",
+                        "next"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error when fetching posts."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get posts",
+        "tags": [
+          "Social Posts"
+        ]
+      },
+      "post": {
+        "operationId": "SocialPostsController_createPosts_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSocialPostDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Post created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialPostDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidSocialPostDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error when fetching the Post."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create Post",
+        "tags": [
+          "Social Posts"
+        ]
+      }
+    },
+    "/v1/social-posts/{id}": {
+      "get": {
+        "operationId": "SocialPostsController_getPost_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Post ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialPostDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Post not found based on the given ID."
+          },
+          "500": {
+            "description": "Internal server error when fetching the Post."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Post by ID",
+        "tags": [
+          "Social Posts"
+        ]
+      },
+      "put": {
+        "operationId": "SocialPostsController_updatePost_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Post ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSocialPostDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Post updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialPostDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidSocialPostDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Post not found."
+          },
+          "500": {
+            "description": "Internal server error when updating the Post."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update Post",
+        "tags": [
+          "Social Posts"
+        ]
+      },
+      "delete": {
+        "operationId": "SocialPostsController_deletePost_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Post ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteEntityResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request."
+          },
+          "404": {
+            "description": "Post not found."
+          },
+          "500": {
+            "description": "Internal server error when deleting the Post."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete Post",
+        "tags": [
+          "Social Posts"
+        ]
+      }
+    },
+    "/v1/social-post-results": {
+      "get": {
+        "description": "Get a paginated result for post results based on the applied filters",
+        "operationId": "SocialPostResultsController_getAllPostResults_v1",
+        "parameters": [
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "description": "Number of items to skip",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items to return",
+            "schema": {
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "post_id",
+            "required": false,
+            "in": "query",
+            "description": "Filter by post IDs. Multiple values imply OR logic (e.g., ?post_id=123&post_id=456).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "platform",
+            "required": false,
+            "in": "query",
+            "description": "Filter by platform(s). Multiple values imply OR logic (e.g., ?platform=x&platform=facebook).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "social_account_id",
+            "required": false,
+            "in": "query",
+            "description": "Filter by social account ID(s). Multiple values imply OR logic (e.g., ?social_account_id=123&social_account_id=456).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated data set for post results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SocialPostResultDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number",
+                          "description": "Total number of items available."
+                        },
+                        "offset": {
+                          "type": "number",
+                          "description": "Number of items skipped."
+                        },
+                        "limit": {
+                          "type": "number",
+                          "description": "Maximum number of items returned."
+                        },
+                        "next": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "URL to the next page of results, or null if none.",
+                          "example": "https://api.postforme.dev/v1/items?offset=10&limit=10"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "offset",
+                        "limit",
+                        "next"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error when fetching post results."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get post results",
+        "tags": [
+          "Social Post Results"
+        ]
+      }
+    },
+    "/v1/social-post-results/{id}": {
+      "get": {
+        "operationId": "SocialPostResultsController_getPostResult_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Post Result ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post result retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialPostResultDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Post result not found based on the given ID."
+          },
+          "500": {
+            "description": "Internal server error when fetching the post result."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get post result by ID",
+        "tags": [
+          "Social Post Results"
+        ]
+      }
+    },
+    "/v1/social-accounts": {
+      "get": {
+        "description": "Get a paginated result for social accounts based on the applied filters",
+        "operationId": "SocialAccountsController_getAllSocialAccounts_v1",
+        "parameters": [
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "description": "Number of items to skip",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items to return",
+            "schema": {
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "platform",
+            "required": false,
+            "in": "query",
+            "description": "Filter by platform(s). Multiple values imply OR logic (e.g., ?platform=x&platform=facebook).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "username",
+            "required": false,
+            "in": "query",
+            "description": "Filter by username(s). Multiple values imply OR logic (e.g., ?username=test&username=test2).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "external_id",
+            "required": false,
+            "in": "query",
+            "description": "Filter by externalId(s). Multiple values imply OR logic (e.g., ?externalId=test&externalId=test2).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "id",
+            "required": false,
+            "in": "query",
+            "description": "Filter by id(s). Multiple values imply OR logic (e.g., ?id=spc_xxxxxx&id=spc_yyyyyy).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated data set for social accounts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SocialAccountDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number",
+                          "description": "Total number of items available."
+                        },
+                        "offset": {
+                          "type": "number",
+                          "description": "Number of items skipped."
+                        },
+                        "limit": {
+                          "type": "number",
+                          "description": "Maximum number of items returned."
+                        },
+                        "next": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "URL to the next page of results, or null if none.",
+                          "example": "https://api.postforme.dev/v1/items?offset=10&limit=10"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "offset",
+                        "limit",
+                        "next"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error when fetching social accounts."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get social accounts",
+        "tags": [
+          "Social Accounts"
+        ]
+      },
+      "post": {
+        "description": "If a social account with the same platform and user_id already exists, it will be updated. If not, a new social account will be created.",
+        "operationId": "SocialAccountsController_createSocialAccount_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSocialAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Social Account created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialAccountDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error when creating the Social Account."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create Social Account",
+        "tags": [
+          "Social Accounts"
+        ]
+      }
+    },
+    "/v1/social-accounts/{id}": {
+      "get": {
+        "operationId": "SocialAccountsController_getSocialAccount_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Social Account ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Social account retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialAccountDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Social account not found based on the given ID."
+          },
+          "500": {
+            "description": "Internal server error when fetching the social account."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get social account by ID",
+        "tags": [
+          "Social Accounts"
+        ]
+      },
+      "patch": {
+        "operationId": "SocialAccountsController_updateSocialAccount_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Social Account ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSocialAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Social account updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialAccountDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Social account not found."
+          },
+          "500": {
+            "description": "Internal server error when updating the social account."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update social account",
+        "tags": [
+          "Social Accounts"
+        ]
+      }
+    },
+    "/v1/social-accounts/auth-url": {
+      "post": {
+        "description": "Generates a URL that initiates the authentication flow for a user's social media account. When visited, the user is redirected to the selected social platform's login/authorization page. Upon successful authentication, they are redirected back to your application",
+        "operationId": "SocialAccountsController_createSocialAccountAuthUrl_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSocialAccountProviderAuthUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Social account auth URL retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialAccountProviderAuthUrlDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Social account credentials not found. Unable to create auth URL."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create Social Account Auth URL",
+        "tags": [
+          "Social Accounts"
+        ]
+      }
+    },
+    "/v1/social-accounts/{id}/disconnect": {
+      "post": {
+        "description": "Disconnecting an account with remove all auth tokens and mark the account as disconnected. The record of the account will be kept and can be retrieved and reconnected by the owner of the account.",
+        "operationId": "SocialAccountsController_disconnectSocialAccount_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account disconnected successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisconnectedSocialAccountDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Social account not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Disconnect a social account",
+        "tags": [
+          "Social Accounts"
+        ]
+      }
+    },
+    "/v1/social-post-previews": {
+      "post": {
+        "operationId": "SocialPostPreviewsController_createPreviews_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSocialPostPreviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Previews created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SocialPostPreviewDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request."
+          },
+          "500": {
+            "description": "Internal server error when fetching the Post."
+          }
+        },
+        "summary": "Create Post Previews",
+        "tags": [
+          "Social Post Previews"
+        ]
+      }
+    },
+    "/v1/webhooks": {
+      "get": {
+        "description": "Get a paginated result for webhooks based on the applied filters",
+        "operationId": "WebhooksController_getAllWebhooks_v1",
+        "parameters": [
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "description": "Number of items to skip",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items to return",
+            "schema": {
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "url",
+            "required": false,
+            "in": "query",
+            "description": "Filter by url(s). Multiple values imply OR logic (e.g., ?url=https://example.com&url=https://postforme.dev).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "event_type",
+            "required": false,
+            "in": "query",
+            "description": "Filter by event type(s). Multiple values imply OR logic (e.g., ?event_type=social.post.created&event_type=social.post.updated).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "id",
+            "required": false,
+            "in": "query",
+            "description": "Filter by id(s). Multiple values imply OR logic (e.g., ?id=wbh_xxxxxx&id=wbh_yyyyyy).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated data set for webhooks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WebhookDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number",
+                          "description": "Total number of items available."
+                        },
+                        "offset": {
+                          "type": "number",
+                          "description": "Number of items skipped."
+                        },
+                        "limit": {
+                          "type": "number",
+                          "description": "Maximum number of items returned."
+                        },
+                        "next": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "URL to the next page of results, or null if none.",
+                          "example": "https://api.postforme.dev/v1/items?offset=10&limit=10"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "offset",
+                        "limit",
+                        "next"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error when fetching webhooks."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get webhooks",
+        "tags": [
+          "Webhooks"
+        ]
+      },
+      "post": {
+        "operationId": "WebhooksController_createWebhook_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhookDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error when creating the Webhook."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create Webhook",
+        "tags": [
+          "Webhooks"
+        ]
+      }
+    },
+    "/v1/webhooks/{id}": {
+      "get": {
+        "operationId": "WebhooksController_getWebhook_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Webhook ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook not found based on the given ID."
+          },
+          "500": {
+            "description": "Internal server error when fetching the webhook."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get webhook by ID",
+        "tags": [
+          "Webhooks"
+        ]
+      },
+      "patch": {
+        "operationId": "WebhooksController_updateWebhook_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Webhook ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWebhookDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook not found."
+          },
+          "500": {
+            "description": "Internal server error when updating the Webhook."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update Webhook",
+        "tags": [
+          "Webhooks"
+        ]
+      },
+      "delete": {
+        "operationId": "WebhooksController_deleteWebhook_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Webhook ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook deleted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteEntityResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook not found."
+          },
+          "500": {
+            "description": "Internal server error when deleting the webhook."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete Webhook",
+        "tags": [
+          "Webhooks"
+        ]
+      }
+    },
+    "/v1/social-account-feeds/{social_account_id}": {
+      "get": {
+        "description": "Get a paginated result for the social account based on the applied filters",
+        "operationId": "SocialAccountFeedsController_getAccountFeed_v1",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items to return; Note: some platforms will have different max limits, in the case the provided limit is over the platform's limit we will return the max allowed by the platform.",
+            "schema": {
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Cursor identifying next page of results",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "external_post_id",
+            "required": false,
+            "in": "query",
+            "description": "Filter by Post for Me Social Postexternal ID. Multiple values imply OR logic (e.g., ?external_post_id=xxxxxx&external_post_id=yyyyyy).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "social_post_id",
+            "required": false,
+            "in": "query",
+            "description": "Filter by Post for Me Social Post id(s). Multiple values imply OR logic (e.g., ?social_post_id=sp_xxxxxx&social_post_id=sp_yyyyyy).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "platform_post_id",
+            "required": false,
+            "in": "query",
+            "description": "Filter by the platform's id(s). Multiple values imply OR logic (e.g., ?social_post_id=spr_xxxxxx&social_post_id=spr_yyyyyy).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "expand",
+            "required": false,
+            "in": "query",
+            "description": "Expand additional data in the response. Currently supports: \"metrics\" to include post analytics data.",
+            "schema": {
+              "example": [
+                "metrics"
+              ],
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "metrics"
+                ]
+              }
+            }
+          },
+          {
+            "name": "social_account_id",
+            "required": true,
+            "in": "path",
+            "description": "Social Account ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated data set for the social account feed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PlatformPostDto"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "cursor": {
+                          "type": "string",
+                          "description": "Id representing the next page of items"
+                        },
+                        "limit": {
+                          "type": "number",
+                          "description": "Maximum number of items returned."
+                        },
+                        "next": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "URL to the next page of results, or null if none.",
+                          "example": "https://api.postforme.dev/v1/items?cursor=pgn_xxxxx&limit=10"
+                        },
+                        "has_more": {
+                          "type": "boolean",
+                          "description": "Indicates if there are more results or not"
+                        }
+                      },
+                      "required": [
+                        "cursor",
+                        "limit",
+                        "next"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error when fetching social account feed."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get social account feed",
+        "tags": [
+          "Social Account Feeds"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Post for Me API",
+    "description": "\nThe official API for [Post for Me](https://www.postforme.dev/)\n\n## Auth\nAuthentication is required for all endpoints. Provide a valid API key as a Bearer token in the Authorization header. \nLog in to your [Post for Me](https://www.postforme.dev/) account to retrieve your API key.\n\n## Getting Started\nTo create a post you first need to get the social accounts you want to post to, upload any media for the post (if applicable), and then create the post. \n\nThe below example shows how to create a media post from start to finish.\n\n**Example flow using JavaScript and the Fetch API:**\n\n**Connect an Account**\n\n You can skip this step if you have accounts connected already, or are connecting accounts through the [dashboard](https://app.postforme.dev/)\n```js\n   //Create an auth URL to redirect the user to in order for them to login and connect their account\n   const socialAccountAuthUrlResponse = await fetch('https://api.postforme.dev/v1/social-accounts/auth-url', {\n     method: 'POST',\n     headers: {\n       'Content-Type': 'application/json',\n       'Authorization': 'Bearer YOUR_API_KEY'\n     },\n     body: JSON.stringify({\n         platform: 'facebook'\n       }),\n   });\n\n   const { url } = await socialAccountAuthUrlResponse.json();\n\n   //Redirect to the url from the repsone\n   console.log(url);\n   ```\n\n**Get Social Accounts**\n\n  ```js\n   // Step 1: Fetch the social accounts you want to post to. In this case we are getting all facebook and instagram accounts.\n   const socialAccountResponse = await fetch('https://api.postforme.app/v1/social-accounts?platform=facebook&platform=instagram', {\n     method: 'GET',\n     headers: {\n       'Content-Type': 'application/json',\n       'Authorization': 'Bearer YOUR_API_KEY'\n     }\n   });\n\n   const { data } = await socialAccountResponse.json();\n\n   //Grab the ids from the social account response\n   const accountIds =  data.map((account) => account.id);\n   ```\n\n\n**Create the post**\n\n ```js\n   // Step 2: Create the post using the social account ids\n\n   // We are scheduling the post one hour from now\n   const scheduledAt = new Date();\n   scheduledAt.setHours(scheduledAt.getHours() + 1);\n\n   const postResponse = await fetch('https://api.postforme.dev/v1/social-posts', {\n       method: 'POST',\n       headers: {\n         'Content-Type': 'application/json',\n         'Authorization': 'Bearer YOUR_API_KEY'\n       },\n       body: JSON.stringify({\n         caption: 'Hello, world!',\n         scheduled_at: scheduledAt,\n         media: [\n          {\n            \"url\": \"https://picsum.photos/id/237/1080/1080\",\n          }\n        ],\n         social_accounts: accountIds,\n       }),\n     });\n   \n     const postData = await postResponse.json();\n   ```\n\n**Thats It! You have successfully scheduled a post to go out in one hour.** \n\n## Client Libraries\n\nFollow the links below for our official libraries: \n\n[TypeScript](https://www.npmjs.com/package/post-for-me)\n\n[Python](https://pypi.org/project/post-for-me/)\n\n[Ruby](https://rubygems.org/gems/post-for-me)\n\n[Go](https://pkg.go.dev/github.com/DayMoonDevelopment/post-for-me-go)\n\n\n## MCP\n\nWe provide an MCP (Model Context Protocol) server that allows AI assistants to interact with Post for Me directly. Currently you must run the MCP server locally to use it with your AI assistant.\n\n[MCP Server Documentation](https://www.npmjs.com/package/post-for-me-mcp)\n\n",
+    "version": "1.0",
+    "contact": {},
+    "termsOfService": "https://www.postforme.dev/terms"
+  },
+  "tags": [
+    {
+      "name": "Media",
+      "description": "\nMedia are media assets (images, videos, etc.) that can be attached to posts using the media url. These endpoints are only needed if your media is not already available on a publicly accessible URL.\nMedia assets are stored temporarily and are automatically deleted in the following scenarios:\n- When the associated post is published\n- After 24 hours if not attached to any post\n- When the scheduled post is deleted\n"
+    },
+    {
+      "name": "Social Posts",
+      "description": "\nPosts represent content that can be published across multiple social media platforms. Each post can have platform-specific content variations, allowing customization for different platforms and accounts. Content can be defined at three levels:\n\n1. Default content for all platforms\n2. Platform-specific content overrides\n3. Account-specific content overrides\n\nThe system will use the most specific content override available when publishing to each platform and account.\n"
+    },
+    {
+      "name": "Social Accounts",
+      "description": "\nSocial accounts represent platform-specific accounts (e.g. Twitter, LinkedIn, Facebook) that are used for publishing posts. \nEach social account has a unique `id` that can be referenced when creating or scheduling posts to specify which platforms the content should be published to.\n"
+    },
+    {
+      "name": "Social Post Results",
+      "description": "\nPost results represent the outcome of publishing content to various social media platforms. They provide comprehensive information including:\n- Publication status (success/failure)\n- Any errors or issues encountered during posting\n- Platform url to view the published post\n"
+    },
+    {
+      "name": "Social Account Feeds",
+      "description": "\nThe social account feed is every post made for the social account, including posts not made through our API. \nUse this endpoint to get the platform details for any post made under the connected account. To use this endpoint accounts must be connected with the **\"feeds\" permission**. \n\nDetails will include: \n - Post information including caption, url, media, etc.. \n - When passing **expand=metrics**, Metrics information including views, likes, follows, etc..\n\nNote: Currently only the following platforms are supported **Instagram**, **Facebook**, **TikTok**, **TikTok Business**, **Youtube**\n"
+    },
+    {
+      "name": "Webhooks",
+      "description": "\nWebhooks enable you to subscribe to certain events. This involves Post for Me making a POST request to the URL of any webhooks you create.\nOnly the events you subscribe to will be sent to your webhook URL.\n\n## Payload\nWhen an event happens that your webhook is subscribed to, we will make a POST request with the following JSON body\n\n```\n    {\n        \"event_type\": \"\",\n        \"data\": {}\n    }\n```\n\nThe event_type will be the event that triggered the webhook POST, data will be the resulting entity from the event\n\n## Security\nTo verify the POST to your webhook URL is from us we will include a secret in the header \"Post-For-Me-Webhook-Secret\".\nWhen you create a webhook you will receive the secret in the response.\n\n## Retries\nIf your server fails to respond with a 2XX code, requests to it will be retried with exponential backoff around 8 times over the course of just over a day.\n\n"
+    },
+    {
+      "name": "Social Post Previews",
+      "description": "\nSocial Post Previews allow you to see what a Social Post will create for each account in the post. \n"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "CreateUploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "upload_url": {
+            "type": "string",
+            "description": "The signed upload URL for the client to upload the file"
+          },
+          "media_url": {
+            "type": "string",
+            "description": "The public URL for the media, to use once file has been uploaded"
+          }
+        },
+        "required": [
+          "upload_url",
+          "media_url"
+        ]
+      },
+      "UserTagDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Facebook User ID, Instagram Username or Instagram product id to tag"
+          },
+          "type": {
+            "type": "string",
+            "description": "The type of tag, user to tag accounts, product to tag products (only supported for instagram)",
+            "enum": [
+              "user",
+              "product"
+            ]
+          },
+          "platform": {
+            "type": "string",
+            "description": "The platform for the tags",
+            "enum": [
+              "facebook",
+              "instagram"
+            ]
+          },
+          "x": {
+            "type": "number",
+            "description": "Percentage distance from left edge of the image, Not required for videos or stories"
+          },
+          "y": {
+            "type": "number",
+            "description": "Percentage distance from top edge of the image, Not required for videos or stories"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "platform"
+        ]
+      },
+      "SocialPostMediaDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Public URL of the media"
+          },
+          "thumbnail_url": {
+            "type": "object",
+            "description": "Public URL of the thumbnail for the media",
+            "nullable": true
+          },
+          "thumbnail_timestamp_ms": {
+            "type": "object",
+            "description": "Timestamp in milliseconds of frame to use as thumbnail for the media",
+            "nullable": true
+          },
+          "tags": {
+            "description": "List of tags to attach to the media",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserTagDto"
+            }
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "PinterestConfigurationDto": {
+        "type": "object",
+        "properties": {
+          "caption": {
+            "type": "object",
+            "description": "Overrides the `caption` from the post",
+            "nullable": true
+          },
+          "media": {
+            "description": "Overrides the `media` from the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          },
+          "board_ids": {
+            "description": "Pinterest board IDs",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "link": {
+            "type": "string",
+            "description": "Pinterest post link",
+            "nullable": true
+          }
+        }
+      },
+      "InstagramConfigurationDto": {
+        "type": "object",
+        "properties": {
+          "caption": {
+            "type": "object",
+            "description": "Overrides the `caption` from the post",
+            "nullable": true
+          },
+          "media": {
+            "description": "Overrides the `media` from the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          },
+          "placement": {
+            "type": "string",
+            "description": "Instagram post placement",
+            "enum": [
+              "reels",
+              "stories",
+              "timeline"
+            ],
+            "nullable": true
+          },
+          "collaborators": {
+            "description": "Instagram usernames to be tagged as a collaborator",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "share_to_feed": {
+            "type": "boolean",
+            "description": "If false video posts will only be shown in the Reels tab",
+            "nullable": true,
+            "default": true
+          },
+          "location": {
+            "type": "string",
+            "description": "Page id with a location that you want to tag the image or video with",
+            "nullable": true
+          },
+          "trial_reel_type": {
+            "type": "string",
+            "description": "Instagram trial reel type, when passed will be created as a trial reel. If manual the trial reel can be manually graduated in the native app. If perfomance the trial reel will be automatically graduated if the trial reel performs well.",
+            "enum": [
+              "manual",
+              "performance"
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "TiktokConfigurationDto": {
+        "type": "object",
+        "properties": {
+          "caption": {
+            "type": "object",
+            "description": "Overrides the `caption` from the post",
+            "nullable": true
+          },
+          "media": {
+            "description": "Overrides the `media` from the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          },
+          "title": {
+            "type": "string",
+            "description": "Overrides the `title` from the post",
+            "nullable": true
+          },
+          "privacy_status": {
+            "type": "string",
+            "description": "Sets the privacy status for TikTok (private, public)",
+            "nullable": true,
+            "default": "public"
+          },
+          "allow_comment": {
+            "type": "boolean",
+            "description": "Allow comments on TikTok",
+            "nullable": true,
+            "default": true
+          },
+          "allow_duet": {
+            "type": "boolean",
+            "description": "Allow duets on TikTok",
+            "nullable": true,
+            "default": true
+          },
+          "allow_stitch": {
+            "type": "boolean",
+            "description": "Allow stitch on TikTok",
+            "nullable": true,
+            "default": true
+          },
+          "disclose_your_brand": {
+            "type": "boolean",
+            "description": "Disclose your brand on TikTok",
+            "nullable": true,
+            "default": false
+          },
+          "disclose_branded_content": {
+            "type": "boolean",
+            "description": "Disclose branded content on TikTok",
+            "nullable": true,
+            "default": false
+          },
+          "is_ai_generated": {
+            "type": "boolean",
+            "description": "Flag content as AI generated on TikTok",
+            "nullable": true,
+            "default": false
+          },
+          "is_draft": {
+            "type": "boolean",
+            "description": "Will create a draft upload to TikTok, posting will need to be completed from within the app",
+            "nullable": true,
+            "default": false
+          },
+          "auto_add_music": {
+            "type": "boolean",
+            "description": "Will automatically add music to photo posts",
+            "nullable": true,
+            "default": true
+          }
+        }
+      },
+      "TwitterPollDto": {
+        "type": "object",
+        "properties": {
+          "duration_minutes": {
+            "type": "number",
+            "description": "Duration of the poll in minutes"
+          },
+          "options": {
+            "description": "The choices of the poll, requiring 2-4 options",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reply_settings": {
+            "type": "string",
+            "description": "Who can reply to the tweet",
+            "enum": [
+              "following",
+              "mentionedUsers",
+              "subscribers",
+              "verified"
+            ]
+          }
+        },
+        "required": [
+          "duration_minutes",
+          "options"
+        ]
+      },
+      "TwitterConfigurationDto": {
+        "type": "object",
+        "properties": {
+          "caption": {
+            "type": "object",
+            "description": "Overrides the `caption` from the post",
+            "nullable": true
+          },
+          "media": {
+            "description": "Overrides the `media` from the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          },
+          "poll": {
+            "description": "Poll options for the tweet",
+            "nullable": false,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TwitterPollDto"
+              }
+            ]
+          },
+          "community_id": {
+            "type": "string",
+            "description": "Id of the community to post to",
+            "nullable": false
+          },
+          "quote_tweet_id": {
+            "type": "string",
+            "description": "Id of the tweet you want to quote",
+            "nullable": false
+          },
+          "reply_settings": {
+            "type": "string",
+            "description": "Who can reply to the tweet",
+            "enum": [
+              "following",
+              "mentionedUsers",
+              "subscribers",
+              "verified"
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "YoutubeConfigurationDto": {
+        "type": "object",
+        "properties": {
+          "caption": {
+            "type": "object",
+            "description": "Overrides the `caption` from the post",
+            "nullable": true
+          },
+          "media": {
+            "description": "Overrides the `media` from the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          },
+          "title": {
+            "type": "string",
+            "description": "Overrides the `title` from the post",
+            "nullable": true
+          },
+          "privacy_status": {
+            "type": "string",
+            "description": "Sets the privacy status of the video, will default to public",
+            "nullable": true,
+            "enum": [
+              "public",
+              "private",
+              "unlisted"
+            ],
+            "default": "public"
+          },
+          "made_for_kids": {
+            "type": "boolean",
+            "description": "If true will notify YouTube the video is intended for kids, defaults to false",
+            "nullable": true,
+            "default": false
+          }
+        }
+      },
+      "FacebookConfigurationDto": {
+        "type": "object",
+        "properties": {
+          "caption": {
+            "type": "object",
+            "description": "Overrides the `caption` from the post",
+            "nullable": true
+          },
+          "media": {
+            "description": "Overrides the `media` from the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          },
+          "placement": {
+            "type": "string",
+            "description": "Facebook post placement",
+            "enum": [
+              "reels",
+              "stories",
+              "timeline"
+            ],
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "description": "Page id with a location that you want to tag the image or video with",
+            "nullable": true
+          },
+          "collaborators": {
+            "description": "List of page ids to invite as collaborators for a Video Reel",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          }
+        }
+      },
+      "LinkedinConfigurationDto": {
+        "type": "object",
+        "properties": {
+          "caption": {
+            "type": "object",
+            "description": "Overrides the `caption` from the post",
+            "nullable": true
+          },
+          "media": {
+            "description": "Overrides the `media` from the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          }
+        }
+      },
+      "BlueskyConfigurationDto": {
+        "type": "object",
+        "properties": {
+          "caption": {
+            "type": "object",
+            "description": "Overrides the `caption` from the post",
+            "nullable": true
+          },
+          "media": {
+            "description": "Overrides the `media` from the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          }
+        }
+      },
+      "ThreadsConfigurationDto": {
+        "type": "object",
+        "properties": {
+          "caption": {
+            "type": "object",
+            "description": "Overrides the `caption` from the post",
+            "nullable": true
+          },
+          "media": {
+            "description": "Overrides the `media` from the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          },
+          "placement": {
+            "type": "string",
+            "description": "Threads post placement",
+            "enum": [
+              "reels",
+              "timeline"
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "PlatformConfigurationsDto": {
+        "type": "object",
+        "properties": {
+          "pinterest": {
+            "description": "Pinterest configuration",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PinterestConfigurationDto"
+              }
+            ]
+          },
+          "instagram": {
+            "description": "Instagram configuration",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InstagramConfigurationDto"
+              }
+            ]
+          },
+          "tiktok": {
+            "description": "TikTok configuration",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TiktokConfigurationDto"
+              }
+            ]
+          },
+          "x": {
+            "description": "Twitter configuration",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TwitterConfigurationDto"
+              }
+            ]
+          },
+          "youtube": {
+            "description": "YouTube configuration",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/YoutubeConfigurationDto"
+              }
+            ]
+          },
+          "facebook": {
+            "description": "Facebook configuration",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FacebookConfigurationDto"
+              }
+            ]
+          },
+          "linkedin": {
+            "description": "LinkedIn configuration",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkedinConfigurationDto"
+              }
+            ]
+          },
+          "bluesky": {
+            "description": "Bluesky configuration",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BlueskyConfigurationDto"
+              }
+            ]
+          },
+          "threads": {
+            "description": "Threads configuration",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ThreadsConfigurationDto"
+              }
+            ]
+          },
+          "tiktok_business": {
+            "description": "TikTok configuration",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TiktokConfigurationDto"
+              }
+            ]
+          }
+        }
+      },
+      "AccountConfigurationDetailsDto": {
+        "type": "object",
+        "properties": {
+          "caption": {
+            "type": "object",
+            "description": "Overrides the `caption` from the post",
+            "nullable": true
+          },
+          "media": {
+            "description": "Overrides the `media` from the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          },
+          "board_ids": {
+            "description": "Pinterest board IDs",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "link": {
+            "type": "string",
+            "description": "Pinterest post link",
+            "nullable": true
+          },
+          "placement": {
+            "type": "string",
+            "description": "Post placement for Facebook/Instagram/Threads",
+            "enum": [
+              "reels",
+              "timeline",
+              "stories"
+            ],
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "description": "Overrides the `title` from the post",
+            "nullable": true
+          },
+          "privacy_status": {
+            "type": "string",
+            "description": "Sets the privacy status for TikTok (private, public), or YouTube (private, public, unlisted)",
+            "nullable": true,
+            "enum": [
+              "public",
+              "private",
+              "unlisted"
+            ],
+            "default": "public"
+          },
+          "made_for_kids": {
+            "type": "boolean",
+            "description": "If true will notify YouTube the video is intended for kids, defaults to false",
+            "nullable": true,
+            "default": false
+          },
+          "allow_comment": {
+            "type": "boolean",
+            "description": "Allow comments on TikTok",
+            "nullable": true,
+            "default": true
+          },
+          "allow_duet": {
+            "type": "boolean",
+            "description": "Allow duets on TikTok",
+            "nullable": true,
+            "default": true
+          },
+          "allow_stitch": {
+            "type": "boolean",
+            "description": "Allow stitch on TikTok",
+            "nullable": true,
+            "default": true
+          },
+          "disclose_your_brand": {
+            "type": "boolean",
+            "description": "Disclose your brand on TikTok",
+            "nullable": true,
+            "default": true
+          },
+          "disclose_branded_content": {
+            "type": "boolean",
+            "description": "Disclose branded content on TikTok",
+            "nullable": true,
+            "default": true
+          },
+          "is_draft": {
+            "type": "boolean",
+            "description": "Will create a draft upload to TikTok, posting will need to be completed from within the app",
+            "nullable": true,
+            "default": false
+          },
+          "is_ai_generated": {
+            "type": "boolean",
+            "description": "Flag content as AI generated on TikTok",
+            "nullable": true,
+            "default": false
+          },
+          "auto_add_music": {
+            "type": "boolean",
+            "description": "Will automatically add music to photo posts on TikTok",
+            "nullable": true,
+            "default": true
+          },
+          "poll": {
+            "description": "Poll options for the twitter",
+            "nullable": false,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TwitterPollDto"
+              }
+            ]
+          },
+          "community_id": {
+            "type": "string",
+            "description": "Id of the twitter community to post to",
+            "nullable": false
+          },
+          "quote_tweet_id": {
+            "type": "string",
+            "description": "Id of the tweet you want to quote",
+            "nullable": false
+          },
+          "reply_settings": {
+            "type": "string",
+            "description": "Who can reply to the tweet",
+            "enum": [
+              "following",
+              "mentionedUsers",
+              "subscribers",
+              "verified"
+            ],
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "description": "Page id with a location that you want to tag the image or video with (Instagram and Facebook)",
+            "nullable": true
+          },
+          "collaborators": {
+            "description": "List of page ids or users to invite as collaborators for a Video Reel (Instagram and Facebook)",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
+          "share_to_feed": {
+            "type": "boolean",
+            "description": "If false Instagram video posts will only be shown in the Reels tab",
+            "nullable": true,
+            "default": true
+          },
+          "trial_reel_type": {
+            "type": "string",
+            "description": "Instagram trial reel type, when passed will be created as a trial reel. If manual the trial reel can be manually graduated in the native app. If perfomance the trial reel will be automatically graduated if the trial reel performs well.",
+            "enum": [
+              "manual",
+              "performance"
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "AccountConfigurationDto": {
+        "type": "object",
+        "properties": {
+          "social_account_id": {
+            "type": "string",
+            "description": "ID of the social account, you want to apply the configuration to"
+          },
+          "configuration": {
+            "description": "Configuration for the social account",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountConfigurationDetailsDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "social_account_id",
+          "configuration"
+        ]
+      },
+      "SocialAccountMetadata": {
+        "type": "object",
+        "properties": {}
+      },
+      "SocialAccountDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the social account"
+          },
+          "platform": {
+            "type": "string",
+            "description": "The platform of the social account"
+          },
+          "username": {
+            "type": "string",
+            "description": "The platform's username of the social account",
+            "nullable": true
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The platform's id of the social account"
+          },
+          "profile_photo_url": {
+            "type": "string",
+            "description": "The platform's profile photo of the social account",
+            "nullable": true
+          },
+          "access_token": {
+            "type": "string",
+            "description": "The access token of the social account"
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "The refresh token of the social account",
+            "nullable": true
+          },
+          "access_token_expires_at": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The access token expiration date of the social account"
+          },
+          "refresh_token_expires_at": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The refresh token expiration date of the social account",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of the account",
+            "enum": [
+              "connected",
+              "disconnected"
+            ]
+          },
+          "external_id": {
+            "type": "string",
+            "description": "The external id of the social account",
+            "nullable": true
+          },
+          "metadata": {
+            "description": "The metadata of the social account",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SocialAccountMetadata"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "platform",
+          "username",
+          "user_id",
+          "profile_photo_url",
+          "access_token",
+          "refresh_token",
+          "access_token_expires_at",
+          "refresh_token_expires_at",
+          "status",
+          "external_id",
+          "metadata"
+        ]
+      },
+      "SocialPostDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier of the post"
+          },
+          "external_id": {
+            "type": "string",
+            "description": "Provided unique identifier of the post",
+            "nullable": true
+          },
+          "caption": {
+            "type": "string",
+            "description": "Caption text for the post"
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the post: draft, processed, scheduled, or processing",
+            "enum": [
+              "draft",
+              "scheduled",
+              "processing",
+              "processed"
+            ]
+          },
+          "scheduled_at": {
+            "type": "string",
+            "description": "Scheduled date and time for the post",
+            "nullable": true
+          },
+          "platform_configurations": {
+            "description": "Platform-specific configurations for the post",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlatformConfigurationsDto"
+              }
+            ]
+          },
+          "account_configurations": {
+            "description": "Account-specific configurations for the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountConfigurationDto"
+            }
+          },
+          "media": {
+            "description": "Array of media URLs associated with the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          },
+          "social_accounts": {
+            "description": "Array of social account IDs for posting",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialAccountDto"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "description": "Timestamp when the post was created"
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "Timestamp when the post was last updated"
+          }
+        },
+        "required": [
+          "id",
+          "external_id",
+          "caption",
+          "status",
+          "scheduled_at",
+          "platform_configurations",
+          "account_configurations",
+          "media",
+          "social_accounts",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "CreateSocialPostDto": {
+        "type": "object",
+        "properties": {
+          "caption": {
+            "type": "string",
+            "description": "Caption text for the post"
+          },
+          "scheduled_at": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Scheduled date and time for the post, setting to null or undefined will post instantly",
+            "nullable": true
+          },
+          "platform_configurations": {
+            "description": "Platform-specific configurations for the post",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlatformConfigurationsDto"
+              }
+            ]
+          },
+          "account_configurations": {
+            "description": "Account-specific configurations for the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountConfigurationDto"
+            }
+          },
+          "media": {
+            "description": "Array of media URLs associated with the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          },
+          "social_accounts": {
+            "description": "Array of social account IDs for posting",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "external_id": {
+            "type": "string",
+            "description": "Array of social account IDs for posting",
+            "nullable": true
+          },
+          "isDraft": {
+            "type": "boolean",
+            "description": "If isDraft is set then the post will not be processed",
+            "nullable": true,
+            "default": false
+          }
+        },
+        "required": [
+          "caption",
+          "social_accounts"
+        ]
+      },
+      "InvalidSocialPostDto": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "description": "Errors for the invalid post",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "DeleteEntityResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether or not the entity was deleted"
+          }
+        },
+        "required": [
+          "success"
+        ]
+      },
+      "SocialPostResultDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the post result"
+          },
+          "social_account_id": {
+            "type": "string",
+            "description": "The ID of the associated social account"
+          },
+          "post_id": {
+            "type": "string",
+            "description": "The ID of the associated post"
+          },
+          "success": {
+            "type": "boolean",
+            "description": "Indicates if the post was successful"
+          },
+          "error": {
+            "type": "object",
+            "description": "Error message if the post failed"
+          },
+          "details": {
+            "type": "object",
+            "description": "Detailed logs from the post"
+          },
+          "platform_data": {
+            "type": "object",
+            "description": "Platform-specific data",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Platform-specific ID"
+              },
+              "url": {
+                "type": "string",
+                "description": "URL of the posted content"
+              }
+            }
+          }
+        },
+        "required": [
+          "id",
+          "social_account_id",
+          "post_id",
+          "success",
+          "error",
+          "details",
+          "platform_data"
+        ]
+      },
+      "BlueskyAuthUrlProviderData": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "The handle of the account"
+          },
+          "app_password": {
+            "type": "string",
+            "description": "The app password of the account"
+          }
+        },
+        "required": [
+          "handle",
+          "app_password"
+        ]
+      },
+      "LinkedInUrlProviderData": {
+        "type": "object",
+        "properties": {
+          "connection_type": {
+            "type": "string",
+            "enum": [
+              "personal",
+              "organization"
+            ],
+            "description": "The type of connection; If using our provided credentials always use \"organization\". If using your own crednetials then only use \"organization\" if you are using the Community API",
+            "default": "personal"
+          },
+          "permission_overrides": {
+            "description": "Override the default permissions/scopes requested during OAuth. Default personal scopes: openid, w_member_social, profile, email. Default organization scopes: r_basicprofile, w_member_social, r_organization_social, w_organization_social, rw_organization_admin",
+            "items": {
+              "type": "array"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "connection_type"
+        ]
+      },
+      "InstagramProviderData": {
+        "type": "object",
+        "properties": {
+          "connection_type": {
+            "type": "string",
+            "enum": [
+              "instagram",
+              "facebook"
+            ],
+            "description": "The type of connection; instagram for using login with instagram, facebook for using login with facebook.",
+            "default": "instagram"
+          },
+          "permission_overrides": {
+            "description": "Override the default permissions/scopes requested during OAuth. Default instagram scopes: instagram_business_basic, instagram_business_content_publish. Default facebook scopes: instagram_basic, instagram_content_publish, pages_show_list, public_profile, business_management",
+            "items": {
+              "type": "array"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "connection_type"
+        ]
+      },
+      "FacebookProviderData": {
+        "type": "object",
+        "properties": {
+          "permission_overrides": {
+            "description": "Override the default permissions/scopes requested during OAuth. Default scopes: public_profile, pages_show_list, pages_read_engagement, pages_manage_posts, business_management",
+            "items": {
+              "type": "array"
+            },
+            "type": "array"
+          }
+        }
+      },
+      "TikTokProviderData": {
+        "type": "object",
+        "properties": {
+          "permission_overrides": {
+            "description": "Override the default permissions/scopes requested during OAuth. Default scopes: user.info.basic, video.list, video.upload, video.publish",
+            "items": {
+              "type": "array"
+            },
+            "type": "array"
+          }
+        }
+      },
+      "TikTokBusinessProviderData": {
+        "type": "object",
+        "properties": {
+          "permission_overrides": {
+            "description": "Override the default permissions/scopes requested during OAuth. Default scopes: user.info.basic, user.info.username, user.info.stats, user.info.profile, user.account.type, user.insights, video.list, video.insights, comment.list, comment.list.manage, video.publish, video.upload, biz.spark.auth, discovery.search.words",
+            "items": {
+              "type": "array"
+            },
+            "type": "array"
+          }
+        }
+      },
+      "YouTubeProviderData": {
+        "type": "object",
+        "properties": {
+          "permission_overrides": {
+            "description": "Override the default permissions/scopes requested during OAuth. Default scopes: https://www.googleapis.com/auth/youtube.force-ssl, https://www.googleapis.com/auth/youtube.upload, https://www.googleapis.com/auth/youtube.readonly, https://www.googleapis.com/auth/userinfo.profile",
+            "items": {
+              "type": "array"
+            },
+            "type": "array"
+          }
+        }
+      },
+      "PinterestProviderData": {
+        "type": "object",
+        "properties": {
+          "permission_overrides": {
+            "description": "Override the default permissions/scopes requested during OAuth. Default scopes: boards:read, boards:write, pins:read, pins:write, user_accounts:read",
+            "items": {
+              "type": "array"
+            },
+            "type": "array"
+          }
+        }
+      },
+      "ThreadsProviderData": {
+        "type": "object",
+        "properties": {
+          "permission_overrides": {
+            "description": "Override the default permissions/scopes requested during OAuth. Default scopes: threads_basic, threads_content_publish",
+            "items": {
+              "type": "array"
+            },
+            "type": "array"
+          }
+        }
+      },
+      "AuthUrlProviderData": {
+        "type": "object",
+        "properties": {
+          "bluesky": {
+            "description": "Additional data needed for connecting bluesky accounts",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BlueskyAuthUrlProviderData"
+              }
+            ]
+          },
+          "linkedin": {
+            "description": "Additional data for connecting linkedin accounts",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkedInUrlProviderData"
+              }
+            ]
+          },
+          "instagram": {
+            "description": "Additional data for connecting instagram accounts",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InstagramProviderData"
+              }
+            ]
+          },
+          "facebook": {
+            "description": "Additional data for connecting facebook accounts",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FacebookProviderData"
+              }
+            ]
+          },
+          "tiktok": {
+            "description": "Additional data for connecting TikTok accounts",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TikTokProviderData"
+              }
+            ]
+          },
+          "tiktok_business": {
+            "description": "Additional data for connecting TikTok Business accounts",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TikTokBusinessProviderData"
+              }
+            ]
+          },
+          "youtube": {
+            "description": "Additional data for connecting YouTube accounts",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/YouTubeProviderData"
+              }
+            ]
+          },
+          "pinterest": {
+            "description": "Additional data for connecting Pinterest accounts",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PinterestProviderData"
+              }
+            ]
+          },
+          "threads": {
+            "description": "Additional data for connecting Threads accounts",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ThreadsProviderData"
+              }
+            ]
+          }
+        }
+      },
+      "CreateSocialAccountProviderAuthUrlDto": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "description": "The social account provider"
+          },
+          "platform_data": {
+            "description": "Additional data needed for the provider",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AuthUrlProviderData"
+              }
+            ]
+          },
+          "external_id": {
+            "type": "string",
+            "description": "Your unique identifier for the social account"
+          },
+          "redirect_url_override": {
+            "type": "string",
+            "description": "Override the default redirect URL for the OAuth flow. If provided, this URL will be used instead of our redirect URL. Make sure this URL is included in your app's authorized redirect urls. This override will not work when using our system credientals."
+          },
+          "permissions": {
+            "type": "array",
+            "description": "List of permissions you want to allow. Will default to only post permissions. You must include the \"feeds\" permission to request an account feed and metrics",
+            "items": {
+              "type": "string",
+              "enum": [
+                "posts",
+                "feeds"
+              ]
+            },
+            "example": [
+              "posts",
+              "feeds"
+            ]
+          }
+        },
+        "required": [
+          "platform"
+        ]
+      },
+      "SocialAccountProviderAuthUrlDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The url to redirect the user to, in order to connect their account"
+          },
+          "platform": {
+            "type": "string",
+            "description": "The social account provider"
+          }
+        },
+        "required": [
+          "url",
+          "platform"
+        ]
+      },
+      "UpdateSocialAccountDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "The platform's username of the social account"
+          },
+          "external_id": {
+            "type": "string",
+            "description": "The platform's external id of the social account"
+          }
+        }
+      },
+      "DisconnectedSocialAccountDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the social account"
+          },
+          "platform": {
+            "type": "string",
+            "description": "The platform of the social account"
+          },
+          "username": {
+            "type": "string",
+            "description": "The platform's username of the social account",
+            "nullable": true
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The platform's id of the social account"
+          },
+          "profile_photo_url": {
+            "type": "string",
+            "description": "The platform's profile photo of the social account",
+            "nullable": true
+          },
+          "access_token": {
+            "type": "string",
+            "description": "The access token of the social account"
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "The refresh token of the social account",
+            "nullable": true
+          },
+          "access_token_expires_at": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The access token expiration date of the social account"
+          },
+          "refresh_token_expires_at": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The refresh token expiration date of the social account",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of the account",
+            "enum": [
+              "disconnected"
+            ]
+          },
+          "external_id": {
+            "type": "string",
+            "description": "The external id of the social account",
+            "nullable": true
+          },
+          "metadata": {
+            "description": "The metadata of the social account",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SocialAccountMetadata"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "platform",
+          "username",
+          "user_id",
+          "profile_photo_url",
+          "access_token",
+          "refresh_token",
+          "access_token_expires_at",
+          "refresh_token_expires_at",
+          "status",
+          "external_id",
+          "metadata"
+        ]
+      },
+      "CreateSocialAccountDto": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "description": "The platform of the social account",
+            "enum": [
+              "facebook",
+              "instagram",
+              "x",
+              "tiktok",
+              "youtube",
+              "pinterest",
+              "linkedin",
+              "bluesky",
+              "threads",
+              "tiktok_business"
+            ]
+          },
+          "user_id": {
+            "type": "string",
+            "description": "The user id of the social account"
+          },
+          "username": {
+            "type": "string",
+            "description": "The platform's username of the social account",
+            "nullable": true
+          },
+          "external_id": {
+            "type": "string",
+            "description": "The external id of the social account",
+            "nullable": true
+          },
+          "access_token": {
+            "type": "string",
+            "description": "The access token of the social account"
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "The refresh token of the social account",
+            "nullable": true
+          },
+          "access_token_expires_at": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The access token expiration date of the social account"
+          },
+          "refresh_token_expires_at": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The refresh token expiration date of the social account",
+            "nullable": true
+          },
+          "metadata": {
+            "description": "The metadata of the social account",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SocialAccountMetadata"
+              }
+            ]
+          }
+        },
+        "required": [
+          "platform",
+          "user_id",
+          "access_token",
+          "access_token_expires_at"
+        ]
+      },
+      "SocialAccountPreview": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID of the social account, ex: spc_12312"
+          },
+          "platform": {
+            "type": "string",
+            "description": "Platform of the social account"
+          },
+          "username": {
+            "type": "string",
+            "description": "username of the social account"
+          }
+        },
+        "required": [
+          "id",
+          "platform"
+        ]
+      },
+      "CreateSocialPostPreviewDto": {
+        "type": "object",
+        "properties": {
+          "caption": {
+            "type": "string",
+            "description": "Caption text for the post"
+          },
+          "preview_social_accounts": {
+            "description": "Array of social accounts. Can preview non connected accounts, just specify a random ID",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialAccountPreview"
+            }
+          },
+          "platform_configurations": {
+            "description": "Platform-specific configurations for the post",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlatformConfigurationsDto"
+              }
+            ]
+          },
+          "account_configurations": {
+            "description": "Account-specific configurations for the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountConfigurationDto"
+            }
+          },
+          "media": {
+            "description": "Array of media URLs associated with the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          }
+        },
+        "required": [
+          "caption",
+          "preview_social_accounts"
+        ]
+      },
+      "SocialPostPreviewDto": {
+        "type": "object",
+        "properties": {
+          "caption": {
+            "type": "string",
+            "description": "Caption text for the post"
+          },
+          "media": {
+            "description": "Array of media URLs associated with the post",
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocialPostMediaDto"
+            }
+          },
+          "platform": {
+            "type": "string",
+            "description": "Platform of the post"
+          },
+          "social_account_username": {
+            "type": "object",
+            "description": "Username of the social account"
+          },
+          "social_account_id": {
+            "type": "string",
+            "description": "Id of the social account"
+          },
+          "social_account_profile_picture_url": {
+            "type": "object",
+            "description": "Url of the social account profile picture"
+          },
+          "configuration": {
+            "type": "object",
+            "description": "Additional configuration for this platform"
+          }
+        },
+        "required": [
+          "caption",
+          "platform",
+          "social_account_id"
+        ]
+      },
+      "WebhookDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the webhook"
+          },
+          "url": {
+            "type": "string",
+            "description": "The public webhook url"
+          },
+          "secret": {
+            "type": "string",
+            "description": "Secret key used to verify webhook post"
+          },
+          "event_types": {
+            "description": "Events that will be sent to the webhook",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "secret",
+          "event_types"
+        ]
+      },
+      "CreateWebhookDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Public url to recieve event data"
+          },
+          "event_types": {
+            "type": "array",
+            "description": "List of events the webhook will recieve",
+            "items": {
+              "type": "string",
+              "enum": [
+                "social.post.created",
+                "social.post.updated",
+                "social.post.deleted",
+                "social.post.result.created",
+                "social.account.created",
+                "social.account.updated"
+              ]
+            }
+          }
+        },
+        "required": [
+          "url",
+          "event_types"
+        ]
+      },
+      "UpdateWebhookDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Public url to recieve event data"
+          },
+          "event_types": {
+            "type": "array",
+            "description": "List of events the webhook will recieve",
+            "items": {
+              "type": "string",
+              "enum": [
+                "social.post.created",
+                "social.post.updated",
+                "social.post.deleted",
+                "social.post.result.created",
+                "social.account.created",
+                "social.account.updated"
+              ]
+            }
+          }
+        }
+      },
+      "PlatformPostDto": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "description": "Social media platform name"
+          },
+          "social_post_result_id": {
+            "type": "string",
+            "description": "ID of the social post result",
+            "nullable": true
+          },
+          "posted_at": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Date the post was published"
+          },
+          "social_post_id": {
+            "type": "string",
+            "description": "ID of the social post",
+            "nullable": true
+          },
+          "external_post_id": {
+            "type": "string",
+            "description": "External post ID from the platform",
+            "nullable": true
+          },
+          "platform_post_id": {
+            "type": "string",
+            "description": "Platform-specific post ID"
+          },
+          "social_account_id": {
+            "type": "string",
+            "description": "ID of the social account"
+          },
+          "external_account_id": {
+            "type": "string",
+            "description": "External account ID from the platform",
+            "nullable": true
+          },
+          "platform_account_id": {
+            "type": "string",
+            "description": "Platform-specific account ID"
+          },
+          "platform_url": {
+            "type": "string",
+            "description": "URL to the post on the platform"
+          },
+          "caption": {
+            "type": "string",
+            "description": "Caption or text content of the post"
+          },
+          "media": {
+            "description": "Array of media items attached to the post",
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
+          "metrics": {
+            "description": "Post metrics and analytics data",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TikTokBusinessMetricsDto"
+              },
+              {
+                "$ref": "#/components/schemas/TikTokPostMetricsDto"
+              },
+              {
+                "$ref": "#/components/schemas/InstagramPostMetricsDto"
+              },
+              {
+                "$ref": "#/components/schemas/YouTubePostMetricsDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "platform",
+          "platform_post_id",
+          "social_account_id",
+          "platform_account_id",
+          "platform_url",
+          "caption",
+          "media"
+        ]
+      },
+      "TikTokBusinessVideoMetricPercentageDto": {
+        "type": "object",
+        "properties": {
+          "percentage": {
+            "type": "number",
+            "description": "Percentage value for the metric"
+          },
+          "second": {
+            "type": "string",
+            "description": "Time in seconds for the metric"
+          }
+        },
+        "required": [
+          "percentage",
+          "second"
+        ]
+      },
+      "TikTokBusinessPostImpressionSourceDto": {
+        "type": "object",
+        "properties": {
+          "percentage": {
+            "type": "number",
+            "description": "Percentage of impressions from this source"
+          },
+          "impression_source": {
+            "type": "string",
+            "description": "Name of the impression source"
+          }
+        },
+        "required": [
+          "percentage",
+          "impression_source"
+        ]
+      },
+      "TikTokBusinessPostAudienceTypeDto": {
+        "type": "object",
+        "properties": {
+          "percentage": {
+            "type": "number",
+            "description": "Percentage of audience of this type"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of audience"
+          }
+        },
+        "required": [
+          "percentage",
+          "type"
+        ]
+      },
+      "TikTokBusinessPostAudienceGenderDto": {
+        "type": "object",
+        "properties": {
+          "percentage": {
+            "type": "number",
+            "description": "Percentage of audience of this gender"
+          },
+          "gender": {
+            "type": "string",
+            "description": "Gender category"
+          }
+        },
+        "required": [
+          "percentage",
+          "gender"
+        ]
+      },
+      "TikTokBusinessPostAudienceCountryDto": {
+        "type": "object",
+        "properties": {
+          "percentage": {
+            "type": "number",
+            "description": "Percentage of audience from this country"
+          },
+          "country": {
+            "type": "string",
+            "description": "Country name"
+          }
+        },
+        "required": [
+          "percentage",
+          "country"
+        ]
+      },
+      "TikTokBusinessPostAudienceCityDto": {
+        "type": "object",
+        "properties": {
+          "percentage": {
+            "type": "number",
+            "description": "Percentage of audience from this city"
+          },
+          "city_name": {
+            "type": "string",
+            "description": "City name"
+          }
+        },
+        "required": [
+          "percentage",
+          "city_name"
+        ]
+      },
+      "TikTokBusinessMetricsDto": {
+        "type": "object",
+        "properties": {
+          "likes": {
+            "type": "number",
+            "description": "Number of likes on the post"
+          },
+          "comments": {
+            "type": "number",
+            "description": "Number of comments on the post"
+          },
+          "shares": {
+            "type": "number",
+            "description": "Number of shares on the post"
+          },
+          "favorites": {
+            "type": "number",
+            "description": "Number of favorites on the post"
+          },
+          "reach": {
+            "type": "number",
+            "description": "Total reach of the post"
+          },
+          "video_views": {
+            "type": "number",
+            "description": "Total number of video views"
+          },
+          "total_time_watched": {
+            "type": "number",
+            "description": "Total time watched in seconds"
+          },
+          "average_time_watched": {
+            "type": "number",
+            "description": "Average time watched in seconds"
+          },
+          "full_video_watched_rate": {
+            "type": "number",
+            "description": "Rate of full video watches as a percentage"
+          },
+          "new_followers": {
+            "type": "number",
+            "description": "Number of new followers gained from the post"
+          },
+          "profile_views": {
+            "type": "number",
+            "description": "Number of profile views generated"
+          },
+          "website_clicks": {
+            "type": "number",
+            "description": "Number of website clicks"
+          },
+          "phone_number_clicks": {
+            "type": "number",
+            "description": "Number of phone number clicks"
+          },
+          "lead_submissions": {
+            "type": "number",
+            "description": "Number of lead submissions"
+          },
+          "app_download_clicks": {
+            "type": "number",
+            "description": "Number of app download clicks"
+          },
+          "email_clicks": {
+            "type": "number",
+            "description": "Number of email clicks"
+          },
+          "address_clicks": {
+            "type": "number",
+            "description": "Number of address clicks"
+          },
+          "video_view_retention": {
+            "description": "Video view retention data by percentage and time",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TikTokBusinessVideoMetricPercentageDto"
+            }
+          },
+          "impression_sources": {
+            "description": "Impression sources breakdown",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TikTokBusinessPostImpressionSourceDto"
+            }
+          },
+          "audience_types": {
+            "description": "Audience types breakdown",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TikTokBusinessPostAudienceTypeDto"
+            }
+          },
+          "audience_genders": {
+            "description": "Audience genders breakdown",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TikTokBusinessPostAudienceGenderDto"
+            }
+          },
+          "audience_countries": {
+            "description": "Audience countries breakdown",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TikTokBusinessPostAudienceCountryDto"
+            }
+          },
+          "audience_cities": {
+            "description": "Audience cities breakdown",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TikTokBusinessPostAudienceCityDto"
+            }
+          },
+          "engagement_likes": {
+            "description": "Engagement likes data by percentage and time",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TikTokBusinessVideoMetricPercentageDto"
+            }
+          }
+        },
+        "required": [
+          "likes",
+          "comments",
+          "shares",
+          "favorites",
+          "reach",
+          "video_views",
+          "total_time_watched",
+          "average_time_watched",
+          "full_video_watched_rate",
+          "new_followers",
+          "profile_views",
+          "website_clicks",
+          "phone_number_clicks",
+          "lead_submissions",
+          "app_download_clicks",
+          "email_clicks",
+          "address_clicks",
+          "video_view_retention",
+          "impression_sources",
+          "audience_types",
+          "audience_genders",
+          "audience_countries",
+          "audience_cities",
+          "engagement_likes"
+        ]
+      },
+      "TikTokPostMetricsDto": {
+        "type": "object",
+        "properties": {
+          "like_count": {
+            "type": "number",
+            "description": "Number of likes on the video"
+          },
+          "comment_count": {
+            "type": "number",
+            "description": "Number of comments on the video"
+          },
+          "share_count": {
+            "type": "number",
+            "description": "Number of shares of the video"
+          },
+          "view_count": {
+            "type": "number",
+            "description": "Number of views on the video"
+          }
+        },
+        "required": [
+          "like_count",
+          "comment_count",
+          "share_count",
+          "view_count"
+        ]
+      },
+      "InstagramPostMetricsDto": {
+        "type": "object",
+        "properties": {
+          "likes": {
+            "type": "number",
+            "description": "Number of likes on the post"
+          },
+          "comments": {
+            "type": "number",
+            "description": "Number of comments on the post"
+          },
+          "views": {
+            "type": "number",
+            "description": "Number of views on the post"
+          },
+          "reach": {
+            "type": "number",
+            "description": "Total number of unique accounts that have seen the media"
+          },
+          "saved": {
+            "type": "number",
+            "description": "Total number of unique accounts that have saved the media"
+          },
+          "shares": {
+            "type": "number",
+            "description": "Total number of shares of the media"
+          },
+          "replies": {
+            "type": "number",
+            "description": "Number of replies to the story (story media only)"
+          },
+          "follows": {
+            "type": "number",
+            "description": "Number of new follows from this post"
+          },
+          "ig_reels_avg_watch_time": {
+            "type": "number",
+            "description": "Average watch time for Reels (in milliseconds)"
+          },
+          "ig_reels_video_view_total_time": {
+            "type": "number",
+            "description": "Total watch time for Reels (in milliseconds)"
+          },
+          "navigation": {
+            "type": "number",
+            "description": "Navigation actions taken on the media"
+          },
+          "profile_activity": {
+            "type": "number",
+            "description": "Profile activity generated from this post"
+          },
+          "profile_visits": {
+            "type": "number",
+            "description": "Number of profile visits from this post"
+          },
+          "total_interactions": {
+            "type": "number",
+            "description": "Total interactions on the post"
+          }
+        }
+      },
+      "YouTubePostMetricsDto": {
+        "type": "object",
+        "properties": {
+          "views": {
+            "type": "number",
+            "description": "Number of views on the video"
+          },
+          "likes": {
+            "type": "number",
+            "description": "Number of likes on the video"
+          },
+          "comments": {
+            "type": "number",
+            "description": "Number of comments on the video"
+          },
+          "dislikes": {
+            "type": "number",
+            "description": "Number of dislikes on the video"
+          },
+          "engagedViews": {
+            "type": "number",
+            "description": "Number of engaged views"
+          },
+          "redViews": {
+            "type": "number",
+            "description": "Number of views from YouTube Premium (Red) members"
+          },
+          "videosAddedToPlaylists": {
+            "type": "number",
+            "description": "Number of times the video was added to playlists"
+          },
+          "videosRemovedFromPlaylists": {
+            "type": "number",
+            "description": "Number of times the video was removed from playlists"
+          },
+          "shares": {
+            "type": "number",
+            "description": "Number of shares"
+          },
+          "estimatedMinutesWatched": {
+            "type": "number",
+            "description": "Estimated minutes watched"
+          },
+          "estimatedRedMinutesWatched": {
+            "type": "number",
+            "description": "Estimated minutes watched by YouTube Premium (Red) members"
+          },
+          "averageViewDuration": {
+            "type": "number",
+            "description": "Average view duration in seconds"
+          },
+          "averageViewPercentage": {
+            "type": "number",
+            "description": "Average percentage of the video watched"
+          },
+          "annotationClickThroughRate": {
+            "type": "number",
+            "description": "Annotation click-through rate"
+          },
+          "annotationCloseRate": {
+            "type": "number",
+            "description": "Annotation close rate"
+          },
+          "annotationImpressions": {
+            "type": "number",
+            "description": "Number of annotation impressions"
+          },
+          "annotationClickableImpressions": {
+            "type": "number",
+            "description": "Number of clickable annotation impressions"
+          },
+          "annotationClosableImpressions": {
+            "type": "number",
+            "description": "Number of closable annotation impressions"
+          },
+          "annotationClicks": {
+            "type": "number",
+            "description": "Number of annotation clicks"
+          },
+          "annotationCloses": {
+            "type": "number",
+            "description": "Number of annotation closes"
+          },
+          "cardClickRate": {
+            "type": "number",
+            "description": "Card click-through rate"
+          },
+          "cardTeaserClickRate": {
+            "type": "number",
+            "description": "Card teaser click-through rate"
+          },
+          "cardImpressions": {
+            "type": "number",
+            "description": "Number of card impressions"
+          },
+          "cardTeaserImpressions": {
+            "type": "number",
+            "description": "Number of card teaser impressions"
+          },
+          "cardClicks": {
+            "type": "number",
+            "description": "Number of card clicks"
+          },
+          "cardTeaserClicks": {
+            "type": "number",
+            "description": "Number of card teaser clicks"
+          },
+          "subscribersGained": {
+            "type": "number",
+            "description": "Subscribers gained"
+          },
+          "subscribersLost": {
+            "type": "number",
+            "description": "Subscribers lost"
+          }
+        },
+        "required": [
+          "views",
+          "likes",
+          "comments",
+          "dislikes"
+        ]
+      }
+    }
+  }
+}
