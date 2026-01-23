@@ -659,15 +659,17 @@
                         url: ns.resultUrl
                     }));
 
-                // Filter out input nodes (they are not generated results)
-                const inputNodeTypes = ['image-input', 'text-input', 'audio-input', 'video-input', 'file-input', 'manual-trigger'];
+                // Filter out input and output nodes (they are not generated results)
+                // Only show results from generation and editing category nodes
+                const excludedNodeTypes = ['image-input', 'text-input', 'audio-input', 'video-input', 'file-input', 'manual-trigger', 'start-flow', 'social-post'];
                 allResults = allResults.filter(result => {
                     const nodeType = result.node_type || '';
-                    // Skip input category nodes
-                    if (inputNodeTypes.includes(nodeType)) return false;
-                    // Also check if it's in input category via NodeManager
+                    // Skip excluded node types
+                    if (excludedNodeTypes.includes(nodeType)) return false;
+                    // Also check category via NodeManager - only show generation and editing
                     const nodeDef = window.editorInstance?.nodeManager?.getNodeDefinition(nodeType);
-                    if (nodeDef?.category === 'input') return false;
+                    const category = nodeDef?.category || '';
+                    if (category === 'input' || category === 'output' || category === 'utility') return false;
                     return true;
                 });
 

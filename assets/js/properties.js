@@ -730,8 +730,15 @@ class PropertiesPanel {
         if (hasFile && previewUrl) {
             if (isImage) {
                 previewHtml = `
-                    <div class="file-preview mt-2">
+                    <div class="file-preview mt-2 relative">
                         <img src="${previewUrl}" alt="Preview" class="w-full max-h-40 object-contain rounded-lg bg-dark-800">
+                        <button type="button" class="file-preview-enhance-btn" 
+                                data-action="enhance-image"
+                                data-image-url="${previewUrl}"
+                                data-field-id="${field.id}"
+                                title="Enhance with AI">
+                            <i data-lucide="wand-2" class="w-3 h-3"></i>
+                        </button>
                     </div>
                 `;
             } else if (isVideo) {
@@ -1069,6 +1076,23 @@ class PropertiesPanel {
                 this.refreshFields();
             });
         });
+
+        // Image enhance buttons in file preview
+        this.content.querySelectorAll('.file-preview-enhance-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const imageUrl = btn.dataset.imageUrl;
+                const fieldId = btn.dataset.fieldId;
+
+                if (!imageUrl) {
+                    if (window.Toast) Toast.error('No image to enhance');
+                    return;
+                }
+
+                // Show image enhance modal (reuse the same modal logic as canvas)
+                this.showImageEnhanceModal(imageUrl, nodeId, fieldId);
+            });
+        });
     }
 
     /**
@@ -1383,6 +1407,140 @@ class PropertiesPanel {
                 actionBtn.classList.remove('loading');
                 actionBtn.innerHTML = originalIcon;
                 if (window.lucide) lucide.createIcons({ nodes: [actionBtn] });
+            }
+        });
+    }
+
+    /**
+     * Show image enhancement modal
+     */
+    showImageEnhanceModal(imageUrl, nodeId, fieldId) {
+        // Remove existing modal if any
+        const existingModal = document.querySelector('.image-enhance-modal-overlay');
+        if (existingModal) existingModal.remove();
+
+        // Create modal HTML
+        const modalHtml = `
+            <div class="image-enhance-modal-overlay custom-prompt-modal-overlay">
+                <div class="image-enhance-modal custom-prompt-modal">
+                    <div class="custom-prompt-modal-header">
+                        <h3>${window.t ? window.t('enhance.image_prompt_title') : 'Enhance Image with AI'}</h3>
+                        <button class="custom-prompt-modal-close" type="button">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="custom-prompt-modal-body">
+                        <div class="image-enhance-preview mb-3">
+                            <img src="${imageUrl}" alt="Image to enhance" style="max-height: 120px; border-radius: 8px; border: 1px solid var(--dark-600);" />
+                        </div>
+                        <label class="custom-prompt-label">
+                            ${window.t ? window.t('enhance.enter_image_prompt') : 'Describe how to enhance this image:'}
+                        </label>
+                        <textarea class="custom-prompt-textarea image-enhance-prompt" rows="4" placeholder="${window.t ? window.t('enhance.image_prompt_placeholder') : 'e.g., Add a sunset background, make it look more cinematic...'}"></textarea>
+                        <div class="image-enhance-options mt-3">
+                            <label class="custom-prompt-label" style="font-size: 12px;">
+                                ${window.t ? window.t('enhance.aspect_ratio') : 'Aspect Ratio'}
+                            </label>
+                            <select class="form-input image-enhance-ratio" style="padding: 6px 10px; font-size: 13px;">
+                                <option value="auto">Auto</option>
+                                <option value="1:1">1:1 (Square)</option>
+                                <option value="3:2">3:2 (Landscape)</option>
+                                <option value="2:3">2:3 (Portrait)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="custom-prompt-modal-footer">
+                        <button class="custom-prompt-cancel btn-secondary" type="button">
+                            ${window.t ? window.t('common.cancel') : 'Cancel'}
+                        </button>
+                        <button class="image-enhance-submit btn-primary" type="button">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            ${window.t ? window.t('enhance.run_enhancement') : 'Run Enhancement'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to document
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = document.querySelector('.image-enhance-modal-overlay');
+        const promptTextarea = modal.querySelector('.image-enhance-prompt');
+        const ratioSelect = modal.querySelector('.image-enhance-ratio');
+        const submitBtn = modal.querySelector('.image-enhance-submit');
+
+        // Initialize icons
+        if (window.lucide) {
+            lucide.createIcons({ root: modal });
+        }
+
+        // Focus on textarea
+        promptTextarea.focus();
+
+        // Close handlers
+        const closeModal = () => modal.remove();
+        modal.querySelector('.custom-prompt-modal-close').addEventListener('click', closeModal);
+        modal.querySelector('.custom-prompt-cancel').addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // Submit handler
+        submitBtn.addEventListener('click', async () => {
+            const prompt = promptTextarea.value.trim();
+            const aspectRatio = ratioSelect.value;
+
+            if (!prompt) {
+                if (window.Toast) Toast.error(window.t ? window.t('enhance.prompt_required') : 'Please enter an enhancement prompt');
+                return;
+            }
+
+            // Show loading state
+            const originalBtnHtml = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Enhancing...';
+            if (window.lucide) lucide.createIcons({ nodes: [submitBtn] });
+
+            try {
+                // Deduct credits first
+                const deductRes = await fetch('api/credits/deduct.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'enhance_image' })
+                });
+                const deductData = await deductRes.json();
+
+                if (!deductData.success) {
+                    if (deductRes.status === 402) {
+                        throw new Error(`Insufficient credits. Required: ${deductData.required}, Balance: ${deductData.balance}`);
+                    }
+                    throw new Error(deductData.error || 'Failed to deduct credits');
+                }
+
+                // Call image enhancement API
+                const enhanced = await window.AIKAFLOWImageEnhance.enhance(imageUrl, prompt, aspectRatio);
+
+                // Update node data with enhanced image
+                const node = this.nodeManager?.getNode(nodeId);
+                if (node) {
+                    const fileData = node.data[fieldId] || {};
+                    fileData.url = enhanced;
+                    fileData.previewUrl = enhanced;
+                    this.updateNodeField(nodeId, fieldId, fileData);
+                    this.refreshFields();
+                }
+
+                // Update credits display
+                document.dispatchEvent(new CustomEvent('credits:update'));
+
+                if (window.Toast) Toast.success('Image enhanced successfully!');
+                closeModal();
+
+            } catch (error) {
+                if (window.Toast) Toast.error('Enhancement failed: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnHtml;
+                if (window.lucide) lucide.createIcons({ nodes: [submitBtn] });
             }
         });
     }

@@ -407,6 +407,44 @@ class PluginManager
                 $inputData['_node_id'] ?? null
             );
         }
+        // Special output for sapi (social post) - fetch results to get platform URLs
+        if ($provider === 'sapi' && $actualTaskId) {
+            $output['status'] = 'submitted';
+            $output['message'] = 'Post submitted successfully';
+            $output['postId'] = $actualTaskId;
+
+            // Try to fetch post results to get platform URLs
+            // Wait a bit for the post to process
+            sleep(2);
+
+            $resultsResponse = self::callGenericApi(
+                ['provider' => 'sapi', 'endpoint' => "https://api.postforme.dev/v1/social-post-results?post_id={$actualTaskId}"],
+                ['apiKey' => $apiKey]
+            );
+
+            if ($resultsResponse['success'] && isset($resultsResponse['data']['data'])) {
+                $results = $resultsResponse['data']['data'];
+                $platformUrls = [];
+
+                foreach ($results as $result) {
+                    if (isset($result['platform_data']['url'])) {
+                        $platformUrls[] = $result['platform_data']['url'];
+                    }
+                }
+
+                if (!empty($platformUrls)) {
+                    $output['platformUrls'] = $platformUrls;
+                    $output['viewUrl'] = $platformUrls[0]; // Use first platform URL as primary
+                    $output['message'] = 'Posted to ' . count($platformUrls) . ' platform(s)';
+                } else {
+                    // Fallback to Postforme dashboard
+                    $output['viewUrl'] = 'https://app.postforme.dev/posts/' . $actualTaskId;
+                }
+            } else {
+                // Fallback to Postforme dashboard if results not ready yet
+                $output['viewUrl'] = 'https://app.postforme.dev/posts/' . $actualTaskId;
+            }
+        }
 
         return [
             'success' => true,
