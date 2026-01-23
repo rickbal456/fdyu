@@ -306,6 +306,7 @@ class PluginManager
             }, ARRAY_FILTER_USE_KEY);
         }
         @file_put_contents($debugLog, "[$ts] [executeApiNode] Request body prepared, keys: " . implode(', ', array_keys($requestBody)) . "\n", FILE_APPEND);
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] Request body JSON: " . json_encode($requestBody) . "\n", FILE_APPEND);
 
         // Acquire rate limit slot before making the API call
         $taskId = null;

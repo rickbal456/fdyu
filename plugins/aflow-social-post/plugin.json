@@ -14,6 +14,17 @@
         "provider": "sapi",
         "endpoint": "https://api.postforme.dev/v1/social-posts"
     },
+    "apiMapping": {
+        "request": {
+            "social_accounts": "{{accounts}}",
+            "caption": "{{caption}}",
+            "media": "{{media}}",
+            "scheduled_at": "{{scheduledAt}}"
+        },
+        "response": {
+            "taskId": "$.id"
+        }
+    },
     "nodeTypes": [
         "social-post"
     ],
