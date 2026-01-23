@@ -47,8 +47,8 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
     case 'GET':
-        // List social accounts from Postforme API
-        listSocialAccounts($postformeApiKey);
+        // List social accounts from Postforme API - filtered by current user
+        listSocialAccounts($postformeApiKey, $user['id']);
         break;
 
     case 'DELETE':
@@ -67,10 +67,15 @@ switch ($method) {
 
 /**
  * List connected social accounts from Postforme API
+ * Filtered by the user's external_id to only show accounts connected by this user
  */
-function listSocialAccounts(string $apiKey): void
+function listSocialAccounts(string $apiKey, $userId): void
 {
-    $response = callPostformeApi('GET', '/v1/social-accounts', null, $apiKey);
+    // Build external_id to filter accounts by user
+    $externalId = 'aikaflow_user_' . $userId;
+
+    // Call API with external_id filter to only get this user's accounts
+    $response = callPostformeApi('GET', '/v1/social-accounts?external_id=' . urlencode($externalId), null, $apiKey);
 
     if ($response['success'] && isset($response['data']['data'])) {
         $accounts = array_map(function ($account) {
