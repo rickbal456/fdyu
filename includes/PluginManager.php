@@ -298,6 +298,29 @@ class PluginManager
             @file_put_contents($debugLog, "[$ts] [executeApiNode] Mapped 'text' input to 'prompt' field: " . substr($inputData['prompt'], 0, 50) . "...\n", FILE_APPEND);
         }
 
+        // Special handling for sapi (social post) provider
+        if ($provider === 'sapi') {
+            // Map 'text' input to 'caption' if caption is empty
+            if (!empty($inputData['text']) && empty($inputData['caption'])) {
+                $inputData['caption'] = $inputData['text'];
+                @file_put_contents($debugLog, "[$ts] [executeApiNode] Mapped 'text' input to 'caption' field\n", FILE_APPEND);
+            }
+
+            // Build media array from video/image inputs
+            $mediaArray = [];
+            if (!empty($inputData['video'])) {
+                $mediaArray[] = ['url' => $inputData['video'], 'type' => 'video'];
+                @file_put_contents($debugLog, "[$ts] [executeApiNode] Added video to media array: {$inputData['video']}\n", FILE_APPEND);
+            }
+            if (!empty($inputData['image'])) {
+                $mediaArray[] = ['url' => $inputData['image'], 'type' => 'image'];
+                @file_put_contents($debugLog, "[$ts] [executeApiNode] Added image to media array: {$inputData['image']}\n", FILE_APPEND);
+            }
+            if (!empty($mediaArray)) {
+                $inputData['media'] = $mediaArray;
+            }
+        }
+
         // Prepare request body - use mapping if available, otherwise use inputData directly
         if ($mapping && isset($mapping['request'])) {
             $requestBody = self::mapData($mapping['request'], $inputData);
