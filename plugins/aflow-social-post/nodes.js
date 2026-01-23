@@ -58,11 +58,14 @@
         try {
             const response = await fetch('./api/social/accounts.php');
             const data = await response.json();
+            console.log('[Social Post Node] Fetch accounts response:', data);
             if (data.success && data.accounts) {
                 return data.accounts;
+            } else {
+                console.warn('[Social Post Node] Failed to fetch accounts:', data.error || 'Unknown error');
             }
         } catch (error) {
-            console.error('Failed to fetch social accounts:', error);
+            console.error('[Social Post Node] Failed to fetch social accounts:', error);
         }
         return [];
     }
@@ -121,8 +124,14 @@
      * Load social accounts and update multiselect options
      */
     async function loadAccountsIntoMultiselect(container, currentAccounts) {
-        const multiselectContainer = container.querySelector('.multiselect-container');
-        if (!multiselectContainer) return;
+        console.log('[Social Post Node] loadAccountsIntoMultiselect called, container:', container);
+        // Find the accounts multiselect specifically by data-field-id
+        const multiselectContainer = container.querySelector('.multiselect-container[data-field-id="accounts"]');
+        console.log('[Social Post Node] multiselectContainer found:', multiselectContainer);
+        if (!multiselectContainer) {
+            console.warn('[Social Post Node] No multiselect container found for accounts!');
+            return;
+        }
 
         // Show loading state
         multiselectContainer.innerHTML = `
