@@ -194,10 +194,10 @@ try {
                 $error = $payload['error'] ?? null;
             }
 
-            // Update the enhance task in workflow_node_tasks
+            // Update the enhance task in enhancement_tasks
             if ($taskId && ($status === 'completed' || $status === 'failed')) {
                 $task = Database::fetchOne(
-                    "SELECT * FROM workflow_node_tasks WHERE external_task_id = ? AND provider = 'rhub-enhance'",
+                    "SELECT * FROM enhancement_tasks WHERE external_task_id = ? AND provider = 'rhub-enhance'",
                     [$taskId]
                 );
 
@@ -214,7 +214,7 @@ try {
                     }
 
                     Database::query(
-                        "UPDATE workflow_node_tasks SET status = ?, result_data = ?, updated_at = NOW() WHERE id = ?",
+                        "UPDATE enhancement_tasks SET status = ?, result_data = ?, updated_at = NOW() WHERE id = ?",
                         [
                             $status,
                             json_encode([

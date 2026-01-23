@@ -108,17 +108,16 @@ try {
     }
 
     // Store task in database for tracking
-    // Use workflow_node_tasks table with special node_id format
     $nodeId = 'enhance_' . bin2hex(random_bytes(8));
 
-    Database::insert('workflow_node_tasks', [
+    Database::insert('enhancement_tasks', [
+        'user_id' => $user['id'],
         'node_id' => $nodeId,
         'external_task_id' => $taskId,
         'provider' => 'rhub-enhance',
+        'task_type' => 'image_enhance',
         'status' => 'processing',
-        'user_id' => $user['id'],
-        'metadata' => json_encode([
-            'type' => 'image_enhance',
+        'input_data' => json_encode([
             'original_image' => $imageUrl,
             'prompt' => $prompt,
             'aspect_ratio' => $aspectRatio

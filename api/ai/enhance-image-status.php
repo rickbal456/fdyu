@@ -41,7 +41,7 @@ try {
     $param = !empty($nodeId) ? $nodeId : $taskId;
 
     $task = Database::fetchOne(
-        "SELECT * FROM workflow_node_tasks WHERE {$whereClause} AND user_id = ? AND provider = 'rhub-enhance'",
+        "SELECT * FROM enhancement_tasks WHERE {$whereClause} AND user_id = ? AND provider = 'rhub-enhance'",
         [$param, $user['id']]
     );
 

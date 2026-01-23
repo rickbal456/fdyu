@@ -190,6 +190,27 @@ CREATE TABLE IF NOT EXISTS webhook_logs (
     INDEX idx_processed (processed)
 ) ENGINE=InnoDB;
 
+-- Enhancement tasks table (for standalone AI enhancement requests)
+CREATE TABLE IF NOT EXISTS enhancement_tasks (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    node_id VARCHAR(50) NOT NULL UNIQUE,
+    external_task_id VARCHAR(255) NULL,
+    provider VARCHAR(50) NOT NULL DEFAULT 'rhub-enhance',
+    task_type VARCHAR(50) NOT NULL DEFAULT 'image_enhance',
+    status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'processing',
+    input_data JSON NULL,
+    result_data JSON NULL,
+    error_message TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_external_task_id (external_task_id),
+    INDEX idx_node_id (node_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB;
+
 -- CSRF tokens table
 CREATE TABLE IF NOT EXISTS csrf_tokens (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -550,3 +571,6 @@ CREATE TABLE IF NOT EXISTS user_gallery (
 -- For Gallery Source Column (Manual vs API):
 -- ALTER TABLE user_gallery ADD COLUMN source ENUM('manual', 'api') DEFAULT 'manual' AFTER node_type;
 -- ALTER TABLE user_gallery ADD INDEX idx_source (source);
+--
+-- For Enhancement Tasks (Image Enhancement via AI):
+-- Run the CREATE TABLE statement for: enhancement_tasks
