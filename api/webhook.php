@@ -157,6 +157,82 @@ try {
             }
             break;
 
+        case 'rhub-enhance':
+            // Image enhancement webhook from RunningHub
+            if (isset($payload['eventData'])) {
+                $taskId = $payload['taskId'] ?? null;
+                $eventData = is_string($payload['eventData']) ? json_decode($payload['eventData'], true) : $payload['eventData'];
+
+                if (isset($eventData['code']) && $eventData['code'] != 0) {
+                    $status = 'failed';
+                    $rawError = $eventData['msg'] ?? 'Enhancement failed';
+                    error_log("[Webhook] Image enhance failed: code={$eventData['code']}, msg={$rawError}");
+                    $error = sanitizeErrorMessage($rawError);
+                } elseif (($payload['event'] ?? '') === 'TASK_FAIL') {
+                    $status = 'failed';
+                    $rawError = $payload['msg'] ?? 'Enhancement failed';
+                    error_log("[Webhook] Image enhance TASK_FAIL: {$rawError}");
+                    $error = sanitizeErrorMessage($rawError);
+                } elseif (($payload['event'] ?? '') === 'TASK_END') {
+                    $status = 'completed';
+                    // Look for image file in data array
+                    if (isset($eventData['data']) && is_array($eventData['data'])) {
+                        foreach ($eventData['data'] as $item) {
+                            if (is_array($item) && isset($item['fileUrl'])) {
+                                $resultUrl = $item['fileUrl'];
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    $status = 'processing';
+                }
+            } else {
+                $taskId = $payload['task_id'] ?? $payload['taskId'] ?? null;
+                $status = $payload['status'] ?? null;
+                $resultUrl = $payload['result_url'] ?? $payload['output_url'] ?? null;
+                $error = $payload['error'] ?? null;
+            }
+
+            // Update the enhance task in workflow_node_tasks
+            if ($taskId && ($status === 'completed' || $status === 'failed')) {
+                $task = Database::fetchOne(
+                    "SELECT * FROM workflow_node_tasks WHERE external_task_id = ? AND provider = 'rhub-enhance'",
+                    [$taskId]
+                );
+
+                if ($task) {
+                    $finalUrl = $resultUrl;
+
+                    // Try to save to BunnyCDN if completed
+                    if ($status === 'completed' && $resultUrl) {
+                        // Use user_id as execution context and node_id for path
+                        $cdnUrl = uploadToBunnyCDN($resultUrl, (int) $task['user_id'], $task['node_id']);
+                        if ($cdnUrl) {
+                            $finalUrl = $cdnUrl;
+                        }
+                    }
+
+                    Database::query(
+                        "UPDATE workflow_node_tasks SET status = ?, result_data = ?, updated_at = NOW() WHERE id = ?",
+                        [
+                            $status,
+                            json_encode([
+                                'enhanced_url' => $finalUrl,
+                                'result_url' => $resultUrl,
+                                'error' => $error
+                            ]),
+                            $task['id']
+                        ]
+                    );
+                }
+            }
+
+            // Mark as processed and return success
+            Database::query("UPDATE webhook_logs SET processed = 1 WHERE id = ?", [$logId]);
+            echo json_encode(['success' => true]);
+            exit;
+
         case 'kie':
             $taskId = $payload['task_id'] ?? null;
             $status = $payload['status'] ?? null;

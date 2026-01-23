@@ -21,19 +21,20 @@
     }
 
     /**
-     * Enhance image using server-side API proxy
+     * Enhance image using server-side API proxy with polling
      * @param {string} imageUrl - URL of the image to enhance
      * @param {string} prompt - Enhancement prompt
      * @param {string} [aspectRatio='auto'] - Aspect ratio (auto, 1:1, 3:2, 2:3)
+     * @param {function} [onStatusUpdate] - Optional callback for status updates
      * @returns {Promise<string>} - Enhanced image URL
      */
-    async function enhanceImage(imageUrl, prompt, aspectRatio = 'auto') {
+    async function enhanceImage(imageUrl, prompt, aspectRatio = 'auto', onStatusUpdate = null) {
         if (!hasRhubApiConfigured()) {
             throw new Error('RunningHub API key not configured. Please configure it in Administration → Integrations.');
         }
 
-        // Call server-side endpoint
-        const response = await fetch('./api/ai/enhance-image.php', {
+        // Submit enhancement task
+        const submitResponse = await fetch('./api/ai/enhance-image.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -45,13 +46,49 @@
             })
         });
 
-        const data = await response.json();
+        const submitData = await submitResponse.json();
 
-        if (!data.success) {
-            throw new Error(data.error || 'Failed to enhance image');
+        if (!submitData.success) {
+            throw new Error(submitData.error || 'Failed to submit enhancement');
         }
 
-        return data.enhanced;
+        const { taskId, nodeId } = submitData;
+
+        if (onStatusUpdate) onStatusUpdate('Processing image...');
+
+        // Poll for result (max 3 minutes = 180 seconds, check every 3 seconds)
+        const maxAttempts = 60;
+        let attempt = 0;
+
+        while (attempt < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+            attempt++;
+
+            if (onStatusUpdate) {
+                onStatusUpdate(`Enhancing... (${Math.min(attempt * 5, 100)}%)`);
+            }
+
+            try {
+                const statusResponse = await fetch(`./api/ai/enhance-image-status.php?nodeId=${encodeURIComponent(nodeId)}`);
+                const statusData = await statusResponse.json();
+
+                if (!statusData.success) {
+                    continue; // Keep polling
+                }
+
+                if (statusData.status === 'completed' && statusData.result) {
+                    return statusData.result;
+                } else if (statusData.status === 'failed') {
+                    throw new Error(statusData.error || 'Enhancement failed');
+                }
+                // status === 'processing': continue polling
+            } catch (e) {
+                // Network error - continue polling
+                console.warn('Status check error:', e);
+            }
+        }
+
+        throw new Error('Enhancement timed out. Please try again.');
     }
 
     const nodeDefinitions = {

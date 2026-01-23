@@ -279,6 +279,26 @@ function handleAdjust($admin)
 function handleNodeCosts()
 {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        // Ensure enhancement actions exist in the database with defaults
+        $defaultActions = [
+            ['node_type' => 'action_enhance', 'cost_per_call' => 1, 'description' => 'Text Enhancement AI'],
+            ['node_type' => 'action_enhance_image', 'cost_per_call' => 10, 'description' => 'Image Enhancement AI']
+        ];
+
+        foreach ($defaultActions as $action) {
+            $exists = Database::fetchOne(
+                "SELECT id FROM node_costs WHERE node_type = ?",
+                [$action['node_type']]
+            );
+            if (!$exists) {
+                try {
+                    Database::insert('node_costs', $action);
+                } catch (Exception $e) {
+                    // Ignore if already exists
+                }
+            }
+        }
+
         $costs = Database::fetchAll("SELECT * FROM node_costs ORDER BY node_type");
         successResponse(['node_costs' => $costs]);
     } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {

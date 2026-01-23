@@ -1385,6 +1385,12 @@ class CanvasManager {
                 submitBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Enhancing...';
                 if (window.lucide) lucide.createIcons({ nodes: [submitBtn] });
 
+                // Status update callback
+                const updateStatus = (msg) => {
+                    submitBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> ${msg}`;
+                    if (window.lucide) lucide.createIcons({ nodes: [submitBtn] });
+                };
+
                 try {
                     // Deduct credits first
                     const deductRes = await fetch('api/credits/deduct.php', {
@@ -1401,8 +1407,8 @@ class CanvasManager {
                         throw new Error(deductData.error || 'Failed to deduct credits');
                     }
 
-                    // Call image enhancement API
-                    const enhanced = await window.AIKAFLOWImageEnhance.enhance(imageUrl, prompt, aspectRatio);
+                    // Call image enhancement API with status callback
+                    const enhanced = await window.AIKAFLOWImageEnhance.enhance(imageUrl, prompt, aspectRatio, updateStatus);
 
                     // Update node data with enhanced image
                     if (this.nodeManager && nodeId) {
