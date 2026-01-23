@@ -277,7 +277,8 @@ function processNodeExecution(array $payload): void
         );
 
         // If async task, wait for webhook
-        if (isset($result['taskId']) && !isset($result['resultUrl'])) {
+        // Exception: social-post nodes complete immediately since Postforme doesn't send webhooks for post results
+        if (isset($result['taskId']) && !isset($result['resultUrl']) && $nodeType !== 'social-post') {
             // Task is async - will be completed via webhook
             Database::update(
                 'node_tasks',
