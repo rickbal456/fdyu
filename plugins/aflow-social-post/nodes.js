@@ -58,7 +58,6 @@
         try {
             const response = await fetch('./api/social/accounts.php');
             const data = await response.json();
-            console.log('[Social Post Node] Fetch accounts response:', data);
             if (data.success && data.accounts) {
                 return data.accounts;
             } else {
@@ -124,14 +123,15 @@
      * Load social accounts and update multiselect options
      */
     async function loadAccountsIntoMultiselect(container, currentAccounts) {
-        console.log('[Social Post Node] loadAccountsIntoMultiselect called, container:', container);
         // Find the accounts multiselect specifically by data-field-id
         const multiselectContainer = container.querySelector('.multiselect-container[data-field-id="accounts"]');
-        console.log('[Social Post Node] multiselectContainer found:', multiselectContainer);
         if (!multiselectContainer) {
             console.warn('[Social Post Node] No multiselect container found for accounts!');
             return;
         }
+
+        // Get the node ID from the properties panel's current node
+        const nodeId = window.editorInstance?.propertiesPanel?.currentNode?.id;
 
         // Show loading state
         multiselectContainer.innerHTML = `
@@ -172,6 +172,32 @@
                     `;
                 });
                 multiselectContainer.innerHTML = html;
+
+                // IMPORTANT: Attach change event listeners to the dynamically created checkboxes
+                // This is needed because the checkboxes are created AFTER setupInputListeners() runs
+                multiselectContainer.querySelectorAll('.multiselect-option').forEach(checkbox => {
+                    checkbox.addEventListener('change', () => {
+                        const selectedValues = [];
+                        multiselectContainer.querySelectorAll('.multiselect-option:checked').forEach(cb => {
+                            selectedValues.push(cb.dataset.optionValue);
+                        });
+
+                        // Update node data via the properties panel or node manager
+                        if (nodeId && window.editorInstance?.propertiesPanel) {
+                            window.editorInstance.propertiesPanel.updateNodeField(nodeId, 'accounts', selectedValues);
+                        } else if (nodeId && window.editorInstance?.nodeManager) {
+                            // Fallback: update node directly
+                            const node = window.editorInstance.nodeManager.getNode(nodeId);
+                            if (node) {
+                                node.data.accounts = selectedValues;
+                                window.editorInstance.workflowManager?.markChanged();
+                            }
+                        }
+
+                        // Update visual state (highlight selected)
+                        checkbox.closest('label')?.classList.toggle('bg-dark-700/30', checkbox.checked);
+                    });
+                });
             }
 
             if (window.lucide) lucide.createIcons({ root: multiselectContainer });

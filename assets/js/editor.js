@@ -1243,27 +1243,42 @@ class Editor {
 
     /**
      * Actually start the workflow execution (called from modal button)
+     * If we have a pending flow execution (from Start Flow node), run that.
+     * Otherwise, find the first flow and run it.
      */
     async startExecution() {
-        // Update run button to show running state
-        this.setRunButtonRunning();
+        // Check if there's a pending flow execution (from Start Flow node)
+        if (this.pendingFlowExecution) {
+            return this.startFlowExecution();
+        }
 
-        const result = await this.workflowManager?.executeWorkflow();
+        // Find the first Start Flow / trigger node and run that flow
+        const nodes = this.nodeManager?.getAllNodes() || [];
+        const triggerNode = nodes.find(node => {
+            const def = this.nodeManager?.getNodeDefinition(node.type);
+            return def?.isTrigger || node.type === 'start-flow' || node.type === 'manual-trigger';
+        });
 
-        if (result?.success) {
-            // Close the execution modal
-            Modals.closeActive();
-
-            // Open the run history panel
-            if (window.PanelsManager) {
-                window.PanelsManager.openHistory();
+        if (triggerNode) {
+            // Run using the single flow method (which doesn't validate ALL nodes)
+            await this.runSingleFlow(triggerNode.id);
+            // The modal is already open, we need to actually start execution
+            // since runSingleFlow opens the modal again, we should just call startFlowExecution
+            if (this.pendingFlowExecution) {
+                return this.startFlowExecution();
             }
-
-            // Dispatch credit update event (credits are deducted on workflow start)
-            document.dispatchEvent(new CustomEvent('credits:update'));
         } else {
-            // If execution failed to start, reset the button
-            this.resetRunButton();
+            // No trigger node found, fall back to running all nodes
+            // But skip validation since it may fail on incomplete nodes
+            const result = await this.workflowManager?.executeWorkflow();
+
+            if (result?.success) {
+                Modals.closeActive();
+                if (window.PanelsManager) {
+                    window.PanelsManager.openHistory();
+                }
+                document.dispatchEvent(new CustomEvent('credits:update'));
+            }
         }
     }
 
@@ -1616,18 +1631,8 @@ class Editor {
             }
         });
 
-        // Update run button (keep it clickable to allow opening execution modal)
-        const runBtn = document.getElementById('btn-run');
-        if (runBtn) {
-            runBtn.classList.add('is-running');
-            runBtn.innerHTML = `
-                <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
-                <span class="hidden sm:inline">Running...</span>
-            `;
-            if (window.lucide) {
-                lucide.createIcons({ nodes: [runBtn] });
-            }
-        }
+        // Note: Keep the Run button as "Run" even when workflow is running
+        // User requested not to change button text
 
         // Update status bar
         const statusExecution = document.getElementById('status-execution');
