@@ -510,7 +510,14 @@
         "prompt_placeholder": "misal, Buat teks ini lebih profesional dan ringkas...",
         "run_enhancement": "Jalankan Peningkatan",
         "prompt_required": "Silakan masukkan prompt",
-        "text_required": "Silakan masukkan teks pada node terlebih dahulu"
+        "text_required": "Silakan masukkan teks pada node terlebih dahulu",
+        "image_prompt_title": "Tingkatkan Gambar dengan AI",
+        "enter_image_prompt": "Jelaskan bagaimana cara meningkatkan gambar ini:",
+        "image_prompt_placeholder": "misal, Tambahkan latar belakang matahari terbenam, buat lebih sinematik...",
+        "aspect_ratio": "Rasio Aspek",
+        "enhance_image": "Tingkatkan dengan AI",
+        "enhancing": "Meningkatkan...",
+        "image_enhanced": "Gambar berhasil ditingkatkan!"
     },
     "panels": {
         "properties": "Properti",

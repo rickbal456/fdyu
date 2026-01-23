@@ -1608,19 +1608,22 @@ class CanvasManager {
             });
         });
 
-        // Add event listener for image enhance button on preview
-        element.querySelectorAll('.node-preview-enhance-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+        // Add event delegation for image enhance button on preview (buttons are dynamically created)
+        element.addEventListener('click', (e) => {
+            const btn = e.target.closest('.node-preview-enhance-btn');
+            if (btn) {
                 e.stopPropagation();
                 const imageUrl = btn.dataset.imageUrl;
                 if (imageUrl) {
                     showImageEnhanceModal(imageUrl, node.id, element);
                 }
-            });
+            }
+        });
 
-            btn.addEventListener('mousedown', (e) => {
+        element.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.node-preview-enhance-btn')) {
                 e.stopPropagation();
-            });
+            }
         });
 
         return element;

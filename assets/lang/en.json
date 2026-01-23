@@ -510,7 +510,14 @@
         "prompt_placeholder": "e.g., Make this text more professional and concise...",
         "run_enhancement": "Run Enhancement",
         "prompt_required": "Please enter a prompt",
-        "text_required": "Please enter some text in the node first"
+        "text_required": "Please enter some text in the node first",
+        "image_prompt_title": "Enhance Image with AI",
+        "enter_image_prompt": "Describe how to enhance this image:",
+        "image_prompt_placeholder": "e.g., Add a sunset background, make it look more cinematic...",
+        "aspect_ratio": "Aspect Ratio",
+        "enhance_image": "Enhance with AI",
+        "enhancing": "Enhancing...",
+        "image_enhanced": "Image enhanced successfully!"
     },
     "panels": {
         "properties": "Properties",

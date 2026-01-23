@@ -510,7 +510,14 @@
         "prompt_placeholder": "مثال: اجعل هذا النص أكثر احترافية وإيجازًا...",
         "run_enhancement": "تشغيل التحسين",
         "prompt_required": "الرجاء إدخال التوجيه",
-        "text_required": "الرجاء إدخال بعض النص في العقدة أولاً"
+        "text_required": "الرجاء إدخال بعض النص في العقدة أولاً",
+        "image_prompt_title": "تحسين الصورة بالذكاء الاصطناعي",
+        "enter_image_prompt": "صِف كيف تريد تحسين هذه الصورة:",
+        "image_prompt_placeholder": "مثال: أضف خلفية غروب الشمس، اجعلها أكثر سينمائية...",
+        "aspect_ratio": "نسبة العرض للارتفاع",
+        "enhance_image": "تحسين بالذكاء الاصطناعي",
+        "enhancing": "جاري التحسين...",
+        "image_enhanced": "تم تحسين الصورة بنجاح!"
     },
     "panels": {
         "properties": "الخصائص",
