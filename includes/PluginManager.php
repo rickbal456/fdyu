@@ -8,11 +8,14 @@ class PluginManager
 
     /**
      * Load all plugins and their node definitions
+     * Note: Always reload to pick up plugin.json changes
      */
     public static function loadPlugins()
     {
-        if (!empty(self::$plugins))
-            return;
+        // Clear existing cache to ensure fresh data
+        self::$plugins = [];
+        self::$nodeDefinitions = [];
+        self::$storagePlugins = [];
 
         $pluginDir = __DIR__ . '/../plugins';
         if (!is_dir($pluginDir))
@@ -306,6 +309,10 @@ class PluginManager
             }, ARRAY_FILTER_USE_KEY);
         }
         @file_put_contents($debugLog, "[$ts] [executeApiNode] Request body prepared, keys: " . implode(', ', array_keys($requestBody)) . "\n", FILE_APPEND);
+
+        // IMPORTANT: Add apiKey to request body so callGenericApi can use it for Authorization header
+        $requestBody['apiKey'] = $apiKey;
+
         @file_put_contents($debugLog, "[$ts] [executeApiNode] Request body JSON: " . json_encode($requestBody) . "\n", FILE_APPEND);
 
         // Acquire rate limit slot before making the API call
