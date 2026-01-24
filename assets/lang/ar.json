@@ -47,7 +47,8 @@
         "all": "الكل",
         "none": "لا شيء",
         "optional": "اختياري",
-        "required": "مطلوب"
+        "required": "مطلوب",
+        "use": "استخدام الصورة"
     },
     "api": {
         "access_for_workflow": "وصول API لسير العمل هذا",

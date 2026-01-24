@@ -47,7 +47,8 @@
         "all": "All",
         "none": "None",
         "optional": "Optional",
-        "required": "Required"
+        "required": "Required",
+        "use": "Use Image"
     },
     "api": {
         "access_for_workflow": "API access for this workflow",

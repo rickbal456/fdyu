@@ -1526,21 +1526,66 @@ class PropertiesPanel {
                 // Call image enhancement API with status callback
                 const enhanced = await window.AIKAFLOWImageEnhance.enhance(imageUrl, prompt, aspectRatio, updateStatus);
 
-                // Update node data with enhanced image
-                const node = this.nodeManager?.getNode(nodeId);
-                if (node) {
-                    const fileData = node.data[fieldId] || {};
-                    fileData.url = enhanced;
-                    fileData.previewUrl = enhanced;
-                    this.updateNodeField(nodeId, fieldId, fileData);
-                    this.refreshFields();
-                }
-
                 // Update credits display
                 document.dispatchEvent(new CustomEvent('credits:update'));
 
-                if (window.Toast) Toast.success('Image enhanced successfully!');
-                closeModal();
+                // Show the result in modal
+                const modalBody = modal.querySelector('.custom-prompt-modal-body');
+                const modalFooter = modal.querySelector('.custom-prompt-modal-footer');
+
+                // Replace body with result preview
+                modalBody.innerHTML = `
+                    <div class="image-enhance-result text-center">
+                        <div class="mb-3">
+                            <span class="text-success" style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 12px;">
+                                <i data-lucide="check-circle" class="w-5 h-5"></i>
+                                ${window.t ? window.t('enhance.image_enhanced') : 'Image enhanced successfully!'}
+                            </span>
+                        </div>
+                        <div class="image-enhance-comparison" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">Original</div>
+                                <img src="${imageUrl}" alt="Original" style="max-height: 140px; border-radius: 8px; border: 1px solid var(--dark-600);" />
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">Enhanced</div>
+                                <img src="${enhanced}" alt="Enhanced" style="max-height: 140px; border-radius: 8px; border: 2px solid var(--primary-500);" />
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Update footer with Use Image button
+                modalFooter.innerHTML = `
+                    <button class="custom-prompt-cancel btn-secondary" type="button">
+                        ${window.t ? window.t('common.cancel') : 'Cancel'}
+                    </button>
+                    <button class="image-enhance-use btn-primary" type="button">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        ${window.t ? window.t('common.use') || 'Use Image' : 'Use Image'}
+                    </button>
+                `;
+
+                // Initialize icons
+                if (window.lucide) lucide.createIcons({ root: modal });
+
+                // Re-attach cancel handler
+                modal.querySelector('.custom-prompt-cancel').addEventListener('click', closeModal);
+
+                // Use Image button handler
+                modal.querySelector('.image-enhance-use').addEventListener('click', () => {
+                    // Update node data with enhanced image
+                    const node = this.nodeManager?.getNode(nodeId);
+                    if (node) {
+                        const fileData = node.data[fieldId] || {};
+                        fileData.url = enhanced;
+                        fileData.previewUrl = enhanced;
+                        this.updateNodeField(nodeId, fieldId, fileData);
+                        this.refreshFields();
+                    }
+                    if (window.Toast) Toast.success(window.t ? window.t('enhance.image_enhanced') : 'Image enhanced successfully!');
+                    closeModal();
+                });
 
             } catch (error) {
                 if (window.Toast) Toast.error('Enhancement failed: ' + error.message);

@@ -47,7 +47,8 @@
         "all": "Semua",
         "none": "Tidak Ada",
         "optional": "Opsional",
-        "required": "Wajib"
+        "required": "Wajib",
+        "use": "Gunakan Gambar"
     },
     "api": {
         "access_for_workflow": "Akses API untuk workflow ini",
