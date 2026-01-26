@@ -1654,15 +1654,20 @@ class Editor {
         const colors = Utils.getCategoryColor(def?.category);
         const icon = Utils.getNodeIcon(node.type);
 
-        // Get display name - check for custom name first, then node name, then definition name
-        const customName = window.pluginManager?.getNodeDisplayName?.(node.type, def?.name);
+        // Get display name priority:
+        // 1. Custom admin-set display name from pluginManager
+        // 2. Node-specific name if set (individual node renamed)
+        // 3. Definition name from node type
+        // 4. Fallback to node type
         let displayName;
-        if (node.name && node.name !== node.type) {
+
+        // Check for custom display name from admin settings first
+        const customName = window.pluginManager?.nodeDisplayNames?.[node.type];
+        if (customName) {
+            displayName = customName;
+        } else if (node.name && node.name !== node.type) {
             // Use node-specific name if set
             displayName = node.name;
-        } else if (customName && customName !== def?.name) {
-            // Use custom display name from admin settings
-            displayName = customName;
         } else {
             // Fall back to definition name or type
             displayName = def?.name || node.type;
