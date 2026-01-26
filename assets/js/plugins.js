@@ -11,6 +11,7 @@ class PluginManager {
         this.loadedNodes = new Map();
         this.isInitialized = false;
         this.baseUrl = ''; // Will be set during init
+        this.nodeDisplayNames = {}; // Custom node titles set by admin
     }
 
     /**
@@ -63,6 +64,9 @@ class PluginManager {
                 this.integrationStatus = {};
                 this.integrationKeys = {};
             }
+
+            // Load custom node display names (works for all users to display custom titles)
+            await this.loadNodeDisplayNames();
 
             // Load installed plugins (this should work even in viewer mode as plugins list is public)
             await this.loadPlugins();
@@ -158,6 +162,80 @@ class PluginManager {
         } catch (error) {
             console.error('Failed to save integration key:', error);
         }
+    }
+
+    /**
+     * Load custom node display names from settings
+     */
+    async loadNodeDisplayNames() {
+        try {
+            const response = await fetch(`${this.baseUrl}/user/public-settings.php?key=node_display_names`);
+            const data = await response.json();
+            if (data.success && data.value) {
+                this.nodeDisplayNames = typeof data.value === 'string'
+                    ? JSON.parse(data.value)
+                    : data.value;
+            }
+        } catch (error) {
+            console.log('Could not load node display names:', error);
+            this.nodeDisplayNames = {};
+        }
+    }
+
+    /**
+     * Save custom node display names to settings (admin only)
+     */
+    async saveNodeDisplayNames(names) {
+        try {
+            this.nodeDisplayNames = names;
+
+            const response = await fetch(`${this.baseUrl}/admin/settings.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ node_display_names: JSON.stringify(names) })
+            });
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to save');
+            }
+
+            // Update sidebar node names
+            this.updateSidebarNodeNames();
+
+            return true;
+        } catch (error) {
+            console.error('Failed to save node display names:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Get display name for a node type
+     * Returns custom name if set, otherwise returns the original name
+     */
+    getNodeDisplayName(nodeType, originalName) {
+        if (this.nodeDisplayNames && this.nodeDisplayNames[nodeType]) {
+            return this.nodeDisplayNames[nodeType];
+        }
+        return originalName;
+    }
+
+    /**
+     * Update sidebar node names with custom display names
+     */
+    updateSidebarNodeNames() {
+        if (!this.nodeDisplayNames) return;
+
+        Object.entries(this.nodeDisplayNames).forEach(([nodeType, customName]) => {
+            const nodeItem = document.querySelector(`.node-item[data-node-type="${nodeType}"]`);
+            if (nodeItem) {
+                const nameEl = nodeItem.querySelector('.node-name');
+                if (nameEl && customName) {
+                    nameEl.textContent = customName;
+                }
+            }
+        });
     }
 
     /**
@@ -750,6 +828,9 @@ class PluginManager {
 
                 // Render integration keys in settings
                 await this.renderIntegrationKeys();
+
+                // Apply custom node display names to sidebar
+                this.updateSidebarNodeNames();
             }
 
         } catch (error) {
@@ -1027,9 +1108,18 @@ class PluginManager {
         const translatedName = window.t ? window.t(`plugins.${nodeKey}.name`) : null;
         const translatedDesc = window.t ? window.t(`plugins.${nodeKey}.description`) : null;
 
-        const displayName = (translatedName && !translatedName.startsWith('plugins.'))
-            ? translatedName
-            : nodeDefinition.name;
+        // Check for custom display name set by admin (takes priority)
+        const customName = window.pluginManager?.nodeDisplayNames?.[nodeDefinition.type];
+
+        let displayName;
+        if (customName) {
+            displayName = customName;
+        } else if (translatedName && !translatedName.startsWith('plugins.')) {
+            displayName = translatedName;
+        } else {
+            displayName = nodeDefinition.name;
+        }
+
         const displayDesc = (translatedDesc && !translatedDesc.startsWith('plugins.'))
             ? translatedDesc
             : (nodeDefinition.description || 'Custom node');
@@ -1396,9 +1486,12 @@ class PluginManager {
      */
     renderInstalledPlugins() {
         let html = '';
+        const isAdmin = window.AIKAFLOW?.user?.isAdmin;
 
         for (const [id, plugin] of this.plugins) {
             const colorClass = plugin.color || 'gray';
+            const nodeTypes = plugin.nodeTypes || plugin.nodes || [];
+            const hasNodes = nodeTypes.length > 0;
 
             html += `
                 <div class="plugin-item" data-plugin-id="${id}">
@@ -1412,6 +1505,12 @@ class PluginManager {
                             <p class="text-xs text-gray-500">v${plugin.version} by ${plugin.author}</p>
                         </div>
                         <div class="flex items-center gap-2">
+                            ${hasNodes && isAdmin ? `
+                                <button class="btn-icon-sm text-dark-400 hover:bg-dark-600" 
+                                        data-action="toggle-nodes" data-plugin-id="${id}" title="Rename Nodes">
+                                    <i data-lucide="settings-2" class="w-4 h-4"></i>
+                                </button>
+                            ` : ''}
                             <button class="btn-icon-sm text-red-400 hover:bg-red-500/20" 
                                     data-action="delete" data-plugin-id="${id}" title="Uninstall">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -1423,11 +1522,69 @@ class PluginManager {
                             </label>
                         </div>
                     </div>
+                    ${hasNodes && isAdmin ? this.renderPluginNodesSection(id, nodeTypes, colorClass) : ''}
                 </div>
             `;
         }
 
         return html;
+    }
+
+    /**
+     * Render nodes section for a plugin (for renaming)
+     */
+    renderPluginNodesSection(pluginId, nodeTypes, colorClass) {
+        let nodesHtml = '';
+
+        for (const nodeType of nodeTypes) {
+            // Get node definition to get original name
+            const nodeDef = window.NodeDefinitions?.[nodeType];
+            const originalName = nodeDef?.name || nodeType;
+            const customName = this.nodeDisplayNames?.[nodeType] || '';
+            const displayName = customName || originalName;
+
+            nodesHtml += `
+                <div class="flex items-center gap-3 py-2 px-3 bg-dark-800 rounded-lg">
+                    <div class="w-6 h-6 rounded bg-${colorClass}-500/20 flex items-center justify-center">
+                        <i data-lucide="${nodeDef?.icon || 'box'}" class="w-3 h-3 text-${colorClass}-400"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs text-dark-500 mb-1">${nodeType}</div>
+                        <input type="text" 
+                               class="node-display-name-input form-input text-sm w-full py-1 px-2"
+                               data-node-type="${nodeType}"
+                               data-original-name="${originalName}"
+                               placeholder="${originalName}"
+                               value="${customName}">
+                    </div>
+                    ${customName ? `
+                        <button class="btn-icon-sm text-dark-400 hover:text-dark-200" 
+                                data-action="reset-node-name" data-node-type="${nodeType}" title="Reset to default">
+                            <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        return `
+            <div class="plugin-nodes-section hidden mt-3 pt-3 border-t border-dark-700" data-plugin-nodes="${pluginId}">
+                <div class="flex items-center justify-between mb-2">
+                    <h5 class="text-xs font-medium text-dark-300 flex items-center gap-2">
+                        <i data-lucide="tag" class="w-3 h-3"></i>
+                        ${window.t?.('modals.node_display_names') || 'Node Display Names'}
+                    </h5>
+                    <button class="btn-secondary text-xs px-2 py-1" data-action="save-node-names" data-plugin-id="${pluginId}">
+                        <i data-lucide="save" class="w-3 h-3 mr-1"></i>
+                        ${window.t?.('modals.save_names') || 'Save Names'}
+                    </button>
+                </div>
+                <p class="text-xs text-dark-500 mb-3">${window.t?.('modals.node_display_names_desc') || 'Customize how node names appear in the sidebar and canvas'}</p>
+                <div class="space-y-2">
+                    ${nodesHtml}
+                </div>
+            </div>
+        `;
     }
 
     /**
@@ -1447,6 +1604,75 @@ class PluginManager {
             btn.addEventListener('click', (e) => {
                 const pluginId = e.currentTarget.dataset.pluginId;
                 this.deletePlugin(pluginId);
+            });
+        });
+
+        // Toggle nodes section buttons
+        document.querySelectorAll('#plugins-list [data-action="toggle-nodes"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const pluginId = e.currentTarget.dataset.pluginId;
+                const nodesSection = document.querySelector(`[data-plugin-nodes="${pluginId}"]`);
+                if (nodesSection) {
+                    nodesSection.classList.toggle('hidden');
+                    // Reinitialize Lucide icons when showing
+                    if (!nodesSection.classList.contains('hidden') && window.lucide) {
+                        lucide.createIcons({ nodes: [nodesSection] });
+                    }
+                }
+            });
+        });
+
+        // Save node names buttons
+        document.querySelectorAll('#plugins-list [data-action="save-node-names"]').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const pluginId = e.currentTarget.dataset.pluginId;
+                const nodesSection = document.querySelector(`[data-plugin-nodes="${pluginId}"]`);
+                if (!nodesSection) return;
+
+                // Collect all node names from inputs
+                const inputs = nodesSection.querySelectorAll('.node-display-name-input');
+                const names = { ...this.nodeDisplayNames };
+
+                inputs.forEach(input => {
+                    const nodeType = input.dataset.nodeType;
+                    const value = input.value.trim();
+                    if (value) {
+                        names[nodeType] = value;
+                    } else {
+                        delete names[nodeType];
+                    }
+                });
+
+                // Save to backend
+                const success = await this.saveNodeDisplayNames(names);
+                if (success) {
+                    window.showToast?.(window.t?.('modals.node_names_saved') || 'Node names saved successfully', 'success');
+                    // Refresh the plugins list to update reset buttons
+                    this.renderPluginsList();
+                } else {
+                    window.showToast?.(window.t?.('errors.save_failed') || 'Failed to save node names', 'error');
+                }
+            });
+        });
+
+        // Reset node name buttons
+        document.querySelectorAll('#plugins-list [data-action="reset-node-name"]').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const nodeType = e.currentTarget.dataset.nodeType;
+                const input = document.querySelector(`.node-display-name-input[data-node-type="${nodeType}"]`);
+                if (input) {
+                    input.value = '';
+                }
+
+                // Remove from nodeDisplayNames
+                const names = { ...this.nodeDisplayNames };
+                delete names[nodeType];
+
+                const success = await this.saveNodeDisplayNames(names);
+                if (success) {
+                    window.showToast?.(window.t?.('modals.node_name_reset') || 'Node name reset to default', 'success');
+                    this.renderPluginsList();
+                }
             });
         });
     }

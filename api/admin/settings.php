@@ -121,7 +121,9 @@ switch ($method) {
             // LLM settings (model, system prompts - stored as JSON string)
             'llm_settings',
             // BunnyCDN storage settings (stored as JSON string)
-            'bunnycdn_settings'
+            'bunnycdn_settings',
+            // Node display names (custom titles for nodes - stored as JSON string)
+            'node_display_names'
         ];
         $updated = [];
 

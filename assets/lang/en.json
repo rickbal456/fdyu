@@ -355,7 +355,14 @@
         "execution_title": "Workflow Execution",
         "abort": "Abort",
         "close": "Close",
-        "choose_file": "Choose File"
+        "choose_file": "Choose File",
+        "node_display_names": "Node Display Names",
+        "node_display_names_desc": "Customize how node names appear in the sidebar and canvas",
+        "save_names": "Save Names",
+        "reset_to_default": "Reset to default",
+        "node_names_saved": "Node names saved successfully",
+        "node_name_reset": "Node name reset to default",
+        "rename_nodes": "Rename Nodes"
     },
     "settings": {
         "profile": "Profile",

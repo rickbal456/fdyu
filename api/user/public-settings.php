@@ -26,6 +26,28 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 try {
+    // Check if requesting a specific key
+    if (isset($_GET['key'])) {
+        $key = $_GET['key'];
+
+        // Whitelist of allowed keys for public access
+        $allowedKeys = ['node_display_names', 'site_title', 'logo_url', 'favicon_url', 'default_theme'];
+
+        if (!in_array($key, $allowedKeys)) {
+            errorResponse('Access denied for this setting', 403);
+        }
+
+        $result = Database::fetchOne(
+            "SELECT setting_value FROM site_settings WHERE setting_key = ?",
+            [$key]
+        );
+
+        successResponse([
+            'success' => true,
+            'value' => $result ? $result['setting_value'] : null
+        ]);
+    }
+
     $settings = [];
 
     // Get LLM settings (model and system prompts - NOT the API key)

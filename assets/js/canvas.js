@@ -1012,13 +1012,16 @@ class CanvasManager {
         element.dataset.nodeType = node.type;
         element.dataset.category = definition.category;
 
+        // Get display name - check for custom name first, then use definition name
+        const displayName = window.pluginManager?.getNodeDisplayName?.(node.type, definition.name) || definition.name;
+
         // Build node HTML
         let html = `
             <div class="node-header">
                 <div class="node-header-icon" style="background-color: ${colors.bg}; color: ${colors.text}">
                     <i data-lucide="${icon}" class="w-4 h-4"></i>
                 </div>
-                <span class="node-header-title">${definition.name}</span>
+                <span class="node-header-title">${displayName}</span>
                 <div class="node-header-actions">
                     ${definition.hasRunButton ? `
                     <button class="node-action-btn node-run-btn" data-action="run-flow" title="Run this flow">
