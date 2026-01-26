@@ -1648,7 +1648,20 @@ class Editor {
         const def = this.nodeManager?.getNodeDefinition(node.type);
         const colors = Utils.getCategoryColor(def?.category);
         const icon = Utils.getNodeIcon(node.type);
-        const displayName = (node.name && node.name !== node.type) ? node.name : (def?.name || node.type);
+
+        // Get display name - check for custom name first, then node name, then definition name
+        const customName = window.pluginManager?.getNodeDisplayName?.(node.type, def?.name);
+        let displayName;
+        if (node.name && node.name !== node.type) {
+            // Use node-specific name if set
+            displayName = node.name;
+        } else if (customName && customName !== def?.name) {
+            // Use custom display name from admin settings
+            displayName = customName;
+        } else {
+            // Fall back to definition name or type
+            displayName = def?.name || node.type;
+        }
 
         return `
             <div class="execution-node-item pending" data-node-id="${node.id}">
