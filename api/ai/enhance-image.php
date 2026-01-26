@@ -83,11 +83,11 @@ try {
         CURLOPT_HTTPHEADER => [
             'Authorization: Bearer ' . $apiKey,
             'Content-Type: application/json',
-            'HTTP-Referer: ' . (defined('APP_URL') ? APP_URL : 'https://fidyu.com'),
+            'HTTP-Referer: ' . (defined('APP_URL') ? APP_URL : 'AIKAFLOW'),
             'X-Title: AIKAFLOW'
         ],
         CURLOPT_POSTFIELDS => json_encode([
-            'model' => 'google/gemini-2.5-flash-preview-05-20',
+            'model' => 'black-forest-labs/flux.2-klein-4b',
             'messages' => [
                 [
                     'role' => 'user',
