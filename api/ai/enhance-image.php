@@ -1,8 +1,8 @@
 <?php
 /**
- * AIKAFLOW API - Image Enhancement via OpenRouter (Flux model)
+ * AIKAFLOW API - Image Enhancement via OpenRouter
  * 
- * Enhances images using OpenRouter's image-to-image capabilities.
+ * Enhances images using OpenRouter's image generation models.
  * Uses the same LLM API key as text enhancement.
  * Returns result instantly (no webhook needed).
  * 
@@ -71,7 +71,11 @@ try {
     $base64Image = base64_encode($imageContent);
     $dataUri = "data:{$mimeType};base64,{$base64Image}";
 
-    // Call OpenRouter API with Flux model for image-to-image
+    // Build the enhancement prompt that includes the source image
+    $enhancePrompt = "Based on this image, create a new enhanced version with these modifications: {$prompt}. Maintain the core elements and composition of the original while applying the requested enhancements.";
+
+    // Call OpenRouter API with image generation modalities
+    // Using a model that supports image output
     $ch = curl_init('https://openrouter.ai/api/v1/chat/completions');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -83,24 +87,25 @@ try {
             'X-Title: AIKAFLOW'
         ],
         CURLOPT_POSTFIELDS => json_encode([
-            'model' => 'black-forest-labs/flux.2-klein-4b',
+            'model' => 'google/gemini-2.5-flash-preview-05-20',
             'messages' => [
                 [
                     'role' => 'user',
                     'content' => [
                         [
-                            'type' => 'text',
-                            'text' => $prompt
-                        ],
-                        [
                             'type' => 'image_url',
                             'image_url' => [
                                 'url' => $dataUri
                             ]
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => $enhancePrompt
                         ]
                     ]
                 ]
-            ]
+            ],
+            'modalities' => ['image', 'text']
         ]),
         CURLOPT_TIMEOUT => 120 // Allow up to 2 minutes for image generation
     ]);
@@ -125,37 +130,16 @@ try {
     $data = json_decode($response, true);
 
     // Extract the generated image URL from response
+    // OpenRouter returns images in choices[0].message.images[].image_url.url
     $enhancedUrl = null;
 
-    // OpenRouter returns the image in the message content
-    if (isset($data['choices'][0]['message']['content'])) {
-        $content = $data['choices'][0]['message']['content'];
-
-        // If content is an array (multimodal response)
-        if (is_array($content)) {
-            foreach ($content as $part) {
-                if (isset($part['type']) && $part['type'] === 'image_url') {
-                    $enhancedUrl = $part['image_url']['url'] ?? null;
-                    break;
-                }
-            }
-        } elseif (is_string($content)) {
-            // Check if it's a URL or base64
-            if (filter_var($content, FILTER_VALIDATE_URL)) {
-                $enhancedUrl = $content;
-            } elseif (preg_match('/^data:image\//', $content)) {
-                $enhancedUrl = $content;
+    if (isset($data['choices'][0]['message']['images']) && is_array($data['choices'][0]['message']['images'])) {
+        foreach ($data['choices'][0]['message']['images'] as $image) {
+            if (isset($image['image_url']['url'])) {
+                $enhancedUrl = $image['image_url']['url'];
+                break;
             }
         }
-    }
-
-    // Also check for image in the response data directly
-    if (!$enhancedUrl && isset($data['data'][0]['url'])) {
-        $enhancedUrl = $data['data'][0]['url'];
-    }
-
-    if (!$enhancedUrl && isset($data['data'][0]['b64_json'])) {
-        $enhancedUrl = 'data:image/png;base64,' . $data['data'][0]['b64_json'];
     }
 
     if (!$enhancedUrl) {
