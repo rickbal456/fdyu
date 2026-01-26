@@ -2,6 +2,7 @@
  * AIKAFLOW Plugin - Image Input with AI Enhancement
  * 
  * Provides image file upload and URL input functionality with optional AI enhancement.
+ * Uses OpenRouter's Flux model for instant image enhancement.
  * The actual API call is proxied through the server to keep API keys secure.
  */
 
@@ -9,86 +10,51 @@
     'use strict';
 
     /**
-     * Check if RunningHub API is configured
+     * Check if LLM API is configured (same as text enhancement)
      * @returns {boolean}
      */
-    function hasRhubApiConfigured() {
+    function hasLlmApiConfigured() {
         // Check via PluginManager integration status
         if (window.PluginManager?.hasApiKey) {
-            return PluginManager.hasApiKey('rhub');
+            return PluginManager.hasApiKey('llm');
         }
-        return window.pluginManager?.integrationStatus?.rhub === true;
+        return window.pluginManager?.integrationStatus?.llm === true;
     }
 
     /**
-     * Enhance image using server-side API proxy with polling
+     * Enhance image using server-side API proxy (OpenRouter Flux model)
      * @param {string} imageUrl - URL of the image to enhance
      * @param {string} prompt - Enhancement prompt
-     * @param {string} [aspectRatio='auto'] - Aspect ratio (auto, 1:1, 3:2, 2:3)
+     * @param {string} [aspectRatio='auto'] - Aspect ratio (kept for compatibility)
      * @param {function} [onStatusUpdate] - Optional callback for status updates
      * @returns {Promise<string>} - Enhanced image URL
      */
     async function enhanceImage(imageUrl, prompt, aspectRatio = 'auto', onStatusUpdate = null) {
-        if (!hasRhubApiConfigured()) {
-            throw new Error('RunningHub API key not configured. Please configure it in Administration → Integrations.');
+        if (!hasLlmApiConfigured()) {
+            throw new Error('LLM API key not configured. Please configure it in Administration → Integrations.');
         }
 
-        // Submit enhancement task
-        const submitResponse = await fetch('./api/ai/enhance-image.php', {
+        if (onStatusUpdate) onStatusUpdate('Enhancing image...');
+
+        // Call server-side endpoint (instant result from OpenRouter)
+        const response = await fetch('./api/ai/enhance-image.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 imageUrl: imageUrl,
-                prompt: prompt,
-                aspectRatio: aspectRatio
+                prompt: prompt
             })
         });
 
-        const submitData = await submitResponse.json();
+        const data = await response.json();
 
-        if (!submitData.success) {
-            throw new Error(submitData.error || 'Failed to submit enhancement');
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to enhance image');
         }
 
-        const { taskId, nodeId } = submitData;
-
-        if (onStatusUpdate) onStatusUpdate('Processing image...');
-
-        // Poll for result (max 3 minutes = 180 seconds, check every 3 seconds)
-        const maxAttempts = 60;
-        let attempt = 0;
-
-        while (attempt < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
-            attempt++;
-
-            if (onStatusUpdate) {
-                onStatusUpdate(`Enhancing... (${Math.min(attempt * 5, 100)}%)`);
-            }
-
-            try {
-                const statusResponse = await fetch(`./api/ai/enhance-image-status.php?nodeId=${encodeURIComponent(nodeId)}`);
-                const statusData = await statusResponse.json();
-
-                if (!statusData.success) {
-                    continue; // Keep polling
-                }
-
-                if (statusData.status === 'completed' && statusData.result) {
-                    return statusData.result;
-                } else if (statusData.status === 'failed') {
-                    throw new Error(statusData.error || 'Enhancement failed');
-                }
-                // status === 'processing': continue polling
-            } catch (e) {
-                // Network error - continue polling
-                console.warn('Status check error:', e);
-            }
-        }
-
-        throw new Error('Enhancement timed out. Please try again.');
+        return data.enhanced;
     }
 
     const nodeDefinitions = {
@@ -175,6 +141,6 @@
     // Expose enhancement function globally for other plugins and UI components
     window.AIKAFLOWImageEnhance = {
         enhance: enhanceImage,
-        isConfigured: hasRhubApiConfigured
+        isConfigured: hasLlmApiConfigured
     };
 })();
