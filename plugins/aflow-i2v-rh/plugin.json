@@ -1,0 +1,37 @@
+{
+    "id": "aflow-i2v-rh",
+    "name": "Image to Video RH",
+    "description": "Generate Video from Image using RH Art Video S API (10-15s)",
+    "version": "1.0.0",
+    "author": "AIKAFLOW Developer",
+    "icon": "clapperboard",
+    "color": "indigo",
+    "category": "generation",
+    "enabled": true,
+    "homepage": "https://aikademi.id",
+    "requires": {
+        "aikaflow": ">=1.0.0"
+    },
+    "nodeTypes": [
+        "aflow-i2v-rh"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "rhub",
+        "endpoint": "https://www.runninghub.ai/openapi/v2/rhart-video-s/image-to-video"
+    },
+    "apiMapping": {
+        "request": {
+            "imageUrl": "{{image}}",
+            "duration": "{{duration}}",
+            "aspectRatio": "{{aspectRatio}}",
+            "prompt": "{{prompt}}"
+        },
+        "response": {
+            "taskId": "$.taskId"
+        }
+    },
+    "settings": {
+        "apiKey": ""
+    }
+}

@@ -130,7 +130,15 @@
         "motion_prompt_optional": "Prompt Gerakan (Opsional)",
         "output_video": "Video Output",
         "api_key_required": "API Key RunningHub diperlukan. Atur di Pengaturan → Integrasi atau di field node.",
-        "prompt_required": "Prompt gerakan diperlukan. Hubungkan node Input Teks atau masukkan prompt secara manual."
+        "prompt_required": "Prompt gerakan diperlukan. Hubungkan node Input Teks atau masukkan prompt secara manual.",
+        "image_to_video_rh": "Gambar ke Video RH",
+        "generate_video_from_image_rh": "Buat Video dari Gambar menggunakan RH Art S API (10-15 detik)",
+        "aspect_ratio_rh": "Rasio Aspek",
+        "landscape_16_9": "Lanskap (16:9)",
+        "portrait_9_16": "Potret (9:16)",
+        "motion_prompt_placeholder_rh": "Jelaskan animasi, gerakan dan adegan secara detail (5-4000 karakter)...",
+        "prompt_required_rh": "Prompt gerakan diperlukan (minimal 5 karakter). Hubungkan node Input Teks atau masukkan prompt secara manual.",
+        "prompt_too_long_rh": "Prompt gerakan terlalu panjang (maksimal 4000 karakter)."
     },
     "toolbar": {
         "new": "Baru",
@@ -229,6 +237,10 @@
         "i2v_v1": {
             "name": "Gambar ke Video V1",
             "description": "Buat video dari gambar (10-15 detik)"
+        },
+        "i2v_rh": {
+            "name": "Gambar ke Video RH",
+            "description": "Buat video dari gambar menggunakan RH Art S API"
         },
         "video_trim": {
             "name": "Potong Video",

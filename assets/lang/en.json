@@ -130,7 +130,15 @@
         "motion_prompt_optional": "Motion Prompt (Optional)",
         "output_video": "Output Video",
         "api_key_required": "RunningHub API Key is required. Set it in Settings → Integrations or in the node field.",
-        "prompt_required": "Motion prompt is required. Either connect a Text Input node or enter a prompt manually."
+        "prompt_required": "Motion prompt is required. Either connect a Text Input node or enter a prompt manually.",
+        "image_to_video_rh": "Image to Video RH",
+        "generate_video_from_image_rh": "Generate Video from Image using RH Art S API (10-15s)",
+        "aspect_ratio_rh": "Aspect Ratio",
+        "landscape_16_9": "Landscape (16:9)",
+        "portrait_9_16": "Portrait (9:16)",
+        "motion_prompt_placeholder_rh": "Describe the animation, motion and scene in detail (5-4000 characters)...",
+        "prompt_required_rh": "Motion prompt is required (minimum 5 characters). Either connect a Text Input node or enter a prompt manually.",
+        "prompt_too_long_rh": "Motion prompt is too long (maximum 4000 characters)."
     },
     "toolbar": {
         "new": "New",
@@ -229,6 +237,10 @@
         "i2v_v1": {
             "name": "Image to Video V1",
             "description": "Generate video from image (10-15s)"
+        },
+        "i2v_rh": {
+            "name": "Image to Video RH",
+            "description": "Generate video from image using RH Art S API"
         },
         "video_trim": {
             "name": "Video Trim",
