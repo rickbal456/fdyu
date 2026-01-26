@@ -1437,17 +1437,6 @@ class PropertiesPanel {
                             ${window.t ? window.t('enhance.enter_image_prompt') : 'Describe how to enhance this image:'}
                         </label>
                         <textarea class="custom-prompt-textarea image-enhance-prompt" rows="4" placeholder="${window.t ? window.t('enhance.image_prompt_placeholder') : 'e.g., Add a sunset background, make it look more cinematic...'}"></textarea>
-                        <div class="image-enhance-options mt-3">
-                            <label class="custom-prompt-label" style="font-size: 12px;">
-                                ${window.t ? window.t('enhance.aspect_ratio') : 'Aspect Ratio'}
-                            </label>
-                            <select class="form-input image-enhance-ratio" style="padding: 6px 10px; font-size: 13px;">
-                                <option value="auto">Auto</option>
-                                <option value="1:1">1:1 (Square)</option>
-                                <option value="3:2">3:2 (Landscape)</option>
-                                <option value="2:3">2:3 (Portrait)</option>
-                            </select>
-                        </div>
                     </div>
                     <div class="custom-prompt-modal-footer">
                         <button class="custom-prompt-cancel btn-secondary" type="button">
@@ -1466,7 +1455,6 @@ class PropertiesPanel {
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         const modal = document.querySelector('.image-enhance-modal-overlay');
         const promptTextarea = modal.querySelector('.image-enhance-prompt');
-        const ratioSelect = modal.querySelector('.image-enhance-ratio');
         const submitBtn = modal.querySelector('.image-enhance-submit');
 
         // Initialize icons
@@ -1488,7 +1476,6 @@ class PropertiesPanel {
         // Submit handler
         submitBtn.addEventListener('click', async () => {
             const prompt = promptTextarea.value.trim();
-            const aspectRatio = ratioSelect.value;
 
             if (!prompt) {
                 if (window.Toast) Toast.error(window.t ? window.t('enhance.prompt_required') : 'Please enter an enhancement prompt');
@@ -1524,7 +1511,7 @@ class PropertiesPanel {
                 }
 
                 // Call image enhancement API with status callback
-                const enhanced = await window.AIKAFLOWImageEnhance.enhance(imageUrl, prompt, aspectRatio, updateStatus);
+                const enhanced = await window.AIKAFLOWImageEnhance.enhance(imageUrl, prompt, 'auto', updateStatus);
 
                 // Update credits display
                 document.dispatchEvent(new CustomEvent('credits:update'));

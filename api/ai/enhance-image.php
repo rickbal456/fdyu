@@ -83,7 +83,7 @@ try {
             'X-Title: AIKAFLOW'
         ],
         CURLOPT_POSTFIELDS => json_encode([
-            'model' => 'black-forest-labs/flux-1.1-pro',
+            'model' => 'black-forest-labs/flux.2-klein-4b',
             'messages' => [
                 [
                     'role' => 'user',
