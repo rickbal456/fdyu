@@ -138,9 +138,10 @@ class PropertiesPanel {
             this.nodeIcon.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i>`;
         }
 
-        // Update name and type
+        // Update name and type - check for custom display name first
         if (this.nodeName) {
-            this.nodeName.textContent = definition.name;
+            const customName = window.pluginManager?.getNodeDisplayName?.(node.type, definition.name);
+            this.nodeName.textContent = customName || definition.name;
         }
         if (this.nodeId) {
             this.nodeId.textContent = node.id;

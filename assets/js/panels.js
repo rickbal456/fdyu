@@ -146,6 +146,43 @@
                     this.loadMoreHistory(currentTab);
                 }
             });
+
+            // Close panels when clicking outside (on canvas/main area)
+            document.addEventListener('click', (e) => {
+                const target = e.target;
+
+                // Check if clicking outside gallery panel
+                if (this.galleryPanel?.classList.contains('open')) {
+                    const isInsideGallery = this.galleryPanel.contains(target);
+                    const isGalleryButton = target.closest('#btn-gallery');
+
+                    if (!isInsideGallery && !isGalleryButton) {
+                        // Check if clicking on canvas or main editor area
+                        const isOnCanvas = target.closest('#canvas-container') ||
+                            target.closest('.canvas-wrapper') ||
+                            target.closest('#nodes-container');
+                        if (isOnCanvas) {
+                            this.closeGallery();
+                        }
+                    }
+                }
+
+                // Check if clicking outside history panel
+                if (this.historyPanel?.classList.contains('open')) {
+                    const isInsideHistory = this.historyPanel.contains(target);
+                    const isHistoryButton = target.closest('#btn-history');
+
+                    if (!isInsideHistory && !isHistoryButton) {
+                        // Check if clicking on canvas or main editor area
+                        const isOnCanvas = target.closest('#canvas-container') ||
+                            target.closest('.canvas-wrapper') ||
+                            target.closest('#nodes-container');
+                        if (isOnCanvas) {
+                            this.closeHistory();
+                        }
+                    }
+                }
+            });
         }
 
         // Load more history items (append mode)

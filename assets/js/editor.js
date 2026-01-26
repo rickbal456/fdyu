@@ -1501,6 +1501,11 @@ class Editor {
         this.updateStatusBar();
 
         if (selectedNodes.length === 1) {
+            // Close gallery/history panels when opening properties panel
+            if (window.PanelsManager) {
+                window.PanelsManager.closeGallery?.();
+                window.PanelsManager.closeHistory?.();
+            }
             this.propertiesPanel?.open(selectedNodes[0]);
         } else if (selectedNodes.length === 0) {
             this.propertiesPanel?.close();
