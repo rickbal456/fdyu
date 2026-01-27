@@ -1,0 +1,44 @@
+{
+    "id": "aflow-i2v-kapi",
+    "name": "Image to Video KAPI",
+    "description": "Generate Video from Image using Sora 2 via KIE.AI API (10-15s)",
+    "version": "1.0.0",
+    "author": "AIKAFLOW Developer",
+    "icon": "clapperboard",
+    "color": "cyan",
+    "category": "generation",
+    "enabled": true,
+    "homepage": "https://aikademi.id",
+    "requires": {
+        "aikaflow": ">=1.0.0"
+    },
+    "nodeTypes": [
+        "aflow-i2v-kapi"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "kapi",
+        "endpoint": "https://api.kie.ai/api/v1/jobs/createTask"
+    },
+    "apiMapping": {
+        "request": {
+            "model": "sora-2-image-to-video",
+            "input": {
+                "prompt": "{{prompt}}",
+                "image_urls": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "{{aspect_ratio}}",
+                "n_frames": "{{n_frames}}",
+                "remove_watermark": true
+            },
+            "callBackUrl": "{{webhook_url}}"
+        },
+        "response": {
+            "taskId": "$.data.taskId"
+        }
+    },
+    "settings": {
+        "apiKey": ""
+    }
+}

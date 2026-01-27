@@ -138,7 +138,17 @@
         "portrait_9_16": "عمودي (9:16)",
         "motion_prompt_placeholder_rh": "صف الرسوم المتحركة والحركة والمشهد بالتفصيل (5-4000 حرف)...",
         "prompt_required_rh": "موجه الحركة مطلوب (5 أحرف على الأقل). قم بتوصيل عقدة إدخال النص أو أدخل موجهًا يدويًا.",
-        "prompt_too_long_rh": "موجه الحركة طويل جدًا (4000 حرف كحد أقصى)."
+        "prompt_too_long_rh": "موجه الحركة طويل جدًا (4000 حرف كحد أقصى).",
+        "image_to_video_kapi": "صورة إلى فيديو KAPI",
+        "generate_video_from_image_kapi": "إنشاء فيديو من صورة باستخدام Sora 2 عبر KIE.AI (10-15 ثانية)",
+        "your_api_key_kie": "مفتاح KIE.AI API الخاص بك",
+        "aspect_ratio_kapi": "نسبة العرض للارتفاع",
+        "landscape_kapi": "أفقي (عرضي)",
+        "portrait_kapi": "عمودي (طولي)",
+        "motion_prompt_placeholder_kapi": "صف الرسوم المتحركة والحركة والمشهد بالتفصيل (حتى 10000 حرف)...",
+        "api_key_required_kie": "مفتاح KIE.AI API مطلوب. اضبطه في الإعدادات ← التكاملات أو في حقل العقدة.",
+        "prompt_required_kapi": "موجه الحركة مطلوب. قم بتوصيل عقدة إدخال النص أو أدخل موجهًا يدويًا.",
+        "prompt_too_long_kapi": "موجه الحركة طويل جدًا (10000 حرف كحد أقصى)."
     },
     "toolbar": {
         "new": "جديد",
@@ -241,6 +251,10 @@
         "i2v_rh": {
             "name": "صورة إلى فيديو RH",
             "description": "إنشاء فيديو من صورة باستخدام RH Art S API"
+        },
+        "i2v_kapi": {
+            "name": "صورة إلى فيديو KAPI",
+            "description": "إنشاء فيديو من صورة باستخدام Sora 2 عبر KIE.AI"
         },
         "video_trim": {
             "name": "قص الفيديو",

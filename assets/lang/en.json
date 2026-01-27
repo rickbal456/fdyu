@@ -138,7 +138,17 @@
         "portrait_9_16": "Portrait (9:16)",
         "motion_prompt_placeholder_rh": "Describe the animation, motion and scene in detail (5-4000 characters)...",
         "prompt_required_rh": "Motion prompt is required (minimum 5 characters). Either connect a Text Input node or enter a prompt manually.",
-        "prompt_too_long_rh": "Motion prompt is too long (maximum 4000 characters)."
+        "prompt_too_long_rh": "Motion prompt is too long (maximum 4000 characters).",
+        "image_to_video_kapi": "Image to Video KAPI",
+        "generate_video_from_image_kapi": "Generate Video from Image using Sora 2 via KIE.AI (10-15s)",
+        "your_api_key_kie": "Your KIE.AI API key",
+        "aspect_ratio_kapi": "Aspect Ratio",
+        "landscape_kapi": "Landscape (Horizontal)",
+        "portrait_kapi": "Portrait (Vertical)",
+        "motion_prompt_placeholder_kapi": "Describe the animation, motion and scene in detail (up to 10000 characters)...",
+        "api_key_required_kie": "KIE.AI API Key is required. Set it in Settings → Integrations or in the node field.",
+        "prompt_required_kapi": "Motion prompt is required. Either connect a Text Input node or enter a prompt manually.",
+        "prompt_too_long_kapi": "Motion prompt is too long (maximum 10000 characters)."
     },
     "toolbar": {
         "new": "New",
@@ -241,6 +251,10 @@
         "i2v_rh": {
             "name": "Image to Video RH",
             "description": "Generate video from image using RH Art S API"
+        },
+        "i2v_kapi": {
+            "name": "Image to Video KAPI",
+            "description": "Generate video from image using Sora 2 via KIE.AI"
         },
         "video_trim": {
             "name": "Video Trim",

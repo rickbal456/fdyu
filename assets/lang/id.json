@@ -138,7 +138,17 @@
         "portrait_9_16": "Potret (9:16)",
         "motion_prompt_placeholder_rh": "Jelaskan animasi, gerakan dan adegan secara detail (5-4000 karakter)...",
         "prompt_required_rh": "Prompt gerakan diperlukan (minimal 5 karakter). Hubungkan node Input Teks atau masukkan prompt secara manual.",
-        "prompt_too_long_rh": "Prompt gerakan terlalu panjang (maksimal 4000 karakter)."
+        "prompt_too_long_rh": "Prompt gerakan terlalu panjang (maksimal 4000 karakter).",
+        "image_to_video_kapi": "Gambar ke Video KAPI",
+        "generate_video_from_image_kapi": "Buat Video dari Gambar menggunakan Sora 2 via KIE.AI (10-15 detik)",
+        "your_api_key_kie": "API key KIE.AI Anda",
+        "aspect_ratio_kapi": "Rasio Aspek",
+        "landscape_kapi": "Lanskap (Horizontal)",
+        "portrait_kapi": "Potret (Vertikal)",
+        "motion_prompt_placeholder_kapi": "Jelaskan animasi, gerakan dan adegan secara detail (hingga 10000 karakter)...",
+        "api_key_required_kie": "API Key KIE.AI diperlukan. Atur di Pengaturan → Integrasi atau di field node.",
+        "prompt_required_kapi": "Prompt gerakan diperlukan. Hubungkan node Input Teks atau masukkan prompt secara manual.",
+        "prompt_too_long_kapi": "Prompt gerakan terlalu panjang (maksimal 10000 karakter)."
     },
     "toolbar": {
         "new": "Baru",
@@ -241,6 +251,10 @@
         "i2v_rh": {
             "name": "Gambar ke Video RH",
             "description": "Buat video dari gambar menggunakan RH Art S API"
+        },
+        "i2v_kapi": {
+            "name": "Gambar ke Video KAPI",
+            "description": "Buat video dari gambar menggunakan Sora 2 via KIE.AI"
         },
         "video_trim": {
             "name": "Potong Video",

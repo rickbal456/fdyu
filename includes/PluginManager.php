@@ -490,6 +490,7 @@ class PluginManager
                 $baseUrl = defined('RUNNINGHUB_API_URL') ? RUNNINGHUB_API_URL : 'https://api.runninghub.ai';
                 break;
             case 'kie':
+            case 'kapi':
                 $baseUrl = defined('KIE_API_URL') ? KIE_API_URL : 'https://api.kie.ai';
                 break;
             case 'sapi':
