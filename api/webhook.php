@@ -157,11 +157,41 @@ try {
             }
             break;
 
+        case 'kapi':
         case 'kie':
-            $taskId = $payload['task_id'] ?? null;
-            $status = $payload['status'] ?? null;
-            $resultUrl = $payload['audio_url'] ?? $payload['result_url'] ?? null;
-            $error = $payload['error_message'] ?? null;
+            // KIE.AI webhook format:
+            // {
+            //   "code": 200,
+            //   "data": {
+            //     "taskId": "...",
+            //     "state": "success" | "fail" | "waiting",
+            //     "resultJson": "{\"resultUrls\":[\"https://...\"]}"
+            //   }
+            // }
+            $data = $payload['data'] ?? [];
+            $taskId = $data['taskId'] ?? null;
+
+            // Map KIE.AI state to our internal status
+            $kieState = $data['state'] ?? '';
+            if ($kieState === 'success') {
+                $status = 'completed';
+            } elseif ($kieState === 'fail') {
+                $status = 'failed';
+                $error = $data['failMsg'] ?? 'Task failed';
+            } else {
+                $status = 'processing';
+            }
+
+            // Extract result URL from resultJson
+            if (isset($data['resultJson'])) {
+                $resultData = is_string($data['resultJson'])
+                    ? json_decode($data['resultJson'], true)
+                    : $data['resultJson'];
+
+                if (isset($resultData['resultUrls']) && is_array($resultData['resultUrls']) && count($resultData['resultUrls']) > 0) {
+                    $resultUrl = $resultData['resultUrls'][0];
+                }
+            }
             break;
 
         case 'jcut':
