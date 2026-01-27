@@ -116,11 +116,15 @@
             // Use connected text input or fall back to node's prompt field
             const finalPrompt = (inputs.text && inputs.text.trim()) ? inputs.text.trim() : prompt;
 
-            // Determine API key source
-            const userProvidedKey = apiKey || getUserApiKey();
+            // Check if admin has configured the key in Settings → Integrations
             const adminHasKey = hasApiKeyConfigured();
 
-            if (!userProvidedKey && !adminHasKey) {
+            // API key priority: Admin key > User's node key
+            // If admin configured key, we DON'T send apiKey (server will use admin key)
+            // If admin didn't configure, check if user provided a key
+            const userKey = apiKey && apiKey.trim() ? apiKey.trim() : '';
+
+            if (!adminHasKey && !userKey) {
                 throw new Error(window.t ? window.t('generation.api_key_required_kie') : 'KIE.AI API Key is required. Set it in Settings → Integrations or in the node field.');
             }
 
@@ -134,16 +138,23 @@
 
             // Return payload for server-side execution
             // Server will resolve endpoint and provider config from plugin.json
+            // Only include apiKey if user explicitly provided one - otherwise server will use admin key
+            const payload = {
+                image: imageUrl,
+                aspect_ratio: aspect_ratio,
+                prompt: finalPrompt,
+                n_frames: String(n_frames)
+            };
+
+            // Only add apiKey if admin hasn't configured one
+            // Admin key takes precedence over user's key
+            if (!adminHasKey && userKey) {
+                payload.apiKey = userKey;
+            }
+
             return {
                 action: PLUGIN_ID,
-                payload: {
-                    apiKey: userProvidedKey,
-                    useAdminKey: !userProvidedKey && adminHasKey,
-                    image: imageUrl,
-                    aspect_ratio: aspect_ratio,
-                    prompt: finalPrompt,
-                    n_frames: String(n_frames)
-                }
+                payload: payload
             };
         }
     });
