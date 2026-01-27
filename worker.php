@@ -181,6 +181,27 @@ function processNodeExecution(array $payload): void
         throw new Exception("Node task not found: {$taskId}");
     }
 
+    // Prevent duplicate execution - skip if already has external task ID or is in final state
+    if (!empty($nodeTask['external_task_id'])) {
+        echo "[" . date('Y-m-d H:i:s') . "] Skipping node {$nodeId} - already has external_task_id: {$nodeTask['external_task_id']}\n";
+        return;
+    }
+
+    if (in_array($nodeTask['status'], ['completed', 'failed'])) {
+        echo "[" . date('Y-m-d H:i:s') . "] Skipping node {$nodeId} - already in final state: {$nodeTask['status']}\n";
+        return;
+    }
+
+    // Also check if node is already processing (to prevent race conditions)
+    if ($nodeTask['status'] === 'processing' && !empty($nodeTask['started_at'])) {
+        $startedAt = strtotime($nodeTask['started_at']);
+        // If started less than 5 minutes ago, skip (might still be running)
+        if (time() - $startedAt < 300) {
+            echo "[" . date('Y-m-d H:i:s') . "] Skipping node {$nodeId} - already processing (started at {$nodeTask['started_at']})\n";
+            return;
+        }
+    }
+
     // Update status to processing
     Database::update(
         'node_tasks',
@@ -552,6 +573,17 @@ function queueNextPendingTask(int $executionId): void
             // Finalize execution
             finalizeExecution($executionId);
         }
+        return;
+    }
+
+    // Check if task is already queued to prevent duplicates
+    $existingQueue = Database::fetchOne(
+        "SELECT id FROM task_queue WHERE payload LIKE ? AND status IN ('pending', 'processing')",
+        ['%"task_id":' . $task['id'] . '%']
+    );
+
+    if ($existingQueue) {
+        echo "[" . date('Y-m-d H:i:s') . "] Task {$task['id']} already in queue, skipping\n";
         return;
     }
 

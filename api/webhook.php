@@ -500,6 +500,17 @@ function queueNextTask(int $executionId): void
         return;
     }
 
+    // Check if task is already queued in task_queue to prevent duplicates
+    $existingQueue = Database::fetchOne(
+        "SELECT id FROM task_queue WHERE payload LIKE ? AND status IN ('pending', 'processing')",
+        ['%"task_id":' . $task['id'] . '%']
+    );
+
+    if ($existingQueue) {
+        error_log("[queueNextTask] Task {$task['id']} already in queue, skipping");
+        return;
+    }
+
     // Add to queue
     Database::insert('task_queue', [
         'task_type' => 'node_execution',
