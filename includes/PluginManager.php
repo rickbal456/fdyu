@@ -229,6 +229,9 @@ class PluginManager
         $debugLog = dirname(__DIR__) . '/logs/worker_debug.log';
         $ts = date('Y-m-d H:i:s');
         @file_put_contents($debugLog, "[$ts] [executeApiNode] START for: $nodeType\n", FILE_APPEND);
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] InputData keys: " . implode(', ', array_keys($inputData)) . "\n", FILE_APPEND);
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] InputData text: " . (isset($inputData['text']) ? substr($inputData['text'], 0, 100) . '...' : '(not set)') . "\n", FILE_APPEND);
+        @file_put_contents($debugLog, "[$ts] [executeApiNode] InputData prompt: " . (isset($inputData['prompt']) ? substr($inputData['prompt'], 0, 100) . '...' : '(not set)') . "\n", FILE_APPEND);
 
         // Only apiConfig is required - apiMapping is optional
         if (!isset($definition['apiConfig'])) {
