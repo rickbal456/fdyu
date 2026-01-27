@@ -528,13 +528,17 @@ class PluginManager
 
         // Use httpRequest helper if available
         if (function_exists('httpRequest')) {
+            // Remove apiKey from body - it's already in the Authorization header
+            $bodyData = $data;
+            unset($bodyData['apiKey']);
+
             $response = httpRequest($url, [
                 'method' => 'POST',
                 'headers' => [
                     $headerName => $headerValuePrefix . $apiKey,
                     'Content-Type' => 'application/json'
                 ],
-                'body' => $data,
+                'body' => $bodyData,
                 'timeout' => 120
             ]);
 

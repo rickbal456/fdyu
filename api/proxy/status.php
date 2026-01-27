@@ -45,6 +45,7 @@ try {
             break;
 
         case 'kie':
+        case 'kapi':
             $baseUrl = defined('KIE_API_URL') ? KIE_API_URL : 'https://api.kie.ai';
             break;
 
