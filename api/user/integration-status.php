@@ -52,7 +52,8 @@ try {
         'rhub' => 'runninghub',
         'jcut' => 'jsoncut',
         'llm' => 'openrouter',
-        'sapi' => 'postforme'
+        'sapi' => 'postforme',
+        'kapi' => 'kapi'  // KIE.AI API (no legacy key)
     ];
 
     foreach ($providerMapping as $newKey => $oldKey) {

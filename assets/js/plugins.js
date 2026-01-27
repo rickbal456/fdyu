@@ -288,7 +288,8 @@ class PluginManager {
             'rhub': { name: 'Generation API', icon: 'cpu', color: 'purple', placeholder: 'Enter API key' },
             'jcut': { name: 'Processing API', icon: 'scissors', color: 'blue', placeholder: 'Enter API key' },
             'llm': { name: 'LLM API', icon: 'bot', color: 'pink', placeholder: 'Enter API key' },
-            'sapi': { name: 'Social API', icon: 'share-2', color: 'pink', placeholder: 'Enter API key' }
+            'sapi': { name: 'Social API', icon: 'share-2', color: 'pink', placeholder: 'Enter API key' },
+            'kapi': { name: 'Video Generation API', icon: 'video', color: 'cyan', placeholder: 'Enter API key' }
         };
 
         // Scan plugins for providers
