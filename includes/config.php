@@ -187,8 +187,9 @@ if (APP_DEBUG) {
 $skipLicenseCheck = defined('SKIP_LICENSE_CHECK') && SKIP_LICENSE_CHECK;
 $isInstaller = basename($_SERVER['SCRIPT_NAME'] ?? '') === 'install.php';
 $isApi = strpos($_SERVER['SCRIPT_NAME'] ?? '', '/api/') !== false;
+$isCli = php_sapi_name() === 'cli' || defined('STDIN'); // Skip for CLI (worker, cron)
 
-if (!$skipLicenseCheck && !$isInstaller && !$isApi && class_exists('Database')) {
+if (!$skipLicenseCheck && !$isInstaller && !$isApi && !$isCli && class_exists('Database')) {
     require_once INCLUDES_PATH . '/LicenseVerifier.php';
 
     // Verify license (fast local check)
