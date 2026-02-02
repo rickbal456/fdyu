@@ -165,8 +165,8 @@ if (APP_DEBUG) {
     ini_set('error_log', LOGS_PATH . '/php_errors.log');
 }
 
-// Timezone
-date_default_timezone_set('UTC');
+// Timezone - must match server/database timezone
+date_default_timezone_set('Asia/Jakarta');
 
 // Debug output (only in debug mode)
 if (APP_DEBUG) {
