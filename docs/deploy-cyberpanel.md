@@ -194,83 +194,334 @@ curl -I https://yourdomain.com
 
 ## ⏰ Langkah 7: Setup Cron Job
 
-Cron job diperlukan untuk menjalankan background tasks.
+Cron job diperlukan untuk menjalankan background tasks secara otomatis. AIKAFLOW memiliki 2 cron job yang perlu disetup.
 
-### Via CyberPanel
+### 7.1 Akses Halaman Cron Job
 
-1. Buka **Websites** → **List Websites** → Pilih domain → **Cron Jobs**
-2. Klik **Add New Cron Job**
-3. Isi:
-   - **Command**:
-     ```
-     /usr/local/lsws/lsphp81/bin/php /home/yourdomain.com/public_html/cron.php >> /home/yourdomain.com/public_html/logs/cron.log 2>&1
-     ```
-   - **Interval**: Every minute (`* * * * *`)
-4. Klik **Add Cron Job**
+1. Login ke CyberPanel: `https://your-server-ip:8090`
+2. Buka **Websites** → **List Websites**
+3. Klik nama domain Anda (contoh: `apps.vandal.id`)
+4. Klik tombol **Cron Jobs**
+5. Klik tab **TAMBAH CRON**
 
-### Via SSH (Alternative)
+### 7.2 Format Field Cron di CyberPanel
+
+| Field                   | Deskripsi               | Nilai                                |
+| ----------------------- | ----------------------- | ------------------------------------ |
+| **Pre-defined**         | Pilih jadwal preset     | Pilih manual atau preset             |
+| **Menit**               | Menit ke-berapa (0-59)  | `*` = setiap menit, `0` = menit ke-0 |
+| **Jam**                 | Jam ke-berapa (0-23)    | `*` = setiap jam, `3` = jam 3 pagi   |
+| **Tanggal dalam bulan** | Tanggal (1-31)          | `*` = setiap hari                    |
+| **Bulan**               | Bulan (1-12)            | `*` = setiap bulan                   |
+| **Hari dalam pekan**    | Hari (0-7, 0/7=Minggu)  | `*` = setiap hari                    |
+| **Perintah**            | Command yang dijalankan | Path lengkap ke script               |
+
+---
+
+### 7.3 Cron Job 1: System Cleanup (Harian)
+
+Membersihkan workflow executions, task queue, dan log lama.
+
+**Isi Form:**
+
+| Field                   | Nilai                         |
+| ----------------------- | ----------------------------- |
+| **Pre-defined**         | `Setiap hari` atau isi manual |
+| **Menit**               | `0`                           |
+| **Jam**                 | `3`                           |
+| **Tanggal dalam bulan** | `*`                           |
+| **Bulan**               | `*`                           |
+| **Hari dalam pekan**    | `*`                           |
+| **Perintah**            | _(lihat di bawah)_            |
+
+**Perintah (copy paste ini):**
+
+```bash
+/usr/local/lsws/lsphp81/bin/php /home/yourdomain.com/public_html/cron/cleanup.php >> /home/yourdomain.com/public_html/logs/cleanup.log 2>&1
+```
+
+> **Jadwal:** Berjalan setiap hari jam 03:00 pagi
+
+Klik tombol **Tambah cron** untuk menyimpan.
+
+---
+
+### 7.4 Cron Job 2: Content Cleanup (Harian)
+
+Membersihkan konten user yang sudah expired dari database dan storage.
+
+**Isi Form:**
+
+| Field                   | Nilai                         |
+| ----------------------- | ----------------------------- |
+| **Pre-defined**         | `Setiap hari` atau isi manual |
+| **Menit**               | `0`                           |
+| **Jam**                 | `2`                           |
+| **Tanggal dalam bulan** | `*`                           |
+| **Bulan**               | `*`                           |
+| **Hari dalam pekan**    | `*`                           |
+| **Perintah**            | _(lihat di bawah)_            |
+
+**Perintah (copy paste ini):**
+
+```bash
+/usr/local/lsws/lsphp81/bin/php /home/yourdomain.com/public_html/api/cron/cleanup-expired-content.php >> /home/yourdomain.com/public_html/logs/content-cleanup.log 2>&1
+```
+
+> **Jadwal:** Berjalan setiap hari jam 02:00 pagi
+
+Klik tombol **Tambah cron** untuk menyimpan.
+
+---
+
+### 7.5 Contoh Jadwal Lainnya
+
+| Jadwal                 | Menit | Jam | Tgl | Bulan | Hari |
+| ---------------------- | ----- | --- | --- | ----- | ---- |
+| Setiap menit           | `*`   | `*` | `*` | `*`   | `*`  |
+| Setiap 5 menit         | `*/5` | `*` | `*` | `*`   | `*`  |
+| Setiap jam             | `0`   | `*` | `*` | `*`   | `*`  |
+| Setiap hari jam 3 pagi | `0`   | `3` | `*` | `*`   | `*`  |
+| Setiap Minggu          | `0`   | `0` | `*` | `*`   | `0`  |
+| Setiap tanggal 1       | `0`   | `0` | `1` | `*`   | `*`  |
+
+---
+
+### 7.6 Verifikasi Cron Job
+
+Setelah menambahkan cron job:
+
+1. Klik tab **FETCH CURRENT CRON JOBS** untuk melihat daftar cron yang sudah ditambahkan
+2. Tunggu beberapa waktu, lalu cek log file:
+   ```bash
+   # Via SSH
+   tail -f /home/yourdomain.com/public_html/logs/cleanup.log
+   tail -f /home/yourdomain.com/public_html/logs/content-cleanup.log
+   ```
+
+---
+
+### 7.7 Via SSH (Alternative)
+
+Jika ingin setup via terminal SSH:
 
 ```bash
 # Edit crontab
 crontab -e
 
-# Tambahkan baris berikut
-* * * * * /usr/local/lsws/lsphp81/bin/php /home/yourdomain.com/public_html/cron.php >> /home/yourdomain.com/public_html/logs/cron.log 2>&1
+# Tambahkan baris berikut:
+
+# System Cleanup - setiap hari jam 3 pagi
+0 3 * * * /usr/local/lsws/lsphp81/bin/php /home/yourdomain.com/public_html/cron/cleanup.php >> /home/yourdomain.com/public_html/logs/cleanup.log 2>&1
+
+# Content Cleanup - setiap hari jam 2 pagi
+0 2 * * * /usr/local/lsws/lsphp81/bin/php /home/yourdomain.com/public_html/api/cron/cleanup-expired-content.php >> /home/yourdomain.com/public_html/logs/content-cleanup.log 2>&1
 ```
+
+Simpan dan keluar (`Ctrl+X`, `Y`, `Enter` jika menggunakan nano).
 
 > [!NOTE]
 > Sesuaikan path PHP (`lsphp81`) dengan versi PHP yang diinstall di CyberPanel.
 > Cek dengan: `ls /usr/local/lsws/`
 
+> [!IMPORTANT]
+> Ganti `yourdomain.com` dengan nama domain Anda yang sebenarnya!
+
 ---
 
-## 🔄 Langkah 8: Setup Background Worker
+## 🔄 Langkah 8: Setup PHP Worker Daemon
 
-Worker diperlukan untuk memproses workflow secara asynchronous.
+Worker daemon diperlukan untuk memproses workflow dan task queue secara background. Worker akan berjalan terus-menerus untuk memproses antrian task.
 
-### 8.1 Buat Supervisor Config
+### 8.1 Apa itu Worker Daemon?
+
+| Aspek       | Penjelasan                                                 |
+| ----------- | ---------------------------------------------------------- |
+| **Fungsi**  | Memproses task queue (workflow execution, node processing) |
+| **Mode**    | Berjalan terus-menerus (daemon) di background              |
+| **File**    | `worker.php --daemon`                                      |
+| **Restart** | Otomatis restart jika crash (via Supervisor)               |
+
+---
+
+### 8.2 Install Supervisor
+
+Supervisor adalah process manager yang menjaga worker tetap berjalan.
 
 ```bash
-# Buat file konfigurasi supervisor
+# Login SSH ke server
+ssh root@your-server-ip
+
+# Install Supervisor (Ubuntu/Debian)
+apt update
+apt install supervisor -y
+
+# Atau untuk CentOS/RHEL
+yum install supervisor -y
+
+# Start dan enable supervisor
+systemctl enable supervisor
+systemctl start supervisor
+
+# Cek status
+systemctl status supervisor
+```
+
+---
+
+### 8.3 Buat Konfigurasi Supervisor
+
+```bash
+# Buat file konfigurasi untuk AIKAFLOW worker
 nano /etc/supervisor/conf.d/aikaflow-worker.conf
 ```
 
-### 8.2 Isi Konfigurasi
+**Isi dengan konfigurasi berikut:**
 
 ```ini
 [program:aikaflow-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=/usr/local/lsws/lsphp81/bin/php /home/yourdomain.com/public_html/worker.php
+command=/usr/local/lsws/lsphp81/bin/php /home/yourdomain.com/public_html/worker.php --daemon
+directory=/home/yourdomain.com/public_html
 autostart=true
 autorestart=true
+startsecs=1
+startretries=3
 user=yourdomain.yourdomain
 numprocs=1
 redirect_stderr=true
 stdout_logfile=/home/yourdomain.com/public_html/logs/worker.log
-stopwaitsecs=3600
+stdout_logfile_maxbytes=10MB
+stdout_logfile_backups=5
+stopwaitsecs=60
+stopsignal=TERM
 ```
 
-### 8.3 Aktifkan Worker
+> [!IMPORTANT]
+> **Ganti nilai berikut sesuai domain Anda:**
+>
+> - `yourdomain.com` → nama domain Anda (contoh: `apps.vandal.id`)
+> - `lsphp81` → versi PHP yang terinstall (cek: `ls /usr/local/lsws/`)
+
+**Simpan file:** `Ctrl+X`, lalu `Y`, lalu `Enter`
+
+---
+
+### 8.4 Penjelasan Konfigurasi
+
+| Parameter        | Nilai                     | Penjelasan                              |
+| ---------------- | ------------------------- | --------------------------------------- |
+| `command`        | `php worker.php --daemon` | Menjalankan worker dalam mode daemon    |
+| `directory`      | `/home/.../public_html`   | Working directory                       |
+| `autostart`      | `true`                    | Otomatis start saat server boot         |
+| `autorestart`    | `true`                    | Otomatis restart jika worker crash      |
+| `startsecs`      | `1`                       | Worker dianggap running setelah 1 detik |
+| `startretries`   | `3`                       | Coba restart maksimal 3x jika gagal     |
+| `user`           | `yourdomain.yourdomain`   | User yang menjalankan worker            |
+| `numprocs`       | `1`                       | Jumlah worker processes                 |
+| `stdout_logfile` | `.../logs/worker.log`     | Lokasi log file                         |
+| `stopwaitsecs`   | `60`                      | Waktu tunggu graceful shutdown          |
+
+---
+
+### 8.5 Aktifkan Worker
 
 ```bash
-# Reload supervisor
+# Reload konfigurasi supervisor
 supervisorctl reread
+
+# Update dengan konfigurasi baru
 supervisorctl update
+
+# Start worker
 supervisorctl start aikaflow-worker:*
 
-# Cek status
+# Cek status worker
 supervisorctl status
 ```
 
-### Alternative: Menggunakan cron-worker.sh
+**Output yang diharapkan:**
+
+```
+aikaflow-worker:aikaflow-worker_00   RUNNING   pid 12345, uptime 0:00:05
+```
+
+---
+
+### 8.6 Perintah Supervisor yang Berguna
+
+| Perintah                                                   | Fungsi                    |
+| ---------------------------------------------------------- | ------------------------- |
+| `supervisorctl status`                                     | Lihat status semua worker |
+| `supervisorctl start aikaflow-worker:*`                    | Start worker              |
+| `supervisorctl stop aikaflow-worker:*`                     | Stop worker               |
+| `supervisorctl restart aikaflow-worker:*`                  | Restart worker            |
+| `supervisorctl tail -f aikaflow-worker:aikaflow-worker_00` | Lihat log real-time       |
+| `supervisorctl reload`                                     | Reload semua konfigurasi  |
+
+---
+
+### 8.7 Verifikasi Worker Berjalan
 
 ```bash
-# Set executable
-chmod +x /home/yourdomain.com/public_html/cron-worker.sh
+# Cek log worker
+tail -f /home/yourdomain.com/public_html/logs/worker.log
 
-# Jalankan
-cd /home/yourdomain.com/public_html
-./cron-worker.sh start
+# Contoh output yang benar:
+# [2026-02-02 12:00:00] Worker started (ID: server_12345)
+# [2026-02-02 12:00:05] No pending tasks
+# [2026-02-02 12:00:10] Processing task #1: node_execution
+# [2026-02-02 12:00:15] Task #1 completed
+```
+
+---
+
+### 8.8 Alternatif: Tanpa Supervisor (Via Cron)
+
+Jika tidak bisa install Supervisor, gunakan cron untuk menjaga worker tetap berjalan:
+
+**Tambahkan cron job baru di CyberPanel:**
+
+| Field                   | Nilai              |
+| ----------------------- | ------------------ |
+| **Pre-defined**         | `Setiap menit`     |
+| **Menit**               | `*`                |
+| **Jam**                 | `*`                |
+| **Tanggal dalam bulan** | `*`                |
+| **Bulan**               | `*`                |
+| **Hari dalam pekan**    | `*`                |
+| **Perintah**            | _(lihat di bawah)_ |
+
+**Perintah:**
+
+```bash
+/usr/local/lsws/lsphp81/bin/php /home/yourdomain.com/public_html/worker.php >> /home/yourdomain.com/public_html/logs/worker.log 2>&1
+```
+
+> [!NOTE]
+> Metode cron akan menjalankan worker setiap menit.
+> Worker akan proses semua pending tasks lalu berhenti.
+> Ini kurang ideal dibanding Supervisor, tapi tetap berfungsi.
+
+---
+
+### 8.9 Troubleshooting Worker
+
+| Masalah                   | Solusi                                                                                             |
+| ------------------------- | -------------------------------------------------------------------------------------------------- |
+| Worker tidak start        | Cek log: `tail -100 /var/log/supervisor/supervisord.log`                                           |
+| Permission denied         | Set owner: `chown -R yourdomain.yourdomain:yourdomain.yourdomain /home/yourdomain.com/public_html` |
+| PHP path tidak ditemukan  | Cek path: `ls /usr/local/lsws/` dan sesuaikan                                                      |
+| Worker crash terus        | Cek log worker: `tail -100 /home/.../logs/worker.log`                                              |
+| Database connection error | Pastikan `.env` sudah benar                                                                        |
+
+**Reset worker jika bermasalah:**
+
+```bash
+supervisorctl stop aikaflow-worker:*
+supervisorctl reread
+supervisorctl update
+supervisorctl start aikaflow-worker:*
 ```
 
 ---

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AIKAFLOW Configuration
  * 
@@ -117,6 +118,7 @@ define('LOGIN_LOCKOUT_TIME', 900); // 15 minutes
 define('RUNNINGHUB_API_URL', 'https://api.runninghub.ai');
 define('KIE_API_URL', 'https://api.kie.ai');
 define('JSONCUT_API_URL', 'https://api.jsoncut.com');
+define('POSTFORME_API_URL', 'https://api.postforme.dev');
 
 // BunnyCDN configuration (optional - configure via .env)
 define('BUNNY_STORAGE_ZONE', env('BUNNY_STORAGE_ZONE', ''));
@@ -193,7 +195,7 @@ if (!$skipLicenseCheck && !$isInstaller && !$isApi && class_exists('Database')) 
     if (!isLicenseValid()) {
         // License is invalid - show error page
         http_response_code(403);
-        ?>
+?>
         <!DOCTYPE html>
         <html lang="en">
 
@@ -225,7 +227,7 @@ if (!$skipLicenseCheck && !$isInstaller && !$isApi && class_exists('Database')) 
         </body>
 
         </html>
-        <?php
+<?php
         exit;
     }
 }
