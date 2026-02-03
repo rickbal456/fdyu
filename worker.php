@@ -474,12 +474,27 @@ function processPollApiStatus(array $payload): void
         // Task completed successfully
         $resultUrl = $result['resultUrl'] ?? null;
 
-        // Upload to CDN if needed
+        // Upload to CDN if needed (use uploadFromUrl for HTTP URLs)
         if ($resultUrl) {
-            $filename = 'video_' . time() . '_' . uniqid() . '.mp4';
-            $uploadedUrl = uploadDataUrlToCDN($resultUrl, $filename);
-            if ($uploadedUrl) {
-                $resultUrl = $uploadedUrl;
+            $debugLog = __DIR__ . '/logs/worker_debug.log';
+            $ts = date('Y-m-d H:i:s');
+            @file_put_contents($debugLog, "[$ts] [Poll] Uploading result to CDN: $resultUrl\n", FILE_APPEND);
+
+            // Determine file extension from URL
+            $extension = pathinfo(parse_url($resultUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'mp4';
+            $filename = 'video_' . time() . '_' . uniqid() . '.' . $extension;
+
+            // Use BunnyCDN plugin to upload from URL
+            if (class_exists('BunnyCDNStorageHandler') && BunnyCDNStorageHandler::isConfigured()) {
+                $uploadedUrl = BunnyCDNStorageHandler::uploadFromUrl($resultUrl, $filename);
+                if ($uploadedUrl) {
+                    @file_put_contents($debugLog, "[$ts] [Poll] CDN upload success: $uploadedUrl\n", FILE_APPEND);
+                    $resultUrl = $uploadedUrl;
+                } else {
+                    @file_put_contents($debugLog, "[$ts] [Poll] CDN upload failed, using original URL\n", FILE_APPEND);
+                }
+            } else {
+                @file_put_contents($debugLog, "[$ts] [Poll] BunnyCDN not configured, using original URL\n", FILE_APPEND);
             }
         }
 
