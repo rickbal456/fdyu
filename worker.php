@@ -588,8 +588,8 @@ function queryExternalTaskStatus(string $provider, string $taskId, string $apiKe
 
     switch ($provider) {
         case 'rhub':
-            // RunningHub task query endpoint - matches the API pattern
-            $url = 'https://www.runninghub.ai/openapi/v2/rhart-video-s/query';
+            // RunningHub task query endpoint - from official docs: https://www.runninghub.ai/openapi/v2/query
+            $url = 'https://www.runninghub.ai/openapi/v2/query';
             @file_put_contents($debugLog, "[$ts] [QueryStatus] Calling URL: $url with taskId: $taskId\n", FILE_APPEND);
 
             $ch = curl_init($url);
