@@ -688,13 +688,13 @@
                 const results = response.allResults || [];
                 const nodeStatuses = response.nodeStatuses || [];
 
-                // Get results from nodeStatuses if allResults is empty
-                let allResults = results.length > 0 ? results :
-                    nodeStatuses.filter(ns => ns.resultUrl).map(ns => ({
-                        node_id: ns.nodeId,
-                        node_type: ns.nodeType,
-                        url: ns.resultUrl
-                    }));
+                // Always create results from nodeStatuses for proper structure
+                // allResults from API may contain raw URL strings without node_type info
+                let allResults = nodeStatuses.filter(ns => ns.resultUrl).map(ns => ({
+                    node_id: ns.nodeId,
+                    node_type: ns.nodeType,
+                    url: ns.resultUrl
+                }));
 
                 // Filter out input and output nodes (they are not generated results)
                 // Only show results from generation and editing category nodes
