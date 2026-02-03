@@ -1733,16 +1733,22 @@ class CanvasManager {
      */
     getInputNodePreviewValue(node, definition) {
         const source = node.data?.source || 'upload';
+        let url = null;
 
         if (source === 'upload' && node.data?.file) {
             // For uploaded files, prefer server URL over dataUrl (to avoid loading large base64)
-            return node.data.file.url || node.data.file.previewUrl || node.data.file.dataUrl;
+            url = node.data.file.url || node.data.file.previewUrl || node.data.file.dataUrl;
         } else if (source === 'url' && node.data?.url) {
             // For URL input
-            return node.data.url;
+            url = node.data.url;
         }
 
-        return null;
+        // Ensure https:// protocol for CDN URLs (not data: URLs)
+        if (url && !url.startsWith('data:') && !/^https?:\/\//i.test(url)) {
+            url = 'https://' + url;
+        }
+
+        return url;
     }
 
 

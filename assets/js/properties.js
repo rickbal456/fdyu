@@ -750,6 +750,11 @@ class PropertiesPanel {
 
     // Get preview URL (from dataUrl, url or CDN)
     let previewUrl = value?.dataUrl || value?.previewUrl || value?.url || "";
+    
+    // Ensure https:// protocol for CDN URLs
+    if (previewUrl && !previewUrl.startsWith('data:') && !/^https?:\/\//i.test(previewUrl)) {
+      previewUrl = 'https://' + previewUrl;
+    }
 
     // Build preview HTML based on media type
     let previewHtml = "";
