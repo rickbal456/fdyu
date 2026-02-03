@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AIKAFLOW - Background Task Worker
  * 
@@ -78,19 +79,16 @@ do {
                 processTask($task);
                 markTaskCompleted($task['id']);
                 echo "[" . date('Y-m-d H:i:s') . "] Task #{$task['id']} completed\n";
-
             } catch (Exception $e) {
                 echo "[" . date('Y-m-d H:i:s') . "] Task #{$task['id']} failed: {$e->getMessage()}\n";
                 markTaskFailed($task['id'], $e->getMessage());
             }
         }
-
     } catch (Exception $e) {
         echo "[" . date('Y-m-d H:i:s') . "] Worker error: {$e->getMessage()}\n";
         error_log('Worker error: ' . $e->getMessage());
         sleep($workerConfig['sleep_interval']);
     }
-
 } while ($isDaemon && $running);
 
 echo "[" . date('Y-m-d H:i:s') . "] Worker stopped\n";
@@ -154,6 +152,10 @@ function processTask(array $task): void
     switch ($task['task_type']) {
         case 'node_execution':
             processNodeExecution($payload);
+            break;
+
+        case 'poll_api_status':
+            processPollApiStatus($payload);
             break;
 
         default:
@@ -297,26 +299,255 @@ function processNodeExecution(array $payload): void
             ['id' => $taskId]
         );
 
-        // If async task, wait for webhook
+        // If async task, queue polling (webhooks are unreliable)
         // Exception: social-post nodes complete immediately since Postforme doesn't send webhooks for post results
         if (isset($result['taskId']) && !isset($result['resultUrl']) && $nodeType !== 'social-post') {
-            // Task is async - will be completed via webhook
+            // Task is async - start polling for status
             Database::update(
                 'node_tasks',
                 ['status' => 'processing'],
                 'id = :id',
                 ['id' => $taskId]
             );
+
+            // Queue polling task
+            Database::insert('task_queue', [
+                'task_type' => 'poll_api_status',
+                'payload' => json_encode([
+                    'node_task_id' => $taskId,
+                    'execution_id' => $executionId,
+                    'external_task_id' => $result['taskId'],
+                    'provider' => $inputData['_provider'] ?? 'rhub',
+                    'api_key' => $inputData['_resolved_api_key'] ?? null,
+                    'poll_count' => 0,
+                    'max_polls' => 60  // 10 minutes max (60 * 10s)
+                ]),
+                'status' => 'pending',
+                'scheduled_at' => date('Y-m-d H:i:s', strtotime('+10 seconds')),
+                'priority' => 5,
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+
+            echo "[" . date('Y-m-d H:i:s') . "] Queued polling task for external_task_id: {$result['taskId']}\n";
             return;
         }
 
         // Queue next task
         queueNextPendingTask($executionId);
-
     } else {
         throw new Exception($result['error'] ?? 'Node execution failed');
     }
 }
+
+/**
+ * Process poll API status task
+ * Polls external API to check task status and update workflow
+ */
+function processPollApiStatus(array $payload): void
+{
+    $nodeTaskId = $payload['node_task_id'];
+    $executionId = $payload['execution_id'];
+    $externalTaskId = $payload['external_task_id'];
+    $provider = $payload['provider'] ?? 'rhub';
+    $apiKey = $payload['api_key'] ?? null;
+    $pollCount = $payload['poll_count'] ?? 0;
+    $maxPolls = $payload['max_polls'] ?? 60;
+
+    $debugLog = __DIR__ . '/logs/worker_debug.log';
+    $ts = date('Y-m-d H:i:s');
+    @file_put_contents($debugLog, "[$ts] [Poll] Checking status for task: $externalTaskId (poll $pollCount/$maxPolls)\n", FILE_APPEND);
+
+    // Check if node task still exists and is processing
+    $nodeTask = Database::fetchOne("SELECT * FROM node_tasks WHERE id = ?", [$nodeTaskId]);
+    if (!$nodeTask) {
+        @file_put_contents($debugLog, "[$ts] [Poll] Node task not found, skipping\n", FILE_APPEND);
+        return;
+    }
+
+    if ($nodeTask['status'] !== 'processing') {
+        @file_put_contents($debugLog, "[$ts] [Poll] Node task already {$nodeTask['status']}, skipping\n", FILE_APPEND);
+        return;
+    }
+
+    // Get API key if not provided
+    if (!$apiKey) {
+        $apiKey = PluginManager::resolveApiKey($provider);
+    }
+
+    if (!$apiKey) {
+        throw new Exception("No API key available for provider: $provider");
+    }
+
+    // Query task status from provider
+    $result = queryExternalTaskStatus($provider, $externalTaskId, $apiKey);
+    @file_put_contents($debugLog, "[$ts] [Poll] Query result: " . json_encode($result) . "\n", FILE_APPEND);
+
+    if ($result['status'] === 'SUCCESS' || $result['status'] === 'completed') {
+        // Task completed successfully
+        $resultUrl = $result['resultUrl'] ?? null;
+
+        // Upload to CDN if needed
+        if ($resultUrl) {
+            $filename = 'video_' . time() . '_' . uniqid() . '.mp4';
+            $uploadedUrl = uploadDataUrlToCDN($resultUrl, $filename);
+            if ($uploadedUrl) {
+                $resultUrl = $uploadedUrl;
+            }
+        }
+
+        Database::update(
+            'node_tasks',
+            [
+                'status' => 'completed',
+                'result_url' => $resultUrl,
+                'output_data' => json_encode(['video' => $resultUrl]),
+                'completed_at' => date('Y-m-d H:i:s')
+            ],
+            'id = :id',
+            ['id' => $nodeTaskId]
+        );
+
+        echo "[" . date('Y-m-d H:i:s') . "] Poll: Task $externalTaskId completed with result: $resultUrl\n";
+
+        // Queue next task
+        queueNextPendingTask($executionId);
+    } elseif ($result['status'] === 'FAILED' || $result['status'] === 'failed') {
+        // Task failed
+        $error = $result['error'] ?? 'External API task failed';
+
+        Database::update(
+            'node_tasks',
+            [
+                'status' => 'failed',
+                'error_message' => $error,
+                'completed_at' => date('Y-m-d H:i:s')
+            ],
+            'id = :id',
+            ['id' => $nodeTaskId]
+        );
+
+        Database::update(
+            'workflow_executions',
+            [
+                'status' => 'failed',
+                'error_message' => $error,
+                'completed_at' => date('Y-m-d H:i:s')
+            ],
+            'id = :id',
+            ['id' => $executionId]
+        );
+
+        echo "[" . date('Y-m-d H:i:s') . "] Poll: Task $externalTaskId failed: $error\n";
+    } else {
+        // Still running - queue another poll if not exceeded max
+        if ($pollCount >= $maxPolls) {
+            $error = "Polling timeout: Task did not complete within " . ($maxPolls * 10) . " seconds";
+
+            Database::update(
+                'node_tasks',
+                [
+                    'status' => 'failed',
+                    'error_message' => $error,
+                    'completed_at' => date('Y-m-d H:i:s')
+                ],
+                'id = :id',
+                ['id' => $nodeTaskId]
+            );
+
+            Database::update(
+                'workflow_executions',
+                [
+                    'status' => 'failed',
+                    'error_message' => $error,
+                    'completed_at' => date('Y-m-d H:i:s')
+                ],
+                'id = :id',
+                ['id' => $executionId]
+            );
+
+            echo "[" . date('Y-m-d H:i:s') . "] Poll: Task $externalTaskId timed out\n";
+        } else {
+            // Re-queue polling
+            Database::insert('task_queue', [
+                'task_type' => 'poll_api_status',
+                'payload' => json_encode([
+                    'node_task_id' => $nodeTaskId,
+                    'execution_id' => $executionId,
+                    'external_task_id' => $externalTaskId,
+                    'provider' => $provider,
+                    'api_key' => $apiKey,
+                    'poll_count' => $pollCount + 1,
+                    'max_polls' => $maxPolls
+                ]),
+                'status' => 'pending',
+                'scheduled_at' => date('Y-m-d H:i:s', strtotime('+10 seconds')),
+                'priority' => 5,
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+
+            echo "[" . date('Y-m-d H:i:s') . "] Poll: Task $externalTaskId still running, re-queued poll " . ($pollCount + 1) . "\n";
+        }
+    }
+}
+
+/**
+ * Query external task status from provider API
+ */
+function queryExternalTaskStatus(string $provider, string $taskId, string $apiKey): array
+{
+    $debugLog = __DIR__ . '/logs/worker_debug.log';
+    $ts = date('Y-m-d H:i:s');
+
+    switch ($provider) {
+        case 'rhub':
+            // RunningHub uses task query endpoint
+            $url = 'https://www.runninghub.ai/openapi/v2/task/openapi-task-status';
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode(['taskId' => $taskId]),
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $apiKey
+                ],
+                CURLOPT_TIMEOUT => 30
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            @file_put_contents($debugLog, "[$ts] [QueryStatus] HTTP $httpCode: $response\n", FILE_APPEND);
+
+            if ($httpCode !== 200) {
+                return ['status' => 'error', 'error' => "HTTP $httpCode"];
+            }
+
+            $data = json_decode($response, true);
+            if (!$data) {
+                return ['status' => 'error', 'error' => 'Invalid JSON response'];
+            }
+
+            // Map RunningHub status
+            $status = $data['status'] ?? 'UNKNOWN';
+            $resultUrl = null;
+
+            if (isset($data['results']) && is_array($data['results']) && !empty($data['results'])) {
+                $resultUrl = $data['results'][0]['url'] ?? null;
+            }
+
+            return [
+                'status' => $status,
+                'resultUrl' => $resultUrl,
+                'error' => $data['errorMessage'] ?? null
+            ];
+
+        default:
+            return ['status' => 'error', 'error' => "Unknown provider: $provider"];
+    }
+}
+
 
 /**
  * Get inputs from connected nodes

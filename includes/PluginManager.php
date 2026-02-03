@@ -133,6 +133,15 @@ class PluginManager
         return '';
     }
 
+    /**
+     * Public method to resolve API key for a provider
+     * Used by worker for polling status
+     */
+    public static function resolveApiKey($provider, $userId = null)
+    {
+        return self::loadAdminApiKey($provider, $userId);
+    }
+
 
     /**
      * Execute a plugin node
