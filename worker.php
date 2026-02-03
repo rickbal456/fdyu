@@ -554,6 +554,11 @@ function queryExternalTaskStatus(string $provider, string $taskId, string $apiKe
  */
 function getNodeInputs(int $executionId, string $nodeId): array
 {
+    $debugLog = __DIR__ . '/logs/worker_debug.log';
+    $ts = date('Y-m-d H:i:s');
+
+    @file_put_contents($debugLog, "[$ts] [getNodeInputs] START - executionId: $executionId, nodeId: $nodeId\n", FILE_APPEND);
+
     // Get workflow data to find connections
     $execution = Database::fetchOne(
         "SELECT we.*, w.json_data 
@@ -563,17 +568,27 @@ function getNodeInputs(int $executionId, string $nodeId): array
         [$executionId]
     );
 
+    @file_put_contents($debugLog, "[$ts] [getNodeInputs] workflow_id: " . ($execution['workflow_id'] ?? 'NULL') . "\n", FILE_APPEND);
+    @file_put_contents($debugLog, "[$ts] [getNodeInputs] json_data exists: " . (isset($execution['json_data']) && $execution['json_data'] ? 'YES' : 'NO') . "\n", FILE_APPEND);
+
     if (!$execution || !$execution['json_data']) {
+        @file_put_contents($debugLog, "[$ts] [getNodeInputs] RETURNING EMPTY - no execution or json_data\n", FILE_APPEND);
         return [];
     }
 
     $workflowData = json_decode($execution['json_data'], true);
     $connections = $workflowData['connections'] ?? [];
 
+    @file_put_contents($debugLog, "[$ts] [getNodeInputs] Total connections in workflow: " . count($connections) . "\n", FILE_APPEND);
+
     $inputs = [];
 
     foreach ($connections as $conn) {
+        @file_put_contents($debugLog, "[$ts] [getNodeInputs] Connection: {$conn['from']['nodeId']} -> {$conn['to']['nodeId']}\n", FILE_APPEND);
+
         if ($conn['to']['nodeId'] === $nodeId) {
+            @file_put_contents($debugLog, "[$ts] [getNodeInputs] MATCH FOUND - looking for source: {$conn['from']['nodeId']}\n", FILE_APPEND);
+
             // Get output from source node
             $sourceTask = Database::fetchOne(
                 "SELECT result_url, output_data FROM node_tasks 
@@ -581,19 +596,27 @@ function getNodeInputs(int $executionId, string $nodeId): array
                 [$executionId, $conn['from']['nodeId']]
             );
 
+            @file_put_contents($debugLog, "[$ts] [getNodeInputs] Source task found: " . ($sourceTask ? 'YES' : 'NO') . "\n", FILE_APPEND);
+
             if ($sourceTask) {
                 $inputKey = $conn['to']['portId'];
+                @file_put_contents($debugLog, "[$ts] [getNodeInputs] result_url: " . ($sourceTask['result_url'] ?? 'NULL') . "\n", FILE_APPEND);
+                @file_put_contents($debugLog, "[$ts] [getNodeInputs] output_data: " . ($sourceTask['output_data'] ?? 'NULL') . "\n", FILE_APPEND);
 
                 if ($sourceTask['result_url']) {
                     $inputs[$inputKey] = $sourceTask['result_url'];
+                    @file_put_contents($debugLog, "[$ts] [getNodeInputs] Assigned result_url to '$inputKey'\n", FILE_APPEND);
                 } elseif ($sourceTask['output_data']) {
                     $outputData = json_decode($sourceTask['output_data'], true);
-                    $inputs[$inputKey] = $outputData[$conn['from']['portId']] ?? null;
+                    $fromPort = $conn['from']['portId'];
+                    $inputs[$inputKey] = $outputData[$fromPort] ?? null;
+                    @file_put_contents($debugLog, "[$ts] [getNodeInputs] Assigned output_data[$fromPort] to '$inputKey': " . ($inputs[$inputKey] ?? 'NULL') . "\n", FILE_APPEND);
                 }
             }
         }
     }
 
+    @file_put_contents($debugLog, "[$ts] [getNodeInputs] FINAL inputs: " . json_encode($inputs) . "\n", FILE_APPEND);
     return $inputs;
 }
 
