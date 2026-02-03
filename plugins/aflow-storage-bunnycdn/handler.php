@@ -59,6 +59,11 @@ class BunnyCDNStorageHandler
             if (self::$config['storageUrl'] === 'https://storage.bunnycdn.com' && defined('BUNNY_STORAGE_URL')) {
                 self::$config['storageUrl'] = BUNNY_STORAGE_URL;
             }
+
+            // Normalize cdnUrl to ensure it has https:// protocol
+            if (!empty(self::$config['cdnUrl'])) {
+                self::$config['cdnUrl'] = self::ensureHttpsProtocol(self::$config['cdnUrl']);
+            }
         }
         return self::$config;
     }

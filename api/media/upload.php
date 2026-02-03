@@ -93,6 +93,10 @@ if (!$hasCDN) {
             $storageUrl = $keys['bunnycdn_storageUrl'] ?? 'https://storage.bunnycdn.com';
 
             if (!empty($storageZone) && !empty($accessKey) && !empty($cdnUrl)) {
+                // Ensure https:// protocol
+                if (!preg_match('#^https?://#i', $cdnUrl)) {
+                    $cdnUrl = 'https://' . $cdnUrl;
+                }
                 $hasCDN = true;
                 $bunnyConfig = [
                     'storageZone' => $storageZone,
