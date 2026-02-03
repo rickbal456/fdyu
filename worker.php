@@ -369,6 +369,39 @@ function processPollApiStatus(array $payload): void
         return;
     }
 
+    // Check if task is stale (started more than 1 hour ago)
+    $startedAt = strtotime($nodeTask['started_at'] ?? 'now');
+    $staleThreshold = 3600; // 1 hour
+    if (time() - $startedAt > $staleThreshold) {
+        $error = "Task is stale: started more than 1 hour ago and never completed. External task ID may be invalid.";
+        @file_put_contents($debugLog, "[$ts] [Poll] $error\n", FILE_APPEND);
+
+        Database::update(
+            'node_tasks',
+            [
+                'status' => 'failed',
+                'error_message' => $error,
+                'completed_at' => date('Y-m-d H:i:s')
+            ],
+            'id = :id',
+            ['id' => $nodeTaskId]
+        );
+
+        Database::update(
+            'workflow_executions',
+            [
+                'status' => 'failed',
+                'error_message' => $error,
+                'completed_at' => date('Y-m-d H:i:s')
+            ],
+            'id = :id',
+            ['id' => $executionId]
+        );
+
+        echo "[" . date('Y-m-d H:i:s') . "] Poll: Task $externalTaskId marked as stale/failed\n";
+        return;
+    }
+
     // Get API key if not provided
     if (!$apiKey) {
         $apiKey = PluginManager::resolveApiKey($provider);
@@ -381,6 +414,61 @@ function processPollApiStatus(array $payload): void
     // Query task status from provider
     $result = queryExternalTaskStatus($provider, $externalTaskId, $apiKey);
     @file_put_contents($debugLog, "[$ts] [Poll] Query result: " . json_encode($result) . "\n", FILE_APPEND);
+
+    // Handle error status (treat as failed)
+    if ($result['status'] === 'error') {
+        $error = $result['error'] ?? 'API query returned error status';
+        @file_put_contents($debugLog, "[$ts] [Poll] Error status received: $error\n", FILE_APPEND);
+
+        // If it's a temporary error and we haven't exceeded max polls, retry
+        if ($pollCount < $maxPolls && strpos($error, 'cURL') !== false) {
+            // Re-queue for retry
+            Database::insert('task_queue', [
+                'task_type' => 'poll_api_status',
+                'payload' => json_encode([
+                    'node_task_id' => $nodeTaskId,
+                    'execution_id' => $executionId,
+                    'external_task_id' => $externalTaskId,
+                    'provider' => $provider,
+                    'api_key' => $apiKey,
+                    'poll_count' => $pollCount + 1,
+                    'max_polls' => $maxPolls
+                ]),
+                'status' => 'pending',
+                'scheduled_at' => date('Y-m-d H:i:s', strtotime('+30 seconds')),
+                'priority' => 5,
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+            echo "[" . date('Y-m-d H:i:s') . "] Poll: Temporary error, will retry in 30s: $error\n";
+            return;
+        }
+
+        // Non-recoverable error, mark as failed
+        Database::update(
+            'node_tasks',
+            [
+                'status' => 'failed',
+                'error_message' => $error,
+                'completed_at' => date('Y-m-d H:i:s')
+            ],
+            'id = :id',
+            ['id' => $nodeTaskId]
+        );
+
+        Database::update(
+            'workflow_executions',
+            [
+                'status' => 'failed',
+                'error_message' => $error,
+                'completed_at' => date('Y-m-d H:i:s')
+            ],
+            'id = :id',
+            ['id' => $executionId]
+        );
+
+        echo "[" . date('Y-m-d H:i:s') . "] Poll: Task $externalTaskId failed with error: $error\n";
+        return;
+    }
 
     if ($result['status'] === 'SUCCESS' || $result['status'] === 'completed') {
         // Task completed successfully
@@ -516,11 +604,23 @@ function queryExternalTaskStatus(string $provider, string $taskId, string $apiKe
 
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
             curl_close($ch);
 
             @file_put_contents($debugLog, "[$ts] [QueryStatus] HTTP $httpCode: $response\n", FILE_APPEND);
 
+            // Handle cURL errors
+            if ($curlError) {
+                @file_put_contents($debugLog, "[$ts] [QueryStatus] cURL Error: $curlError\n", FILE_APPEND);
+                return ['status' => 'error', 'error' => "cURL error: $curlError"];
+            }
+
             if ($httpCode !== 200) {
+                // Treat 4xx/5xx as potential expired task
+                if ($httpCode >= 400) {
+                    @file_put_contents($debugLog, "[$ts] [QueryStatus] Task may be expired (HTTP $httpCode)\n", FILE_APPEND);
+                    return ['status' => 'FAILED', 'error' => "Task not found or expired (HTTP $httpCode)"];
+                }
                 return ['status' => 'error', 'error' => "HTTP $httpCode"];
             }
 
@@ -529,18 +629,42 @@ function queryExternalTaskStatus(string $provider, string $taskId, string $apiKe
                 return ['status' => 'error', 'error' => 'Invalid JSON response'];
             }
 
+            // Handle RunningHub API error format (code != 0 means error)
+            if (isset($data['code']) && $data['code'] != 0) {
+                $errorMsg = $data['msg'] ?? 'Unknown API error';
+                @file_put_contents($debugLog, "[$ts] [QueryStatus] API Error code {$data['code']}: $errorMsg\n", FILE_APPEND);
+
+                // Common error codes that indicate task doesn't exist
+                if (in_array($data['code'], [404, 40001, 40002, 50001])) {
+                    return ['status' => 'FAILED', 'error' => "Task not found: $errorMsg"];
+                }
+                return ['status' => 'FAILED', 'error' => "API error (code {$data['code']}): $errorMsg"];
+            }
+
+            // Handle data wrapper format from RunningHub
+            $taskData = $data['data'] ?? $data;
+
             // Map RunningHub status
-            $status = $data['status'] ?? 'UNKNOWN';
+            $status = $taskData['status'] ?? $data['status'] ?? 'UNKNOWN';
             $resultUrl = null;
 
-            if (isset($data['results']) && is_array($data['results']) && !empty($data['results'])) {
+            // Try multiple result formats
+            if (isset($taskData['results']) && is_array($taskData['results']) && !empty($taskData['results'])) {
+                $resultUrl = $taskData['results'][0]['url'] ?? null;
+            } elseif (isset($data['results']) && is_array($data['results']) && !empty($data['results'])) {
                 $resultUrl = $data['results'][0]['url'] ?? null;
+            } elseif (isset($taskData['output']['video'])) {
+                $resultUrl = $taskData['output']['video'];
+            } elseif (isset($taskData['resultUrl'])) {
+                $resultUrl = $taskData['resultUrl'];
             }
+
+            @file_put_contents($debugLog, "[$ts] [QueryStatus] Parsed status: $status, resultUrl: " . ($resultUrl ?? 'null') . "\n", FILE_APPEND);
 
             return [
                 'status' => $status,
                 'resultUrl' => $resultUrl,
-                'error' => $data['errorMessage'] ?? null
+                'error' => $taskData['errorMessage'] ?? $data['errorMessage'] ?? $data['msg'] ?? null
             ];
 
         default:
@@ -560,23 +684,29 @@ function getNodeInputs(int $executionId, string $nodeId): array
     @file_put_contents($debugLog, "[$ts] [getNodeInputs] START - executionId: $executionId, nodeId: $nodeId\n", FILE_APPEND);
 
     // Get workflow data to find connections
+    // First try workflow_json_data (stored directly), then fall back to JOIN with workflows table
     $execution = Database::fetchOne(
-        "SELECT we.*, w.json_data 
+        "SELECT we.*, w.json_data as workflow_joined_data
          FROM workflow_executions we
          LEFT JOIN workflows w ON w.id = we.workflow_id
          WHERE we.id = ?",
         [$executionId]
     );
 
-    @file_put_contents($debugLog, "[$ts] [getNodeInputs] workflow_id: " . ($execution['workflow_id'] ?? 'NULL') . "\n", FILE_APPEND);
-    @file_put_contents($debugLog, "[$ts] [getNodeInputs] json_data exists: " . (isset($execution['json_data']) && $execution['json_data'] ? 'YES' : 'NO') . "\n", FILE_APPEND);
+    // Prefer workflow_json_data (directly stored), then workflow_joined_data (from JOIN)
+    $jsonData = $execution['workflow_json_data'] ?? $execution['workflow_joined_data'] ?? null;
 
-    if (!$execution || !$execution['json_data']) {
+    @file_put_contents($debugLog, "[$ts] [getNodeInputs] workflow_id: " . ($execution['workflow_id'] ?? 'NULL') . "\n", FILE_APPEND);
+    @file_put_contents($debugLog, "[$ts] [getNodeInputs] workflow_json_data exists: " . (!empty($execution['workflow_json_data']) ? 'YES' : 'NO') . "\n", FILE_APPEND);
+    @file_put_contents($debugLog, "[$ts] [getNodeInputs] workflow_joined_data exists: " . (!empty($execution['workflow_joined_data']) ? 'YES' : 'NO') . "\n", FILE_APPEND);
+    @file_put_contents($debugLog, "[$ts] [getNodeInputs] Final jsonData exists: " . (!empty($jsonData) ? 'YES' : 'NO') . "\n", FILE_APPEND);
+
+    if (!$execution || !$jsonData) {
         @file_put_contents($debugLog, "[$ts] [getNodeInputs] RETURNING EMPTY - no execution or json_data\n", FILE_APPEND);
         return [];
     }
 
-    $workflowData = json_decode($execution['json_data'], true);
+    $workflowData = json_decode($jsonData, true);
     $connections = $workflowData['connections'] ?? [];
 
     @file_put_contents($debugLog, "[$ts] [getNodeInputs] Total connections in workflow: " . count($connections) . "\n", FILE_APPEND);
@@ -784,6 +914,10 @@ function uploadDataUrlToCDN(string $dataUrl, string $filename): ?string
 
         if ($httpCode >= 200 && $httpCode < 300) {
             $cdnUrl = defined('BUNNY_CDN_URL') ? BUNNY_CDN_URL : '';
+            // Ensure https:// protocol
+            if (!empty($cdnUrl) && !preg_match('#^https?://#i', $cdnUrl)) {
+                $cdnUrl = 'https://' . $cdnUrl;
+            }
             return rtrim($cdnUrl, '/') . '/' . $path;
         }
     }

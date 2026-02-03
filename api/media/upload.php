@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AIKAFLOW API - File Upload
  * 
@@ -166,9 +167,13 @@ try {
             throw new Exception('BunnyCDN upload failed: ' . $response);
         }
 
-        $cdnUrl = rtrim($bunnyConfig['cdnUrl'], '/') . '/' . $relativePath;
+        // Ensure CDN URL has https:// protocol
+        $cdnBaseUrl = rtrim($bunnyConfig['cdnUrl'], '/');
+        if (!preg_match('#^https?://#i', $cdnBaseUrl)) {
+            $cdnBaseUrl = 'https://' . $cdnBaseUrl;
+        }
+        $cdnUrl = $cdnBaseUrl . '/' . $relativePath;
         $storageMode = 'cdn';
-
     } else {
         // No CDN - save to local uploads folder (NOT base64!)
         $uploadsDir = defined('PUBLIC_PATH') ? PUBLIC_PATH . '/uploads' : __DIR__ . '/../../uploads';
@@ -222,7 +227,6 @@ try {
     }
 
     successResponse($responseData);
-
 } catch (Exception $e) {
     error_log('File upload error: ' . $e->getMessage());
     errorResponse('Upload failed: ' . $e->getMessage(), 500);

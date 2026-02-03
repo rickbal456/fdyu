@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BunnyCDN Storage Plugin Handler
  * 
@@ -140,10 +141,27 @@ class BunnyCDNStorageHandler
         curl_close($ch);
 
         if ($httpCode >= 200 && $httpCode < 300) {
-            return rtrim($config['cdnUrl'], '/') . '/' . $path;
+            $cdnUrl = self::ensureHttpsProtocol(rtrim($config['cdnUrl'], '/'));
+            return $cdnUrl . '/' . $path;
         }
 
         return null;
+    }
+
+    /**
+     * Ensure URL has https:// protocol
+     */
+    private static function ensureHttpsProtocol(string $url): string
+    {
+        if (empty($url)) {
+            return $url;
+        }
+
+        // Remove any existing protocol
+        $url = preg_replace('#^https?://#i', '', $url);
+
+        // Add https://
+        return 'https://' . $url;
     }
 
     /**
@@ -200,7 +218,8 @@ class BunnyCDNStorageHandler
         curl_close($ch);
 
         if ($httpCode >= 200 && $httpCode < 300) {
-            return rtrim($config['cdnUrl'], '/') . '/' . $path;
+            $cdnUrl = self::ensureHttpsProtocol(rtrim($config['cdnUrl'], '/'));
+            return $cdnUrl . '/' . $path;
         }
 
         return null;
