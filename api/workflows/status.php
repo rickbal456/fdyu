@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AIKAFLOW API - Get Execution Status
  * 
@@ -39,17 +40,26 @@ try {
 
     // Get node statuses
     $tasks = Database::fetchAll(
-        "SELECT node_id, node_type, status, result_url, error_message, started_at, completed_at 
+        "SELECT node_id, node_type, status, result_url, output_data, error_message, started_at, completed_at 
          FROM node_tasks WHERE execution_id = ? ORDER BY id ASC",
         [$executionId]
     );
 
     $nodeStatuses = array_map(function ($task) {
+        // Get result URL from result_url column, or fallback to output_data.video
+        $resultUrl = $task['result_url'];
+        if (empty($resultUrl) && !empty($task['output_data'])) {
+            $outputData = json_decode($task['output_data'], true);
+            if ($outputData) {
+                $resultUrl = $outputData['video'] ?? $outputData['url'] ?? $outputData['image'] ?? null;
+            }
+        }
+
         return [
             'nodeId' => $task['node_id'],
             'nodeType' => $task['node_type'],
             'status' => $task['status'],
-            'resultUrl' => $task['result_url'],
+            'resultUrl' => $resultUrl,
             'error' => $task['error_message'],
             'startedAt' => $task['started_at'],
             'completedAt' => $task['completed_at']
@@ -140,8 +150,6 @@ try {
         'startedAt' => $execution['started_at'],
         'completedAt' => $execution['completed_at']
     ]);
-
-
 } catch (Exception $e) {
     error_log('Get execution status error: ' . $e->getMessage());
     errorResponse('Failed to get execution status', 500);
