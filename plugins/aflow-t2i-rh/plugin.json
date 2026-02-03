@@ -1,0 +1,34 @@
+{
+  "id": "aflow-t2i-rh",
+  "name": "Text to Image RH",
+  "description": "Generate Image from Text using RunningHub Nano Banana API",
+  "version": "1.0.0",
+  "author": "AIKAFLOW Developer",
+  "icon": "image",
+  "color": "emerald",
+  "category": "generation",
+  "enabled": true,
+  "homepage": "https://aikademi.id",
+  "requires": {
+    "aikaflow": ">=1.0.0"
+  },
+  "nodeTypes": ["aflow-t2i-rh"],
+  "executionType": "api",
+  "apiConfig": {
+    "provider": "rhub",
+    "endpoint": "https://www.runninghub.ai/openapi/v2/rhart-image-n-pro/text-to-image"
+  },
+  "apiMapping": {
+    "request": {
+      "prompt": "{{prompt}}",
+      "aspectRatio": "{{aspectRatio}}",
+      "resolution": "{{resolution}}"
+    },
+    "response": {
+      "taskId": "$.taskId"
+    }
+  },
+  "settings": {
+    "apiKey": ""
+  }
+}
