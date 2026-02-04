@@ -172,7 +172,7 @@ class BunnyCDNStorageHandler
     /**
      * Upload a file from URL to BunnyCDN
      */
-    public static function uploadFromUrl(string $sourceUrl, ?string $filename = null): ?string
+    public static function uploadFromUrl(string $sourceUrl, ?string $filename = null, array $headers = []): ?string
     {
         $config = self::getConfig();
 
@@ -180,25 +180,34 @@ class BunnyCDNStorageHandler
             return null;
         }
 
-        // Download source file
-        $fileContent = @file_get_contents($sourceUrl);
-        if (!$fileContent) {
+        // Download source file using curl to support custom headers (e.g., x-api-key for JsonCut)
+        $ch = curl_init($sourceUrl);
+        $requestHeaders = ['Accept: */*'];
+        foreach ($headers as $name => $value) {
+            $requestHeaders[] = "$name: $value";
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTPHEADER => $requestHeaders,
+            CURLOPT_TIMEOUT => 120,
+            CURLOPT_SSL_VERIFYPEER => false
+        ]);
+
+        $fileContent = curl_exec($ch);
+        $downloadHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $downloadMimeType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        curl_close($ch);
+
+        if (!$fileContent || $downloadHttpCode !== 200) {
+            error_log("BunnyCDN uploadFromUrl: Download failed, HTTP $downloadHttpCode from $sourceUrl");
             return null;
         }
 
-        // Get mime type from URL or content
-        $mimeType = 'application/octet-stream';
-        $extension = pathinfo(parse_url($sourceUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'bin';
-
-        // Try to get content type from headers
-        if (isset($http_response_header)) {
-            foreach ($http_response_header as $header) {
-                if (stripos($header, 'Content-Type:') === 0) {
-                    $mimeType = trim(substr($header, 13));
-                    break;
-                }
-            }
-        }
+        // Get mime type from curl response or fallback
+        $mimeType = $downloadMimeType ?: 'application/octet-stream';
+        $extension = pathinfo(parse_url($sourceUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'mp4';
 
         // Generate path
         $path = 'uploads/' . date('Y/m/d') . '/' . bin2hex(random_bytes(16)) . '.' . $extension;

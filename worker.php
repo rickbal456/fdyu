@@ -484,9 +484,16 @@ function processPollApiStatus(array $payload): void
             $extension = pathinfo(parse_url($resultUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'mp4';
             $filename = 'video_' . time() . '_' . uniqid() . '.' . $extension;
 
+            // Prepare download headers for authenticated APIs (like JsonCut)
+            $downloadHeaders = [];
+            if ($provider === 'jcut' && $apiKey) {
+                $downloadHeaders['x-api-key'] = $apiKey;
+                @file_put_contents($debugLog, "[$ts] [Poll] Adding x-api-key header for JsonCut download\n", FILE_APPEND);
+            }
+
             // Use BunnyCDN plugin to upload from URL
             if (class_exists('BunnyCDNStorageHandler') && BunnyCDNStorageHandler::isConfigured()) {
-                $uploadedUrl = BunnyCDNStorageHandler::uploadFromUrl($resultUrl, $filename);
+                $uploadedUrl = BunnyCDNStorageHandler::uploadFromUrl($resultUrl, $filename, $downloadHeaders);
                 if ($uploadedUrl) {
                     @file_put_contents($debugLog, "[$ts] [Poll] CDN upload success: $uploadedUrl\n", FILE_APPEND);
                     $resultUrl = $uploadedUrl;
