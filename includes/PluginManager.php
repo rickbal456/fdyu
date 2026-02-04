@@ -529,7 +529,8 @@ class PluginManager
             'success' => true,
             'taskId' => $actualTaskId,
             'resultUrl' => $output['resultUrl'] ?? null,
-            'output' => $output
+            'output' => $output,
+            'provider' => $provider  // Include provider for polling
         ];
     }
 

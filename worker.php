@@ -317,7 +317,7 @@ function processNodeExecution(array $payload): void
                     'node_task_id' => $taskId,
                     'execution_id' => $executionId,
                     'external_task_id' => $result['taskId'],
-                    'provider' => $inputData['_provider'] ?? 'rhub',
+                    'provider' => $result['provider'] ?? $inputData['_provider'] ?? 'rhub',
                     'api_key' => $inputData['_resolved_api_key'] ?? null,
                     'poll_count' => 0,
                     'max_polls' => 60  // 10 minutes max (60 * 10s)
