@@ -375,7 +375,8 @@ class PluginManager
                         [
                             'type' => 'video',
                             'path' => $video1Url,
-                            'resizeMode' => 'cover'
+                            'resizeMode' => 'cover',
+                            'mixVolume' => 1
                         ]
                     ]
                 ];
@@ -396,7 +397,8 @@ class PluginManager
                         [
                             'type' => 'video',
                             'path' => $video2Url,
-                            'resizeMode' => 'cover'
+                            'resizeMode' => 'cover',
+                            'mixVolume' => 1
                         ]
                     ]
                 ];
@@ -410,7 +412,12 @@ class PluginManager
                     'height' => $height,
                     'fps' => 30,
                     'format' => 'mp4',
-                    'clips' => $clips
+                    'clips' => $clips,
+                    // Audio settings - keep original audio from source videos
+                    'keepSourceAudio' => true,
+                    'outputVolume' => 1,
+                    'clipsAudioVolume' => 1,
+                    'loopAudio' => false
                 ],
                 'apiKey' => $apiKey
             ];
