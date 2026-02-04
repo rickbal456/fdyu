@@ -24,11 +24,11 @@
             "transition_duration": "{{data.transitionDuration}}"
         },
         "response": {
-            "taskId": "$.task_id",
-            "status": "$.status"
+            "taskId": "$.data.jobId",
+            "status": "$.data.status"
         },
         "result": {
-            "resultUrl": "$.output_url"
+            "resultUrl": "$.data.outputUrl"
         }
     }
 }

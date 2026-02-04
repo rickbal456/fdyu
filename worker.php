@@ -684,6 +684,66 @@ function queryExternalTaskStatus(string $provider, string $taskId, string $apiKe
                 'error' => $taskData['errorMessage'] ?? $data['errorMessage'] ?? $data['msg'] ?? null
             ];
 
+        case 'jcut':
+            // JsonCut job status endpoint: GET /api/v1/jobs/:jobId
+            $baseUrl = defined('JSONCUT_API_URL') ? JSONCUT_API_URL : 'https://api.jsoncut.com';
+            $url = $baseUrl . '/api/v1/jobs/' . $taskId;
+            @file_put_contents($debugLog, "[$ts] [QueryStatus] JsonCut - Calling URL: $url\n", FILE_APPEND);
+
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPGET => true,
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: application/json',
+                    'x-api-key: ' . $apiKey
+                ],
+                CURLOPT_TIMEOUT => 30
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            @file_put_contents($debugLog, "[$ts] [QueryStatus] JsonCut HTTP $httpCode: $response\n", FILE_APPEND);
+
+            if ($curlError) {
+                @file_put_contents($debugLog, "[$ts] [QueryStatus] JsonCut cURL Error: $curlError\n", FILE_APPEND);
+                return ['status' => 'error', 'error' => "cURL error: $curlError"];
+            }
+
+            if ($httpCode !== 200) {
+                if ($httpCode >= 400) {
+                    return ['status' => 'FAILED', 'error' => "Job not found (HTTP $httpCode)"];
+                }
+                return ['status' => 'error', 'error' => "HTTP $httpCode"];
+            }
+
+            $data = json_decode($response, true);
+            if (!$data || !isset($data['data'])) {
+                return ['status' => 'error', 'error' => 'Invalid JSON response'];
+            }
+
+            $jobData = $data['data'];
+            $status = $jobData['status'] ?? 'UNKNOWN';
+            $resultUrl = $jobData['outputUrl'] ?? null;
+
+            @file_put_contents($debugLog, "[$ts] [QueryStatus] JsonCut Parsed status: $status, outputUrl: " . ($resultUrl ?? 'null') . "\n", FILE_APPEND);
+
+            // Map JsonCut status to our standard format
+            // JsonCut statuses: PENDING, PROCESSING, COMPLETED, FAILED, CANCELLED
+            $mappedStatus = $status;
+            if ($status === 'COMPLETED') {
+                $mappedStatus = 'SUCCESS';
+            }
+
+            return [
+                'status' => $mappedStatus,
+                'resultUrl' => $resultUrl,
+                'error' => $jobData['error'] ?? $jobData['errorMessage'] ?? null
+            ];
+
         default:
             return ['status' => 'error', 'error' => "Unknown provider: $provider"];
     }
