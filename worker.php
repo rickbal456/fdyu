@@ -1127,8 +1127,16 @@ function finalizeExecution(int $executionId): void
             $allCompleted = false;
         }
 
+        // Prioritize result_url from processing/output nodes over input nodes
+        // Input nodes typically have 'input' in their type name (e.g., video-input, image-input)
         if ($task['result_url']) {
-            $finalResultUrl = $task['result_url'];
+            $isInputNode = stripos($task['node_type'], 'input') !== false;
+
+            // If we don't have a finalResultUrl yet, or if this is not an input node
+            // (processing nodes take priority over input nodes)
+            if ($finalResultUrl === null || !$isInputNode) {
+                $finalResultUrl = $task['result_url'];
+            }
         }
 
         $outputs[$task['node_id']] = [
