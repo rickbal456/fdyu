@@ -564,6 +564,9 @@ class PluginManager
         switch ($provider) {
             case 'jcut':
                 $baseUrl = defined('JSONCUT_API_URL') ? JSONCUT_API_URL : 'https://api.jsoncut.com';
+                // JsonCut uses x-api-key header, not Authorization Bearer
+                $headerName = 'x-api-key';
+                $headerValuePrefix = '';
                 break;
             case 'rhub':
                 $baseUrl = defined('RUNNINGHUB_API_URL') ? RUNNINGHUB_API_URL : 'https://api.runninghub.ai';
