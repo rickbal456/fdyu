@@ -21,6 +21,17 @@
             ],
             fields: [
                 {
+                    id: 'outputRatio',
+                    type: 'select',
+                    label: 'Output Ratio',
+                    default: 'portrait',
+                    options: [
+                        { value: 'portrait', label: '9:16 Portrait (TikTok, Reels, Shorts)' },
+                        { value: 'landscape', label: '16:9 Landscape (YouTube)' },
+                        { value: 'square', label: '1:1 Square (Instagram Feed)' }
+                    ]
+                },
+                {
                     id: 'transition',
                     type: 'select',
                     label: 'Transition',
@@ -48,6 +59,7 @@
                 source: 'output'
             },
             defaultData: {
+                outputRatio: 'portrait',
                 transition: 'none',
                 transitionDuration: 1
             },

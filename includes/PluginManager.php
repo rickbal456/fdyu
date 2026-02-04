@@ -343,6 +343,27 @@ class PluginManager
             $video2Url = $inputData['video2'] ?? '';
             $transition = $inputData['transition'] ?? 'none';
             $transitionDuration = floatval($inputData['transitionDuration'] ?? 1);
+            $outputRatio = $inputData['outputRatio'] ?? 'portrait';
+
+            // Determine output dimensions based on selected ratio
+            // Default to portrait (9:16) for social media videos
+            switch ($outputRatio) {
+                case 'landscape':
+                    $width = 1920;
+                    $height = 1080;
+                    break;
+                case 'square':
+                    $width = 1080;
+                    $height = 1080;
+                    break;
+                case 'portrait':
+                default:
+                    $width = 1080;
+                    $height = 1920;
+                    break;
+            }
+
+            @file_put_contents($debugLog, "[$ts] [executeApiNode] Output ratio: $outputRatio ({$width}x{$height})\n", FILE_APPEND);
 
             // Build clips array for video merge
             $clips = [];
@@ -385,8 +406,8 @@ class PluginManager
             $requestBody = [
                 'type' => 'video',
                 'config' => [
-                    'width' => 1920,
-                    'height' => 1080,
+                    'width' => $width,
+                    'height' => $height,
                     'fps' => 30,
                     'format' => 'mp4',
                     'clips' => $clips
