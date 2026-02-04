@@ -333,15 +333,82 @@ class PluginManager
             }
         }
 
-        // Prepare request body - use mapping if available, otherwise use inputData directly
-        if ($mapping && isset($mapping['request'])) {
-            $requestBody = self::mapData($mapping['request'], $inputData);
-            $requestBody = self::processSpecialValues($requestBody);
+        // Special handling for JsonCut video merge operation
+        // JsonCut uses clips-based structure, not simple video URLs
+        $operation = $apiConfig['operation'] ?? '';
+        if ($provider === 'jcut' && $operation === 'merge') {
+            @file_put_contents($debugLog, "[$ts] [executeApiNode] Building JsonCut merge clips structure\n", FILE_APPEND);
+
+            $video1Url = $inputData['video1'] ?? '';
+            $video2Url = $inputData['video2'] ?? '';
+            $transition = $inputData['transition'] ?? 'none';
+            $transitionDuration = floatval($inputData['transitionDuration'] ?? 1);
+
+            // Build clips array for video merge
+            $clips = [];
+
+            // First clip with video1
+            if (!empty($video1Url)) {
+                $clip1 = [
+                    'layers' => [
+                        [
+                            'type' => 'video',
+                            'path' => $video1Url,
+                            'resizeMode' => 'cover'
+                        ]
+                    ]
+                ];
+                // Add transition to first clip if not 'none'
+                if ($transition !== 'none' && $transition !== '') {
+                    $clip1['transition'] = [
+                        'name' => $transition,
+                        'duration' => $transitionDuration
+                    ];
+                }
+                $clips[] = $clip1;
+            }
+
+            // Second clip with video2
+            if (!empty($video2Url)) {
+                $clips[] = [
+                    'layers' => [
+                        [
+                            'type' => 'video',
+                            'path' => $video2Url,
+                            'resizeMode' => 'cover'
+                        ]
+                    ]
+                ];
+            }
+
+            // Build the full request body for JsonCut
+            $requestBody = [
+                'type' => 'video',
+                'config' => [
+                    'width' => 1920,
+                    'height' => 1080,
+                    'fps' => 30,
+                    'format' => 'mp4',
+                    'clips' => $clips
+                ],
+                'apiKey' => $apiKey
+            ];
+
+            // Add webhook URL
+            $requestBody['webhook'] = APP_URL . '/api/webhook.php?source=jcut';
+
+            @file_put_contents($debugLog, "[$ts] [executeApiNode] JsonCut merge request body: " . json_encode($requestBody) . "\n", FILE_APPEND);
         } else {
-            // Direct passthrough - use inputData as request body (without internal fields)
-            $requestBody = array_filter($inputData, function ($key) {
-                return !str_starts_with($key, '_'); // Remove internal fields like _user_id, _workflow_run_id
-            }, ARRAY_FILTER_USE_KEY);
+            // Prepare request body - use mapping if available, otherwise use inputData directly
+            if ($mapping && isset($mapping['request'])) {
+                $requestBody = self::mapData($mapping['request'], $inputData);
+                $requestBody = self::processSpecialValues($requestBody);
+            } else {
+                // Direct passthrough - use inputData as request body (without internal fields)
+                $requestBody = array_filter($inputData, function ($key) {
+                    return !str_starts_with($key, '_'); // Remove internal fields like _user_id, _workflow_run_id
+                }, ARRAY_FILTER_USE_KEY);
+            }
         }
         @file_put_contents($debugLog, "[$ts] [executeApiNode] Request body prepared, keys: " . implode(', ', array_keys($requestBody)) . "\n", FILE_APPEND);
 

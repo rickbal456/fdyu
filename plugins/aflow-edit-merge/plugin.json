@@ -13,6 +13,7 @@
     "executionType": "api",
     "apiConfig": {
         "provider": "jcut",
+        "endpoint": "/api/v1/jobs",
         "operation": "merge"
     },
     "apiMapping": {
