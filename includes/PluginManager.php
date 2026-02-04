@@ -375,7 +375,8 @@ class PluginManager
                         [
                             'type' => 'video',
                             'path' => $video1Url,
-                            'resizeMode' => 'cover'
+                            'resizeMode' => 'cover',
+                            'audioTrack' => 'auto'  // Include original video audio
                         ]
                     ]
                 ];
@@ -396,7 +397,8 @@ class PluginManager
                         [
                             'type' => 'video',
                             'path' => $video2Url,
-                            'resizeMode' => 'cover'
+                            'resizeMode' => 'cover',
+                            'audioTrack' => 'auto'  // Include original video audio
                         ]
                     ]
                 ];
