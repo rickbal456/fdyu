@@ -727,9 +727,17 @@ function queryExternalTaskStatus(string $provider, string $taskId, string $apiKe
 
             $jobData = $data['data'];
             $status = $jobData['status'] ?? 'UNKNOWN';
-            $resultUrl = $jobData['outputUrl'] ?? null;
 
-            @file_put_contents($debugLog, "[$ts] [QueryStatus] JsonCut Parsed status: $status, outputUrl: " . ($resultUrl ?? 'null') . "\n", FILE_APPEND);
+            // JsonCut returns outputFileId, not outputUrl
+            // We need to construct the download URL from the fileId
+            $resultUrl = null;
+            $outputFileId = $jobData['outputFileId'] ?? null;
+            if ($outputFileId) {
+                // Construct the download URL for the output file
+                $resultUrl = $baseUrl . '/api/v1/files/' . $outputFileId . '/download';
+            }
+
+            @file_put_contents($debugLog, "[$ts] [QueryStatus] JsonCut Parsed status: $status, outputFileId: " . ($outputFileId ?? 'null') . ", resultUrl: " . ($resultUrl ?? 'null') . "\n", FILE_APPEND);
 
             // Map JsonCut status to our standard format
             // JsonCut statuses: PENDING, PROCESSING, COMPLETED, FAILED, CANCELLED
