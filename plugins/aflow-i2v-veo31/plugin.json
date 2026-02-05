@@ -1,0 +1,37 @@
+{
+    "id": "aflow-i2v-veo31",
+    "name": "Image to Video Veo3.1",
+    "description": "Generate Video from Image using Veo3.1 via RunningHub API (8s)",
+    "version": "1.0.0",
+    "author": "AIKAFLOW Developer",
+    "icon": "clapperboard",
+    "color": "violet",
+    "category": "generation",
+    "enabled": true,
+    "homepage": "https://aikademi.id",
+    "requires": {
+        "aikaflow": ">=1.0.0"
+    },
+    "nodeTypes": [
+        "aflow-i2v-veo31"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "rhub",
+        "endpoint": "https://www.runninghub.ai/openapi/v2/rhart-video-v3.1-fast/image-to-video"
+    },
+    "apiMapping": {
+        "request": {
+            "imageUrls": ["{{image}}"],
+            "aspectRatio": "{{aspectRatio}}",
+            "prompt": "{{prompt}}",
+            "duration": "{{duration}}"
+        },
+        "response": {
+            "taskId": "$.taskId"
+        }
+    },
+    "settings": {
+        "apiKey": ""
+    }
+}
