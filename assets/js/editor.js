@@ -1351,6 +1351,63 @@ class Editor {
     }
 
     /**
+     * Stop a processing node
+     * @param {string} nodeId - The node ID from the workflow
+     * @param {number} nodeTaskId - The node task ID from the database
+     */
+    async stopProcessingNode(nodeId, nodeTaskId) {
+        const executionId = this.workflowManager?.executionState?.executionId;
+        if (!executionId || !nodeTaskId) {
+            Toast.error('Stop Failed', 'Missing execution or task information');
+            return;
+        }
+
+        // Confirm before stopping
+        if (!confirm('Are you sure you want to stop this node? This will mark it as failed.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/workflows/stop-node.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    execution_id: executionId,
+                    node_task_id: nodeTaskId
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                Toast.warning('Node Stopped', 'The node has been stopped');
+
+                // Update the node UI to failed state
+                const modal = Modals.getModal('modal-execution');
+                if (modal) {
+                    const nodeItem = modal.querySelector(`.execution-node-item[data-node-id="${nodeId}"]`);
+                    if (nodeItem) {
+                        nodeItem.className = 'execution-node-item failed';
+                        const statusText = nodeItem.querySelector('.status-text');
+                        const statusTimer = nodeItem.querySelector('.status-timer');
+                        const stopBtn = nodeItem.querySelector('.btn-stop-node');
+                        const retryBtn = nodeItem.querySelector('.btn-retry-node');
+                        if (statusText) statusText.textContent = 'Stopped';
+                        if (statusTimer) statusTimer.textContent = '';
+                        if (stopBtn) stopBtn.classList.add('hidden');
+                        if (retryBtn) retryBtn.classList.remove('hidden');
+                    }
+                }
+            } else {
+                Toast.error('Stop Failed', result.error || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Failed to stop node:', error);
+            Toast.error('Stop Failed', error.message);
+        }
+    }
+
+    /**
      * Run a single flow starting from a specific trigger node
      * @param {string} triggerNodeId - The ID of the trigger node to start from
      */
@@ -1734,6 +1791,9 @@ class Editor {
                     <div class="execution-node-status"><span class="status-text">Pending</span><span class="status-timer"></span></div>
                 </div>
                 <div class="execution-node-actions">
+                    <button class="btn-stop-node hidden" title="Stop this node">
+                        <i data-lucide="square" class="w-4 h-4"></i>
+                    </button>
                     <button class="btn-retry-node hidden" title="Retry this node">
                         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                     </button>
@@ -1823,17 +1883,33 @@ class Editor {
 
                     if (ns.status === 'completed') {
                         nodeItem.querySelector('.execution-node-progress-bar').style.width = '100%';
-                        // Hide retry button for completed nodes
+                        // Hide retry and stop buttons for completed nodes
                         const retryBtn = nodeItem.querySelector('.btn-retry-node');
+                        const stopBtn = nodeItem.querySelector('.btn-stop-node');
                         if (retryBtn) retryBtn.classList.add('hidden');
+                        if (stopBtn) stopBtn.classList.add('hidden');
                     } else if (ns.status === 'processing') {
                         nodeItem.querySelector('.execution-node-progress-bar').style.width = '50%';
-                        // Hide retry button while processing
+                        // Show stop button and hide retry button while processing
                         const retryBtn = nodeItem.querySelector('.btn-retry-node');
+                        const stopBtn = nodeItem.querySelector('.btn-stop-node');
                         if (retryBtn) retryBtn.classList.add('hidden');
+                        if (stopBtn) {
+                            stopBtn.classList.remove('hidden');
+                            // Add click handler if not already added
+                            if (!stopBtn.dataset.handlerAdded) {
+                                stopBtn.dataset.handlerAdded = 'true';
+                                stopBtn.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    this.stopProcessingNode(ns.nodeId, ns.nodeTaskId);
+                                });
+                            }
+                        }
                     } else if (ns.status === 'failed') {
-                        // Show retry button for failed nodes
+                        // Show retry button and hide stop button for failed nodes
                         const retryBtn = nodeItem.querySelector('.btn-retry-node');
+                        const stopBtn = nodeItem.querySelector('.btn-stop-node');
+                        if (stopBtn) stopBtn.classList.add('hidden');
                         if (retryBtn) {
                             retryBtn.classList.remove('hidden');
                             // Add click handler if not already added
@@ -1845,9 +1921,28 @@ class Editor {
                                 });
                             }
                         }
+                    } else {
+                        // Pending or other status - hide both buttons
+                        const retryBtn = nodeItem.querySelector('.btn-retry-node');
+                        const stopBtn = nodeItem.querySelector('.btn-stop-node');
+                        if (retryBtn) retryBtn.classList.add('hidden');
+                        if (stopBtn) stopBtn.classList.add('hidden');
                     }
                 }
             });
+        }
+
+        // Update modal buttons based on overall execution status
+        const isRunning = data.status === 'running' || 
+            (data.nodeStatuses && data.nodeStatuses.some(ns => ns.status === 'processing' || ns.status === 'pending'));
+        
+        if (isRunning) {
+            modal.querySelector('#btn-abort-execution')?.classList.remove('hidden');
+            modal.querySelector('#btn-close-execution-modal')?.classList.add('hidden');
+            modal.querySelector('#btn-start-execution')?.classList.add('hidden');
+        } else {
+            modal.querySelector('#btn-abort-execution')?.classList.add('hidden');
+            modal.querySelector('#btn-close-execution-modal')?.classList.remove('hidden');
         }
 
         // Add log entry

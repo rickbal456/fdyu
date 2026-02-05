@@ -2190,6 +2190,35 @@ body {
   display: none;
 }
 
+.btn-stop-node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background-color: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 6px;
+  color: #f59e0b;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-stop-node:hover {
+  background-color: rgba(245, 158, 11, 0.3);
+  border-color: #f59e0b;
+  transform: scale(1.05);
+}
+
+.btn-stop-node:active {
+  transform: scale(0.95);
+}
+
+.btn-stop-node.hidden {
+  display: none;
+}
+
 @keyframes pulse {
   0%,
   100% {
