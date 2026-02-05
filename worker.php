@@ -25,7 +25,7 @@ $workerConfig = [
     'sleep_interval' => 2,        // Seconds between checks
     'max_execution_time' => 300,  // Max time per task (seconds)
     'batch_size' => 5,            // Tasks to process per cycle
-    'lock_timeout' => 600,        // Lock timeout (seconds)
+    'lock_timeout' => 7200,       // Lock timeout (seconds) - 2 hours for long API tasks
     'worker_id' => gethostname() . '_' . getmypid()
 ];
 
@@ -156,6 +156,10 @@ function processTask(array $task): void
 
         case 'poll_api_status':
             processPollApiStatus($payload);
+            break;
+
+        case 'retry_node':
+            processRetryNode($payload);
             break;
 
         default:
@@ -340,6 +344,30 @@ function processNodeExecution(array $payload): void
 }
 
 /**
+ * Process retry node task
+ * Retries a failed node by re-executing it
+ */
+function processRetryNode(array $payload): void
+{
+    $executionId = $payload['execution_id'];
+    $nodeTaskId = $payload['node_task_id'];
+    $nodeId = $payload['node_id'];
+    $nodeType = $payload['node_type'];
+
+    $debugLog = __DIR__ . '/logs/worker_debug.log';
+    $ts = date('Y-m-d H:i:s');
+    @file_put_contents($debugLog, "[$ts] [RetryNode] Retrying node task: $nodeTaskId ($nodeType)\n", FILE_APPEND);
+
+    // Process like a normal node execution
+    processNodeExecution([
+        'execution_id' => $executionId,
+        'task_id' => $nodeTaskId,
+        'node_id' => $nodeId,
+        'node_type' => $nodeType
+    ]);
+}
+
+/**
  * Process poll API status task
  * Polls external API to check task status and update workflow
  */
@@ -351,11 +379,11 @@ function processPollApiStatus(array $payload): void
     $provider = $payload['provider'] ?? 'rhub';
     $apiKey = $payload['api_key'] ?? null;
     $pollCount = $payload['poll_count'] ?? 0;
-    $maxPolls = $payload['max_polls'] ?? 60;
+    // Removed maxPolls limit - polling continues forever while API is RUNNING
 
     $debugLog = __DIR__ . '/logs/worker_debug.log';
     $ts = date('Y-m-d H:i:s');
-    @file_put_contents($debugLog, "[$ts] [Poll] Checking status for task: $externalTaskId (poll $pollCount/$maxPolls)\n", FILE_APPEND);
+    @file_put_contents($debugLog, "[$ts] [Poll] Checking status for task: $externalTaskId (poll #$pollCount)\n", FILE_APPEND);
 
     // Check if node task still exists and is processing
     $nodeTask = Database::fetchOne("SELECT * FROM node_tasks WHERE id = ?", [$nodeTaskId]);
@@ -369,11 +397,11 @@ function processPollApiStatus(array $payload): void
         return;
     }
 
-    // Check if task is stale (started more than 1 hour ago)
+    // Check if task is stale (started more than 2 hours ago without any API response)
     $startedAt = strtotime($nodeTask['started_at'] ?? 'now');
-    $staleThreshold = 3600; // 1 hour
+    $staleThreshold = 7200; // 2 hours - safety net for truly stuck tasks
     if (time() - $startedAt > $staleThreshold) {
-        $error = "Task is stale: started more than 1 hour ago and never completed. External task ID may be invalid.";
+        $error = "Task is stale: started more than 2 hours ago and never received API response. Task may need to be retried.";
         @file_put_contents($debugLog, "[$ts] [Poll] $error\n", FILE_APPEND);
 
         Database::update(
@@ -415,14 +443,15 @@ function processPollApiStatus(array $payload): void
     $result = queryExternalTaskStatus($provider, $externalTaskId, $apiKey);
     @file_put_contents($debugLog, "[$ts] [Poll] Query result: " . json_encode($result) . "\n", FILE_APPEND);
 
-    // Handle error status (treat as failed)
+    // Handle error status (temporary errors like cURL - always retry)
     if ($result['status'] === 'error') {
         $error = $result['error'] ?? 'API query returned error status';
         @file_put_contents($debugLog, "[$ts] [Poll] Error status received: $error\n", FILE_APPEND);
 
-        // If it's a temporary error and we haven't exceeded max polls, retry
-        if ($pollCount < $maxPolls && strpos($error, 'cURL') !== false) {
-            // Re-queue for retry
+        // For temporary errors (cURL, network), always retry with backoff
+        if (strpos($error, 'cURL') !== false || strpos($error, 'timeout') !== false) {
+            // Re-queue for retry with longer delay
+            $delay = min(30 + ($pollCount * 5), 120); // Exponential backoff, max 2 minutes
             Database::insert('task_queue', [
                 'task_type' => 'poll_api_status',
                 'payload' => json_encode([
@@ -431,19 +460,18 @@ function processPollApiStatus(array $payload): void
                     'external_task_id' => $externalTaskId,
                     'provider' => $provider,
                     'api_key' => $apiKey,
-                    'poll_count' => $pollCount + 1,
-                    'max_polls' => $maxPolls
+                    'poll_count' => $pollCount + 1
                 ]),
                 'status' => 'pending',
-                'scheduled_at' => date('Y-m-d H:i:s', strtotime('+30 seconds')),
+                'scheduled_at' => date('Y-m-d H:i:s', strtotime("+{$delay} seconds")),
                 'priority' => 5,
                 'created_at' => date('Y-m-d H:i:s')
             ]);
-            echo "[" . date('Y-m-d H:i:s') . "] Poll: Temporary error, will retry in 30s: $error\n";
+            echo "[" . date('Y-m-d H:i:s') . "] Poll: Temporary error, will retry in {$delay}s: $error\n";
             return;
         }
 
-        // Non-recoverable error, mark as failed
+        // Non-recoverable error - mark NODE as failed (not workflow)
         Database::update(
             'node_tasks',
             [
@@ -455,18 +483,13 @@ function processPollApiStatus(array $payload): void
             ['id' => $nodeTaskId]
         );
 
-        Database::update(
-            'workflow_executions',
-            [
-                'status' => 'failed',
-                'error_message' => $error,
-                'completed_at' => date('Y-m-d H:i:s')
-            ],
-            'id = :id',
-            ['id' => $executionId]
-        );
+        // DON'T fail workflow - only this node fails, others continue
+        // User can retry or abort via UI
 
-        echo "[" . date('Y-m-d H:i:s') . "] Poll: Task $externalTaskId failed with error: $error\n";
+        echo "[" . date('Y-m-d H:i:s') . "] Poll: Node $nodeTaskId failed with error: $error (workflow continues)\n";
+
+        // Continue processing other pending nodes
+        queueNextPendingTask($executionId);
         return;
     }
 
@@ -522,8 +545,8 @@ function processPollApiStatus(array $payload): void
         // Queue next task
         queueNextPendingTask($executionId);
     } elseif ($result['status'] === 'FAILED' || $result['status'] === 'failed') {
-        // Task failed
-        $error = $result['error'] ?? 'External API task failed';
+        // Task failed - mark NODE as failed (not workflow)
+        $error = $result['error'] ?? $result['errorMessage'] ?? 'External API task failed';
 
         Database::update(
             'node_tasks',
@@ -536,67 +559,34 @@ function processPollApiStatus(array $payload): void
             ['id' => $nodeTaskId]
         );
 
-        Database::update(
-            'workflow_executions',
-            [
-                'status' => 'failed',
-                'error_message' => $error,
-                'completed_at' => date('Y-m-d H:i:s')
-            ],
-            'id = :id',
-            ['id' => $executionId]
-        );
+        // DON'T fail entire workflow - only this node fails
+        // User can retry this node or abort via UI
 
-        echo "[" . date('Y-m-d H:i:s') . "] Poll: Task $externalTaskId failed: $error\n";
+        echo "[" . date('Y-m-d H:i:s') . "] Poll: Node $nodeTaskId failed: $error (workflow continues)\n";
+
+        // Continue processing other pending nodes
+        queueNextPendingTask($executionId);
     } else {
-        // Still running - queue another poll if not exceeded max
-        if ($pollCount >= $maxPolls) {
-            $error = "Polling timeout: Task did not complete within " . ($maxPolls * 10) . " seconds";
+        // Still running (RUNNING, PENDING, PROCESSING, etc.) - always re-queue
+        // NO TIMEOUT - only user abort or API FAILED/SUCCESS can stop polling
 
-            Database::update(
-                'node_tasks',
-                [
-                    'status' => 'failed',
-                    'error_message' => $error,
-                    'completed_at' => date('Y-m-d H:i:s')
-                ],
-                'id = :id',
-                ['id' => $nodeTaskId]
-            );
+        Database::insert('task_queue', [
+            'task_type' => 'poll_api_status',
+            'payload' => json_encode([
+                'node_task_id' => $nodeTaskId,
+                'execution_id' => $executionId,
+                'external_task_id' => $externalTaskId,
+                'provider' => $provider,
+                'api_key' => $apiKey,
+                'poll_count' => $pollCount + 1
+            ]),
+            'status' => 'pending',
+            'scheduled_at' => date('Y-m-d H:i:s', strtotime('+10 seconds')),
+            'priority' => 5,
+            'created_at' => date('Y-m-d H:i:s')
+        ]);
 
-            Database::update(
-                'workflow_executions',
-                [
-                    'status' => 'failed',
-                    'error_message' => $error,
-                    'completed_at' => date('Y-m-d H:i:s')
-                ],
-                'id = :id',
-                ['id' => $executionId]
-            );
-
-            echo "[" . date('Y-m-d H:i:s') . "] Poll: Task $externalTaskId timed out\n";
-        } else {
-            // Re-queue polling
-            Database::insert('task_queue', [
-                'task_type' => 'poll_api_status',
-                'payload' => json_encode([
-                    'node_task_id' => $nodeTaskId,
-                    'execution_id' => $executionId,
-                    'external_task_id' => $externalTaskId,
-                    'provider' => $provider,
-                    'api_key' => $apiKey,
-                    'poll_count' => $pollCount + 1,
-                    'max_polls' => $maxPolls
-                ]),
-                'status' => 'pending',
-                'scheduled_at' => date('Y-m-d H:i:s', strtotime('+10 seconds')),
-                'priority' => 5,
-                'created_at' => date('Y-m-d H:i:s')
-            ]);
-
-            echo "[" . date('Y-m-d H:i:s') . "] Poll: Task $externalTaskId still running, re-queued poll " . ($pollCount + 1) . "\n";
-        }
+        echo "[" . date('Y-m-d H:i:s') . "] Poll: Task $externalTaskId still running, re-queued poll #" . ($pollCount + 1) . "\n";
     }
 }
 

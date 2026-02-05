@@ -40,7 +40,7 @@ try {
 
     // Get node statuses
     $tasks = Database::fetchAll(
-        "SELECT node_id, node_type, status, result_url, output_data, error_message, started_at, completed_at 
+        "SELECT id, node_id, node_type, status, result_url, output_data, error_message, started_at, completed_at 
          FROM node_tasks WHERE execution_id = ? ORDER BY id ASC",
         [$executionId]
     );
@@ -56,6 +56,7 @@ try {
         }
 
         return [
+            'nodeTaskId' => (int) $task['id'],  // For retry functionality
             'nodeId' => $task['node_id'],
             'nodeType' => $task['node_type'],
             'status' => $task['status'],

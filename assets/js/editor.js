@@ -1300,6 +1300,57 @@ class Editor {
     }
 
     /**
+     * Retry a failed node
+     * @param {string} nodeId - The node ID from the workflow
+     * @param {number} nodeTaskId - The node task ID from the database
+     */
+    async retryFailedNode(nodeId, nodeTaskId) {
+        const executionId = this.workflowManager?.executionState?.executionId;
+        if (!executionId || !nodeTaskId) {
+            Toast.error('Retry Failed', 'Missing execution or task information');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/workflows/retry-node.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    execution_id: executionId,
+                    node_task_id: nodeTaskId
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                Toast.info('Retrying Node', 'The node has been queued for retry');
+
+                // Reset the node UI to processing state
+                const modal = Modals.getModal('modal-execution');
+                if (modal) {
+                    const nodeItem = modal.querySelector(`.execution-node-item[data-node-id="${nodeId}"]`);
+                    if (nodeItem) {
+                        nodeItem.className = 'execution-node-item pending';
+                        const statusText = nodeItem.querySelector('.status-text');
+                        const statusTimer = nodeItem.querySelector('.status-timer');
+                        const retryBtn = nodeItem.querySelector('.btn-retry-node');
+                        if (statusText) statusText.textContent = 'Pending (Retry)';
+                        if (statusTimer) statusTimer.textContent = '';
+                        if (retryBtn) retryBtn.classList.add('hidden');
+                        nodeItem.querySelector('.execution-node-progress-bar').style.width = '0%';
+                    }
+                }
+            } else {
+                Toast.error('Retry Failed', result.error || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Failed to retry node:', error);
+            Toast.error('Retry Failed', error.message);
+        }
+    }
+
+    /**
      * Run a single flow starting from a specific trigger node
      * @param {string} triggerNodeId - The ID of the trigger node to start from
      */
@@ -1674,13 +1725,18 @@ class Editor {
         }
 
         return `
-            <div class="execution-node-item pending" data-node-id="${node.id}">
+            <div class="execution-node-item pending" data-node-id="${node.id}" data-node-type="${node.type}">
                 <div class="execution-node-icon" style="background-color: ${colors.bg}; color: ${colors.text}">
                     <i data-lucide="${icon}" class="w-4 h-4"></i>
                 </div>
                 <div class="execution-node-info">
                     <div class="execution-node-name">${Utils.escapeHtml(displayName)}</div>
                     <div class="execution-node-status"><span class="status-text">Pending</span><span class="status-timer"></span></div>
+                </div>
+                <div class="execution-node-actions">
+                    <button class="btn-retry-node hidden" title="Retry this node">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
                 </div>
                 <div class="execution-node-progress">
                     <div class="execution-node-progress-bar" style="width: 0%"></div>
@@ -1767,8 +1823,28 @@ class Editor {
 
                     if (ns.status === 'completed') {
                         nodeItem.querySelector('.execution-node-progress-bar').style.width = '100%';
+                        // Hide retry button for completed nodes
+                        const retryBtn = nodeItem.querySelector('.btn-retry-node');
+                        if (retryBtn) retryBtn.classList.add('hidden');
                     } else if (ns.status === 'processing') {
                         nodeItem.querySelector('.execution-node-progress-bar').style.width = '50%';
+                        // Hide retry button while processing
+                        const retryBtn = nodeItem.querySelector('.btn-retry-node');
+                        if (retryBtn) retryBtn.classList.add('hidden');
+                    } else if (ns.status === 'failed') {
+                        // Show retry button for failed nodes
+                        const retryBtn = nodeItem.querySelector('.btn-retry-node');
+                        if (retryBtn) {
+                            retryBtn.classList.remove('hidden');
+                            // Add click handler if not already added
+                            if (!retryBtn.dataset.handlerAdded) {
+                                retryBtn.dataset.handlerAdded = 'true';
+                                retryBtn.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    this.retryFailedNode(ns.nodeId, ns.nodeTaskId);
+                                });
+                            }
+                        }
                     }
                 }
             });
