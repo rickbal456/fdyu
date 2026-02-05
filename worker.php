@@ -1279,8 +1279,29 @@ function markTaskFailed(int $taskId, string $error): void
 {
     $task = Database::fetchOne("SELECT * FROM task_queue WHERE id = ?", [$taskId]);
 
-    if ($task && $task['attempts'] < $task['max_attempts']) {
-        // Retry
+    // Identify permanent errors that should NOT be retried
+    // These are validation/input errors that won't succeed on retry
+    $permanentErrors = [
+        'length',           // prompt/field length errors
+        'API Error:',       // API validation errors
+        'required',         // missing required fields
+        'invalid',          // invalid input format
+        'not found',        // resource not found
+        'exceeded',         // rate limit or quota exceeded
+        'too long',         // content too long
+        'too short',        // content too short
+    ];
+
+    $isPermanentError = false;
+    foreach ($permanentErrors as $pattern) {
+        if (stripos($error, $pattern) !== false) {
+            $isPermanentError = true;
+            break;
+        }
+    }
+
+    if ($task && $task['attempts'] < $task['max_attempts'] && !$isPermanentError) {
+        // Retry only for temporary errors (network issues, timeouts, etc.)
         Database::update(
             'task_queue',
             [
