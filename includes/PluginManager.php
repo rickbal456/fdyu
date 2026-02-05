@@ -684,6 +684,9 @@ class PluginManager
      */
     private static function mapData($template, $data)
     {
+        $debugLog = dirname(__DIR__) . '/logs/worker_debug.log';
+        $ts = date('Y-m-d H:i:s');
+
         $result = [];
         foreach ($template as $key => $value) {
             if (is_array($value)) {
@@ -693,6 +696,7 @@ class PluginManager
                 if (preg_match('/\{\{(.*?)\}\}/', $value, $matches)) {
                     $path = trim($matches[1]);
                     $val = self::getValueByPath($data, $path);
+                    @file_put_contents($debugLog, "[$ts] [mapData] Mapping '$path' => " . (is_string($val) ? substr($val, 0, 100) : gettype($val)) . "\n", FILE_APPEND);
                     // If the value is the only thing, use the type, otherwise replace string
                     if ($value === $matches[0]) {
                         $result[$key] = $val;
