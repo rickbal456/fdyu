@@ -477,6 +477,20 @@ class PluginManager
         $apiResponse = $response['data'];
         @file_put_contents($debugLog, "[$ts] [executeApiNode] Raw API response: " . json_encode($apiResponse) . "\n", FILE_APPEND);
 
+        // Check for API-level errors (RunningHub returns HTTP 200 but with errorCode)
+        if (!empty($apiResponse['errorCode']) && !empty($apiResponse['errorMessage'])) {
+            $errorMsg = $apiResponse['errorMessage'];
+            @file_put_contents($debugLog, "[$ts] [executeApiNode] API Error: {$apiResponse['errorCode']} - $errorMsg\n", FILE_APPEND);
+            // Release rate limit slot on error
+            if ($taskId && class_exists('ApiRateLimiter')) {
+                ApiRateLimiter::releaseSlot($provider, $taskId);
+            }
+            return [
+                'success' => false,
+                'error' => "API Error: $errorMsg"
+            ];
+        }
+
         // Map response
         $result = [];
         if ($mapping && isset($mapping['response'])) {
