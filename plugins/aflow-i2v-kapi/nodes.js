@@ -6,7 +6,7 @@
  * 
  * SECURITY NOTE: All API configuration (endpoints, provider details)
  * are stored server-side in plugin.json and resolved by the worker.
- * This client-side file only handles UI and node registration.
+ * API Key is configured in Administration → Integrations.
  */
 
 (function () {
@@ -15,49 +15,24 @@
     const PLUGIN_ID = 'aflow-i2v-kapi';
 
     /**
-     * Check if API key is configured (either plugin-specific or main provider)
-     * This checks STATUS only, not the actual key value (for security)
+     * Check if API key is configured in admin settings
      * @returns {boolean}
      */
     function hasApiKeyConfigured() {
-        // First check plugin-specific key status
-        if (PluginManager.hasApiKey(`plugin_${PLUGIN_ID}`)) return true;
-
-        // Then check main provider key status (kapi)
+        // Check if admin has configured kapi key
         return PluginManager.hasApiKey('kapi');
     }
 
-    /**
-     * Get user's own API key from node field (if they entered one)
-     * This is for users who bring their own key
-     */
-    function getUserApiKey() {
-        // Check user's own keys (not admin-shared)
-        const pluginKey = PluginManager.getAiKey(`plugin_${PLUGIN_ID}`);
-        if (pluginKey) return pluginKey;
-
-        return PluginManager.getAiKey('kapi');
-    }
-
-    // Build fields - API key field is always included but hidden when configured
+    // Build fields - API key is now configured in admin Integrations
     const fields = [
-        {
-            id: 'apiKey',
-            type: 'text',
-            label: window.t ? window.t('generation.api_key') : 'API Key',
-            placeholder: window.t ? window.t('generation.your_api_key_kie') : 'Your KIE.AI API key',
-            description: window.t ? window.t('generation.configure_in_settings') : 'Or configure in Settings → Integrations',
-            // Hide this field if API key is already configured in admin settings
-            showIf: () => !hasApiKeyConfigured()
-        },
         {
             id: 'aspect_ratio',
             type: 'select',
             label: window.t ? window.t('generation.aspect_ratio_kapi') : 'Aspect Ratio',
-            default: 'landscape',
+            default: 'portrait',
             options: [
-                { value: 'landscape', label: window.t ? window.t('generation.landscape_kapi') : 'Landscape (Horizontal)' },
-                { value: 'portrait', label: window.t ? window.t('generation.portrait_kapi') : 'Portrait (Vertical)' }
+                { value: 'portrait', label: window.t ? window.t('generation.portrait_kapi') : 'Portrait (Vertical)' },
+                { value: 'landscape', label: window.t ? window.t('generation.landscape_kapi') : 'Landscape (Horizontal)' }
             ]
         },
         {
@@ -102,30 +77,22 @@
             source: 'output'
         },
         defaultData: {
-            apiKey: '',
-            aspect_ratio: 'landscape',
+            aspect_ratio: 'portrait',
             prompt: '',
             n_frames: '10'
         },
         // Custom execution handler (used by worker)
         // Returns only node data - server resolves API config from plugin.json
         execute: async function (node, inputs, context) {
-            const { apiKey, aspect_ratio, prompt, n_frames } = node.data;
+            const { aspect_ratio, prompt, n_frames } = node.data;
             const imageUrl = inputs.image || '';
 
             // Use connected text input or fall back to node's prompt field
             const finalPrompt = (inputs.text && inputs.text.trim()) ? inputs.text.trim() : prompt;
 
-            // Check if admin has configured the key in Settings → Integrations
-            const adminHasKey = hasApiKeyConfigured();
-
-            // API key priority: Admin key > User's node key
-            // If admin configured key, we DON'T send apiKey (server will use admin key)
-            // If admin didn't configure, check if user provided a key
-            const userKey = apiKey && apiKey.trim() ? apiKey.trim() : '';
-
-            if (!adminHasKey && !userKey) {
-                throw new Error(window.t ? window.t('generation.api_key_required_kie') : 'KIE.AI API Key is required. Set it in Settings → Integrations or in the node field.');
+            // Check if admin has configured the key in Administration → Integrations
+            if (!hasApiKeyConfigured()) {
+                throw new Error(window.t ? window.t('generation.api_key_required_kie') : 'KIE.AI API Key is required. Configure it in Administration → Integrations → Video Generation API.');
             }
 
             if (!finalPrompt || finalPrompt.trim().length === 0) {
@@ -137,24 +104,15 @@
             }
 
             // Return payload for server-side execution
-            // Server will resolve endpoint and provider config from plugin.json
-            // Only include apiKey if user explicitly provided one - otherwise server will use admin key
-            const payload = {
-                image: imageUrl,
-                aspect_ratio: aspect_ratio,
-                prompt: finalPrompt,
-                n_frames: String(n_frames)
-            };
-
-            // Only add apiKey if admin hasn't configured one
-            // Admin key takes precedence over user's key
-            if (!adminHasKey && userKey) {
-                payload.apiKey = userKey;
-            }
-
+            // Server will resolve endpoint and API key from plugin.json and admin settings
             return {
                 action: PLUGIN_ID,
-                payload: payload
+                payload: {
+                    image: imageUrl,
+                    aspect_ratio: aspect_ratio,
+                    prompt: finalPrompt,
+                    n_frames: String(n_frames)
+                }
             };
         }
     });
