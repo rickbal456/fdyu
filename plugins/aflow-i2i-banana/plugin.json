@@ -1,0 +1,36 @@
+{
+    "id": "aflow-i2i-banana",
+    "name": "Nano Banana Image to Image",
+    "description": "Transform images using AI with Nano Banana model via RunningHub API",
+    "version": "1.0.0",
+    "author": "AIKAFLOW Developer",
+    "icon": "image",
+    "color": "orange",
+    "category": "generation",
+    "enabled": true,
+    "homepage": "https://aikademi.id",
+    "requires": {
+        "aikaflow": ">=1.0.0"
+    },
+    "nodeTypes": [
+        "aflow-i2i-banana"
+    ],
+    "executionType": "api",
+    "apiConfig": {
+        "provider": "rhub",
+        "endpoint": "https://www.runninghub.ai/openapi/v2/rhart-image-n-pro/edit"
+    },
+    "apiMapping": {
+        "request": {
+            "imageUrls": ["{{image}}"],
+            "prompt": "{{prompt}}",
+            "resolution": "{{resolution}}"
+        },
+        "response": {
+            "taskId": "$.taskId"
+        }
+    },
+    "settings": {
+        "apiKey": ""
+    }
+}

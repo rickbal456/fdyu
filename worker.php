@@ -496,6 +496,7 @@ function processPollApiStatus(array $payload): void
     if ($result['status'] === 'SUCCESS' || $result['status'] === 'completed') {
         // Task completed successfully
         $resultUrl = $result['resultUrl'] ?? null;
+        $isImage = false; // Default to video
 
         // Upload to CDN if needed (use uploadFromUrl for HTTP URLs)
         if ($resultUrl) {
@@ -504,8 +505,15 @@ function processPollApiStatus(array $payload): void
             @file_put_contents($debugLog, "[$ts] [Poll] Uploading result to CDN: $resultUrl\n", FILE_APPEND);
 
             // Determine file extension from URL
-            $extension = pathinfo(parse_url($resultUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'mp4';
-            $filename = 'video_' . time() . '_' . uniqid() . '.' . $extension;
+            $extension = strtolower(pathinfo(parse_url($resultUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'mp4');
+
+            // Determine if this is an image or video based on extension
+            $imageExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'];
+            $isImage = in_array($extension, $imageExtensions);
+
+            // Generate appropriate filename
+            $prefix = $isImage ? 'image' : 'video';
+            $filename = $prefix . '_' . time() . '_' . uniqid() . '.' . $extension;
 
             // Prepare download headers for authenticated APIs (like JsonCut)
             $downloadHeaders = [];
@@ -528,12 +536,15 @@ function processPollApiStatus(array $payload): void
             }
         }
 
+        // Determine output key based on file type
+        $outputKey = $isImage ? 'image' : 'video';
+
         Database::update(
             'node_tasks',
             [
                 'status' => 'completed',
                 'result_url' => $resultUrl,
-                'output_data' => json_encode(['video' => $resultUrl]),
+                'output_data' => json_encode([$outputKey => $resultUrl]),
                 'completed_at' => date('Y-m-d H:i:s')
             ],
             'id = :id',
