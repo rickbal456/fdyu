@@ -96,7 +96,7 @@
         description: 'Generate Image from Text using Nano Banana API',
         icon: 'image',
         inputs: [
-            { id: 'flow', type: 'flow', label: 'Wait For' },
+            { id: 'flow', type: 'flow', label: 'Wait For', optional: true },
             { id: 'text', type: 'text', label: 'Prompt (Optional)', optional: true }
         ],
         outputs: [

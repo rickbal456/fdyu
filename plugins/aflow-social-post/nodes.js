@@ -221,7 +221,7 @@
         description: 'Publish content to social media platforms',
         icon: 'share-2',
         inputs: [
-            { id: 'flow', type: 'flow', label: 'Wait For' },
+            { id: 'flow', type: 'flow', label: 'Wait For', optional: true },
             { id: 'video', type: 'video', label: 'Video (Optional)', optional: true },
             { id: 'image', type: 'image', label: 'Image (Optional)', optional: true },
             { id: 'text', type: 'text', label: 'Caption (Optional)', optional: true }

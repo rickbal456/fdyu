@@ -89,7 +89,7 @@
         description: 'Generate Video from Image using RH Art S API (10-15s)',
         icon: 'clapperboard',
         inputs: [
-            { id: 'flow', type: 'flow', label: 'Wait For' },
+            { id: 'flow', type: 'flow', label: 'Wait For', optional: true },
             { id: 'image', type: 'image', label: 'Input Image' },
             { id: 'text', type: 'text', label: 'Motion Prompt (Optional)', optional: true }
         ],

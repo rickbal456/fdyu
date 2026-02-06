@@ -59,7 +59,7 @@
         description: 'Generate Video from Image using Veo3.1 via RunningHub (8s)',
         icon: 'clapperboard',
         inputs: [
-            { id: 'flow', type: 'flow', label: 'Wait For' },
+            { id: 'flow', type: 'flow', label: 'Wait For', optional: true },
             { id: 'image', type: 'image', label: 'Input Image' },
             { id: 'text', type: 'text', label: 'Motion Prompt (Optional)', optional: true }
         ],

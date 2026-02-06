@@ -91,7 +91,7 @@
         description: window.t ? window.t('generation.generate_video_from_image') : 'Generate Video from Image 10-15s',
         icon: 'clapperboard',
         inputs: [
-            { id: 'flow', type: 'flow', label: window.t ? window.t('generation.wait_for') : 'Wait For' },
+            { id: 'flow', type: 'flow', label: 'Wait For', optional: true },
             { id: 'image', type: 'image', label: window.t ? window.t('generation.input_image') : 'Input Image' },
             { id: 'text', type: 'text', label: window.t ? window.t('generation.motion_prompt_optional') : 'Motion Prompt (Optional)', optional: true }
         ],
