@@ -47,7 +47,7 @@
     PluginManager.registerNode({
         type: 'aflow-i2i-banana',
         category: 'generation',
-        name: window.t ? window.t('generation.nano_banana_i2i') : 'Nano Banana I2I',
+        name: window.t ? window.t('generation.nano_banana_i2i') : 'Nano Banana Image to Image',
         description: window.t ? window.t('generation.nano_banana_i2i_desc') : 'Transform images with AI using Nano Banana model',
         icon: 'image',
         inputs: [
