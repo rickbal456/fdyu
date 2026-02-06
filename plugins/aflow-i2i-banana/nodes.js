@@ -25,15 +25,15 @@
         {
             id: 'prompt',
             type: 'textarea',
-            label: window.t ? window.t('generation.edit_prompt') : 'Edit Prompt',
-            placeholder: window.t ? window.t('generation.edit_prompt_placeholder') : 'Describe how you want to transform the image (5-4000 characters)...',
+            label: 'Edit Prompt',
+            placeholder: 'Describe how you want to transform the image (5-4000 characters)...',
             rows: 6,
             disabledWhenConnected: 'text'
         },
         {
             id: 'resolution',
             type: 'select',
-            label: window.t ? window.t('generation.resolution') : 'Resolution',
+            label: 'Resolution',
             default: '1k',
             options: [
                 { value: '1k', label: '1K (Standard)' },
@@ -47,16 +47,16 @@
     PluginManager.registerNode({
         type: 'aflow-i2i-banana',
         category: 'generation',
-        name: window.t ? window.t('generation.nano_banana_i2i') : 'Nano Banana Image to Image',
-        description: window.t ? window.t('generation.nano_banana_i2i_desc') : 'Transform images with AI using Nano Banana model',
+        name: 'Nano Banana Image to Image',
+        description: 'Transform images with AI using Nano Banana model',
         icon: 'image',
         inputs: [
-            { id: 'flow', type: 'flow', label: window.t ? window.t('generation.wait_for') : 'Wait For' },
-            { id: 'image', type: 'image', label: window.t ? window.t('generation.input_image') : 'Input Image' },
-            { id: 'text', type: 'text', label: window.t ? window.t('generation.prompt_optional') : 'Prompt (Optional)', optional: true }
+            { id: 'flow', type: 'flow', label: 'Wait For' },
+            { id: 'image', type: 'image', label: 'Input Image' },
+            { id: 'text', type: 'text', label: 'Prompt (Optional)', optional: true }
         ],
         outputs: [
-            { id: 'image', type: 'image', label: window.t ? window.t('generation.output_image') : 'Output Image' }
+            { id: 'image', type: 'image', label: 'Output Image' }
         ],
         fields: fields,
         preview: {
@@ -76,19 +76,19 @@
 
             // Check if admin has configured the key
             if (!hasApiKeyConfigured()) {
-                throw new Error(window.t ? window.t('generation.api_key_required_rhub') : 'RunningHub API Key is required. Configure it in Administration → Integrations.');
+                throw new Error('RunningHub API Key is required. Configure it in Administration → Integrations.');
             }
 
             if (!finalPrompt || finalPrompt.trim().length < 5) {
-                throw new Error(window.t ? window.t('generation.prompt_too_short') : 'Prompt is too short (minimum 5 characters).');
+                throw new Error('Prompt is too short (minimum 5 characters).');
             }
 
             if (finalPrompt.length > 4000) {
-                throw new Error(window.t ? window.t('generation.prompt_too_long_4000') : 'Prompt is too long (maximum 4000 characters).');
+                throw new Error('Prompt is too long (maximum 4000 characters).');
             }
 
             if (!imageUrl) {
-                throw new Error(window.t ? window.t('generation.image_required') : 'Input image is required.');
+                throw new Error('Input image is required.');
             }
 
             // Return payload for server-side execution
