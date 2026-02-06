@@ -25,28 +25,28 @@
         {
             id: 'aspectRatio',
             type: 'select',
-            label: window.t ? window.t('generation.aspect_ratio') : 'Aspect Ratio',
+            label: 'Aspect Ratio',
             default: '9:16',
             options: [
-                { value: '9:16', label: window.t ? window.t('generation.portrait') : 'Portrait (9:16)' },
-                { value: '16:9', label: window.t ? window.t('generation.landscape') : 'Landscape (16:9)' }
+                { value: '9:16', label: 'Portrait (Vertical)' },
+                { value: '16:9', label: 'Landscape (Horizontal)' }
             ]
         },
         {
             id: 'prompt',
             type: 'textarea',
-            label: window.t ? window.t('generation.motion_prompt') : 'Motion Prompt',
-            placeholder: window.t ? window.t('generation.motion_prompt_placeholder') : 'Describe the animation, motion and scene in detail (5-800 characters)...',
+            label: 'Motion Prompt',
+            placeholder: 'Describe the motion and scene (5-800 characters)...',
             rows: 6,
             disabledWhenConnected: 'text'
         },
         {
             id: 'duration',
             type: 'select',
-            label: window.t ? window.t('generation.duration_seconds') : 'Duration (seconds)',
+            label: 'Duration',
             default: '8',
             options: [
-                { value: '8', label: window.t ? window.t('generation.8_seconds') : '8 seconds' }
+                { value: '8', label: '8 seconds' }
             ]
         }
     ];
@@ -56,15 +56,15 @@
         type: 'aflow-i2v-veo31',
         category: 'generation',
         name: 'Image to Video Veo3.1',
-        description: window.t ? window.t('generation.generate_video_veo31') : 'Generate Video from Image using Veo3.1 via RunningHub (8s)',
+        description: 'Generate Video from Image using Veo3.1 via RunningHub (8s)',
         icon: 'clapperboard',
         inputs: [
-            { id: 'flow', type: 'flow', label: window.t ? window.t('generation.wait_for') : 'Wait For' },
-            { id: 'image', type: 'image', label: window.t ? window.t('generation.input_image') : 'Input Image' },
-            { id: 'text', type: 'text', label: window.t ? window.t('generation.motion_prompt_optional') : 'Motion Prompt (Optional)', optional: true }
+            { id: 'flow', type: 'flow', label: 'Wait For' },
+            { id: 'image', type: 'image', label: 'Input Image' },
+            { id: 'text', type: 'text', label: 'Motion Prompt (Optional)', optional: true }
         ],
         outputs: [
-            { id: 'video', type: 'video', label: window.t ? window.t('generation.output_video') : 'Output Video' }
+            { id: 'video', type: 'video', label: 'Output Video' }
         ],
         fields: fields,
         preview: {
@@ -85,15 +85,15 @@
 
             // Check if admin has configured the key
             if (!hasApiKeyConfigured()) {
-                throw new Error(window.t ? window.t('generation.api_key_required_rhub') : 'RunningHub API Key is required. Configure it in Administration → Integrations.');
+                throw new Error('RunningHub API Key is required. Configure it in Administration → Integrations.');
             }
 
             if (!finalPrompt || finalPrompt.trim().length < 5) {
-                throw new Error(window.t ? window.t('generation.prompt_too_short') : 'Motion prompt is too short (minimum 5 characters).');
+                throw new Error('Motion prompt is too short (minimum 5 characters).');
             }
 
             if (finalPrompt.length > 800) {
-                throw new Error(window.t ? window.t('generation.prompt_too_long') : 'Motion prompt is too long (maximum 800 characters).');
+                throw new Error('Motion prompt is too long (maximum 800 characters).');
             }
 
             // Return payload for server-side execution

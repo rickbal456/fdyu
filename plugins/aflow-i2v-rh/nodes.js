@@ -44,27 +44,27 @@
         {
             id: 'apiKey',
             type: 'text',
-            label: window.t ? window.t('generation.api_key') : 'API Key',
-            placeholder: window.t ? window.t('generation.your_api_key') : 'Your API key',
-            description: window.t ? window.t('generation.configure_in_settings') : 'Or configure in Settings → Integrations',
+            label: 'API Key',
+            placeholder: 'Your API key',
+            description: 'Or configure in Settings → Integrations',
             // Hide this field if API key is already configured in admin settings
             showIf: () => !hasApiKeyConfigured()
         },
         {
             id: 'aspectRatio',
             type: 'select',
-            label: window.t ? window.t('generation.aspect_ratio_rh') : 'Aspect Ratio',
+            label: 'Aspect Ratio',
             default: '16:9',
             options: [
-                { value: '16:9', label: window.t ? window.t('generation.landscape_16_9') : 'Landscape (16:9)' },
-                { value: '9:16', label: window.t ? window.t('generation.portrait_9_16') : 'Portrait (9:16)' }
+                { value: '16:9', label: 'Landscape (16:9)' },
+                { value: '9:16', label: 'Portrait (9:16)' }
             ]
         },
         {
             id: 'prompt',
             type: 'textarea',
-            label: window.t ? window.t('generation.motion_prompt') : 'Motion Prompt',
-            placeholder: window.t ? window.t('generation.motion_prompt_placeholder_rh') : 'Describe the animation, motion and scene in detail (5-4000 characters)...',
+            label: 'Motion Prompt',
+            placeholder: 'Describe the motion and scene (5-4000 characters)...',
             rows: 6,
             // This field will be disabled when 'text' input port is connected
             disabledWhenConnected: 'text'
@@ -72,11 +72,11 @@
         {
             id: 'duration',
             type: 'select',
-            label: window.t ? window.t('generation.duration_seconds') : 'Duration (seconds)',
+            label: 'Duration',
             default: '10',
             options: [
-                { value: '10', label: window.t ? window.t('generation.10_seconds') : '10 seconds' },
-                { value: '15', label: window.t ? window.t('generation.15_seconds') : '15 seconds' }
+                { value: '10', label: '10 seconds' },
+                { value: '15', label: '15 seconds' }
             ]
         }
     ];
@@ -85,16 +85,16 @@
     PluginManager.registerNode({
         type: 'aflow-i2v-rh',
         category: 'generation',
-        name: window.t ? window.t('generation.image_to_video_rh') : 'Image to Video RH',
-        description: window.t ? window.t('generation.generate_video_from_image_rh') : 'Generate Video from Image using RH Art S API (10-15s)',
+        name: 'Image to Video RH',
+        description: 'Generate Video from Image using RH Art S API (10-15s)',
         icon: 'clapperboard',
         inputs: [
-            { id: 'flow', type: 'flow', label: window.t ? window.t('generation.wait_for') : 'Wait For' },
-            { id: 'image', type: 'image', label: window.t ? window.t('generation.input_image') : 'Input Image' },
-            { id: 'text', type: 'text', label: window.t ? window.t('generation.motion_prompt_optional') : 'Motion Prompt (Optional)', optional: true }
+            { id: 'flow', type: 'flow', label: 'Wait For' },
+            { id: 'image', type: 'image', label: 'Input Image' },
+            { id: 'text', type: 'text', label: 'Motion Prompt (Optional)', optional: true }
         ],
         outputs: [
-            { id: 'video', type: 'video', label: window.t ? window.t('generation.output_video') : 'Output Video' }
+            { id: 'video', type: 'video', label: 'Output Video' }
         ],
         fields: fields,
         preview: {
@@ -121,15 +121,15 @@
             const adminHasKey = hasApiKeyConfigured();
 
             if (!userProvidedKey && !adminHasKey) {
-                throw new Error(window.t ? window.t('generation.api_key_required') : 'API Key is required. Set it in Settings → Integrations or in the node field.');
+                throw new Error('API Key is required. Set it in Settings → Integrations or in the node field.');
             }
 
             if (!finalPrompt || finalPrompt.length < 5) {
-                throw new Error(window.t ? window.t('generation.prompt_required_rh') : 'Motion prompt is required (minimum 5 characters). Either connect a Text Input node or enter a prompt manually.');
+                throw new Error('Motion prompt is required (minimum 5 characters). Either connect a Text Input node or enter a prompt manually.');
             }
 
             if (finalPrompt.length > 4000) {
-                throw new Error(window.t ? window.t('generation.prompt_too_long_rh') : 'Motion prompt is too long (maximum 4000 characters).');
+                throw new Error('Motion prompt is too long (maximum 4000 characters).');
             }
 
             // Return payload for server-side execution

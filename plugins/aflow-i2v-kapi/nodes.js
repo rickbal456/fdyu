@@ -28,18 +28,18 @@
         {
             id: 'aspect_ratio',
             type: 'select',
-            label: window.t ? window.t('generation.aspect_ratio_kapi') : 'Aspect Ratio',
+            label: 'Aspect Ratio',
             default: 'portrait',
             options: [
-                { value: 'portrait', label: window.t ? window.t('generation.portrait_kapi') : 'Portrait (Vertical)' },
-                { value: 'landscape', label: window.t ? window.t('generation.landscape_kapi') : 'Landscape (Horizontal)' }
+                { value: 'portrait', label: 'Portrait (Vertical)' },
+                { value: 'landscape', label: 'Landscape (Horizontal)' }
             ]
         },
         {
             id: 'prompt',
             type: 'textarea',
-            label: window.t ? window.t('generation.motion_prompt') : 'Motion Prompt',
-            placeholder: window.t ? window.t('generation.motion_prompt_placeholder_kapi') : 'Describe the animation, motion and scene in detail (up to 10000 characters)...',
+            label: 'Motion Prompt',
+            placeholder: 'Describe the motion and scene (up to 10000 characters)...',
             rows: 6,
             // This field will be disabled when 'text' input port is connected
             disabledWhenConnected: 'text'
@@ -47,11 +47,11 @@
         {
             id: 'n_frames',
             type: 'select',
-            label: window.t ? window.t('generation.duration_seconds') : 'Duration (seconds)',
+            label: 'Duration',
             default: '10',
             options: [
-                { value: '10', label: window.t ? window.t('generation.10_seconds') : '10 seconds' },
-                { value: '15', label: window.t ? window.t('generation.15_seconds') : '15 seconds' }
+                { value: '10', label: '10 seconds' },
+                { value: '15', label: '15 seconds' }
             ]
         }
     ];
@@ -60,16 +60,16 @@
     PluginManager.registerNode({
         type: 'aflow-i2v-kapi',
         category: 'generation',
-        name: window.t ? window.t('generation.image_to_video_kapi') : 'Image to Video KAPI',
-        description: window.t ? window.t('generation.generate_video_from_image_kapi') : 'Generate Video from Image using Sora 2 via KIE.AI (10-15s)',
+        name: 'Image to Video KAPI',
+        description: 'Generate Video from Image using Sora 2 via KIE.AI (10-15s)',
         icon: 'clapperboard',
         inputs: [
-            { id: 'flow', type: 'flow', label: window.t ? window.t('generation.wait_for') : 'Wait For' },
-            { id: 'image', type: 'image', label: window.t ? window.t('generation.input_image') : 'Input Image' },
-            { id: 'text', type: 'text', label: window.t ? window.t('generation.motion_prompt_optional') : 'Motion Prompt (Optional)', optional: true }
+            { id: 'flow', type: 'flow', label: 'Wait For' },
+            { id: 'image', type: 'image', label: 'Input Image' },
+            { id: 'text', type: 'text', label: 'Motion Prompt (Optional)', optional: true }
         ],
         outputs: [
-            { id: 'video', type: 'video', label: window.t ? window.t('generation.output_video') : 'Output Video' }
+            { id: 'video', type: 'video', label: 'Output Video' }
         ],
         fields: fields,
         preview: {
@@ -92,15 +92,15 @@
 
             // Check if admin has configured the key in Administration → Integrations
             if (!hasApiKeyConfigured()) {
-                throw new Error(window.t ? window.t('generation.api_key_required_kie') : 'KIE.AI API Key is required. Configure it in Administration → Integrations → Video Generation API.');
+                throw new Error('KIE.AI API Key is required. Configure it in Administration → Integrations → Video Generation API.');
             }
 
             if (!finalPrompt || finalPrompt.trim().length === 0) {
-                throw new Error(window.t ? window.t('generation.prompt_required_kapi') : 'Motion prompt is required. Either connect a Text Input node or enter a prompt manually.');
+                throw new Error('Motion prompt is required. Either connect a Text Input node or enter a prompt manually.');
             }
 
             if (finalPrompt.length > 10000) {
-                throw new Error(window.t ? window.t('generation.prompt_too_long_kapi') : 'Motion prompt is too long (maximum 10000 characters).');
+                throw new Error('Motion prompt is too long (maximum 10000 characters).');
             }
 
             // Return payload for server-side execution
