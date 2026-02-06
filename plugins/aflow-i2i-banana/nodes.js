@@ -51,7 +51,7 @@
         description: 'Transform images with AI using Nano Banana model',
         icon: 'image',
         inputs: [
-            { id: 'flow', type: 'flow', label: 'Wait For' },
+            { id: 'flow', type: 'flow', label: 'Wait For', optional: true },
             { id: 'image', type: 'image', label: 'Input Image' },
             { id: 'text', type: 'text', label: 'Prompt (Optional)', optional: true }
         ],
