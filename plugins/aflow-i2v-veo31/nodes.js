@@ -55,7 +55,7 @@
     PluginManager.registerNode({
         type: 'aflow-i2v-veo31',
         category: 'generation',
-        name: window.t ? window.t('generation.image_to_video_veo31') : 'Image to Video Veo3.1',
+        name: 'Image to Video Veo3.1',
         description: window.t ? window.t('generation.generate_video_veo31') : 'Generate Video from Image using Veo3.1 via RunningHub (8s)',
         icon: 'clapperboard',
         inputs: [

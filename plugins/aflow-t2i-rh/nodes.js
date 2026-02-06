@@ -92,7 +92,7 @@
     PluginManager.registerNode({
         type: 'aflow-t2i-rh',
         category: 'generation',
-        name: window.t ? window.t('generation.text_to_image_rh') : 'Text to Image RH',
+        name: 'Nano Banana Text to Image',
         description: window.t ? window.t('generation.generate_image_from_text_rh') : 'Generate Image from Text using Nano Banana API',
         icon: 'image',
         inputs: [

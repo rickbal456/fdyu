@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AIKAFLOW API - Execute Workflow
  * 
@@ -140,6 +141,7 @@ try {
             'user_id' => $user['id'],
             'status' => 'pending',  // All start as pending, will be updated to running if starting
             'input_data' => json_encode($inputData),
+            'workflow_json_data' => json_encode($workflowData),  // Store workflow data directly for worker
             'repeat_count' => 1,  // Each execution is a single iteration now
             'current_iteration' => 1,
             'iteration_outputs' => json_encode([]),
@@ -242,8 +244,6 @@ try {
         ],
         'message' => $message
     ]);
-
-
 } catch (Exception $e) {
     error_log('Execute workflow error: ' . $e->getMessage());
     errorResponse('Failed to start workflow execution: ' . $e->getMessage(), 500);
