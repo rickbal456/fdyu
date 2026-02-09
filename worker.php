@@ -760,6 +760,74 @@ function queryExternalTaskStatus(string $provider, string $taskId, string $apiKe
                 'error' => $jobData['error'] ?? $jobData['errorMessage'] ?? null
             ];
 
+        case 'kapi':
+            // KIE.AI (KAPI) task query endpoint: GET https://api.kie.ai/api/v1/jobs/recordInfo?taskId={taskId}
+            $url = 'https://api.kie.ai/api/v1/jobs/recordInfo?taskId=' . urlencode($taskId);
+            @file_put_contents($debugLog, "[$ts] [QueryStatus] KAPI - Calling URL: $url\n", FILE_APPEND);
+
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPGET => true,
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $apiKey
+                ],
+                CURLOPT_TIMEOUT => 30
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            @file_put_contents($debugLog, "[$ts] [QueryStatus] KAPI HTTP $httpCode: $response\n", FILE_APPEND);
+
+            if ($curlError) {
+                @file_put_contents($debugLog, "[$ts] [QueryStatus] KAPI cURL Error: $curlError\n", FILE_APPEND);
+                return ['status' => 'error', 'error' => "cURL error: $curlError"];
+            }
+
+            if ($httpCode !== 200) {
+                if ($httpCode >= 400) {
+                    return ['status' => 'FAILED', 'error' => "Task not found (HTTP $httpCode)"];
+                }
+                return ['status' => 'error', 'error' => "HTTP $httpCode"];
+            }
+
+            $data = json_decode($response, true);
+            if (!$data || !isset($data['data'])) {
+                return ['status' => 'error', 'error' => 'Invalid JSON response'];
+            }
+
+            $taskData = $data['data'];
+            // KAPI uses 'state' field: waiting, success, fail
+            $state = $taskData['state'] ?? 'waiting';
+
+            // Map KAPI state to our standard format
+            $resultUrl = null;
+            if ($state === 'success') {
+                // Parse resultJson to extract resultUrls
+                $resultJson = json_decode($taskData['resultJson'] ?? '{}', true);
+                if (isset($resultJson['resultUrls']) && is_array($resultJson['resultUrls']) && !empty($resultJson['resultUrls'])) {
+                    $resultUrl = $resultJson['resultUrls'][0];
+                }
+                $mappedStatus = 'SUCCESS';
+            } elseif ($state === 'fail') {
+                $mappedStatus = 'FAILED';
+            } else {
+                // waiting or other states
+                $mappedStatus = 'RUNNING';
+            }
+
+            @file_put_contents($debugLog, "[$ts] [QueryStatus] KAPI Parsed state: $state -> $mappedStatus, resultUrl: " . ($resultUrl ?? 'null') . "\n", FILE_APPEND);
+
+            return [
+                'status' => $mappedStatus,
+                'resultUrl' => $resultUrl,
+                'error' => $taskData['failMsg'] ?? null
+            ];
+
         default:
             return ['status' => 'error', 'error' => "Unknown provider: $provider"];
     }

@@ -2,7 +2,7 @@
  * AIKAFLOW Plugin - Image to Video KAPI
  * 
  * This file defines the custom nodes provided by this plugin.
- * Uses the KIE.AI Sora 2 Image-to-Video API for video generation.
+ * Uses the KIE.AI Sora 2 Image-to-Video Stable API for video generation.
  * 
  * SECURITY NOTE: All API configuration (endpoints, provider details)
  * are stored server-side in plugin.json and resolved by the worker.
@@ -61,7 +61,7 @@
         type: 'aflow-i2v-kapi',
         category: 'generation',
         name: 'Image to Video KAPI',
-        description: 'Generate Video from Image using Sora 2 via KIE.AI (10-15s)',
+        description: 'Generate Video from Image using Sora 2 Stable via KIE.AI (10-15s)',
         icon: 'clapperboard',
         inputs: [
             { id: 'flow', type: 'flow', label: 'Wait For', optional: true },

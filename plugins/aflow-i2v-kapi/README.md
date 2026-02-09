@@ -1,14 +1,13 @@
 # Image to Video KAPI Plugin
 
-A custom AIKAFLOW plugin for generating videos from images using KIE.AI's Sora 2 Image-to-Video API.
+A custom AIKAFLOW plugin for generating videos from images using KIE.AI's Sora 2 Image-to-Video Stable API.
 
 ## Features
 
 - Generate 10-15 second videos from static images
 - Support for landscape (horizontal) and portrait (vertical) aspect ratios
 - Detailed motion prompts up to 10000 characters
-- Uses KIE.AI Sora 2 model for high-quality video generation
-- Watermark-free output
+- Uses KIE.AI Sora 2 Stable model for high-quality video generation
 
 ## Installation
 
@@ -49,7 +48,7 @@ To get your API key, visit: https://kie.ai/api-key
 
 ## API Reference
 
-This plugin uses the KIE.AI Sora 2 Image-to-Video API.
+This plugin uses the KIE.AI Sora 2 Image-to-Video Stable API.
 
 ### Create Task
 
@@ -58,26 +57,26 @@ This plugin uses the KIE.AI Sora 2 Image-to-Video API.
 
 ### Request Parameters
 
-| Parameter              | Type    | Required | Description                                    |
-| ---------------------- | ------- | -------- | ---------------------------------------------- |
-| model                  | string  | Yes      | `sora-2-image-to-video`                        |
-| input.prompt           | string  | Yes      | Motion/animation description (max 10000 chars) |
-| input.image_urls       | array   | Yes      | Array of image URLs (1 image)                  |
-| input.aspect_ratio     | string  | No       | `portrait` or `landscape` (default: landscape) |
-| input.n_frames         | string  | No       | `10` or `15` seconds                           |
-| input.remove_watermark | boolean | No       | Remove watermark (default: true)               |
+| Parameter           | Type   | Required | Description                                    |
+| ------------------- | ------ | -------- | ---------------------------------------------- |
+| model               | string | Yes      | `sora-2-image-to-video-stable`                 |
+| input.prompt        | string | Yes      | Motion/animation description (max 10000 chars) |
+| input.image_urls    | array  | Yes      | Array of image URLs (1 image)                  |
+| input.aspect_ratio  | string | No       | `portrait` or `landscape` (default: landscape) |
+| input.n_frames      | string | No       | `10` or `15` seconds                           |
+| input.upload_method | string | No       | Upload destination: `s3` or `oss`              |
 
 ### Request Example
 
 ```json
 {
-  "model": "sora-2-image-to-video",
+  "model": "sora-2-image-to-video-stable",
   "input": {
     "prompt": "A woman gracefully modeling a flowing hijab, turning slowly...",
     "image_urls": ["https://example.com/image.jpg"],
     "aspect_ratio": "portrait",
     "n_frames": "10",
-    "remove_watermark": true
+    "upload_method": "s3"
   }
 }
 ```
@@ -85,13 +84,13 @@ This plugin uses the KIE.AI Sora 2 Image-to-Video API.
 ### Query Status
 
 - **URL**: `GET https://api.kie.ai/api/v1/jobs/recordInfo?taskId=xxx`
+- **Response States**: `waiting`, `success`, `fail`
 
 ## Model Details
 
-- **Model**: `sora-2-image-to-video`
+- **Model**: `sora-2-image-to-video-stable`
 - **Max Image Size**: 10MB
 - **Supported Formats**: JPEG, PNG, WebP
-- **Watermark Removal**: Enabled by default
 
 ## Troubleshooting
 
