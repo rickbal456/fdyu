@@ -578,6 +578,8 @@ class PluginManager
 
     /**
      * Process special values in request body
+     * - Recursively processes nested arrays
+     * - Filters out null/empty values from indexed arrays (e.g. imageUrls with unconnected ports)
      */
     private static function processSpecialValues($data)
     {
@@ -585,7 +587,15 @@ class PluginManager
             return $data;
         foreach ($data as $key => $value) {
             if (is_array($value)) {
-                $data[$key] = self::processSpecialValues($value);
+                $processed = self::processSpecialValues($value);
+                // For indexed (non-associative) arrays, filter out null and empty string values
+                // This handles cases like imageUrls: ["url1", null, null] → ["url1"]
+                if (array_is_list($processed)) {
+                    $processed = array_values(array_filter($processed, function ($v) {
+                        return $v !== null && $v !== '';
+                    }));
+                }
+                $data[$key] = $processed;
             }
         }
         return $data;

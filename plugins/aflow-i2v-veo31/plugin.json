@@ -22,7 +22,7 @@
     },
     "apiMapping": {
         "request": {
-            "imageUrls": "{{imageUrls}}",
+            "imageUrls": ["{{image}}", "{{image2}}", "{{image3}}"],
             "aspectRatio": "{{aspectRatio}}",
             "resolution": "{{resolution}}",
             "prompt": "{{prompt}}",
