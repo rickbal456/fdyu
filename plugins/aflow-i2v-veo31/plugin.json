@@ -1,8 +1,8 @@
 {
     "id": "aflow-i2v-veo31",
     "name": "Image to Video Veo3.1",
-    "description": "Generate Video from Image using Veo3.1 via RunningHub API (8s)",
-    "version": "1.0.0",
+    "description": "Generate Video from Image using Veo3.1 via RunningHub API (8s, up to 3 images, 720p/1080p/4K)",
+    "version": "1.1.0",
     "author": "AIKAFLOW Developer",
     "icon": "clapperboard",
     "color": "violet",
@@ -22,8 +22,9 @@
     },
     "apiMapping": {
         "request": {
-            "imageUrls": ["{{image}}"],
+            "imageUrls": "{{imageUrls}}",
             "aspectRatio": "{{aspectRatio}}",
+            "resolution": "{{resolution}}",
             "prompt": "{{prompt}}",
             "duration": "{{duration}}"
         },

@@ -33,6 +33,17 @@
             ]
         },
         {
+            id: 'resolution',
+            type: 'select',
+            label: 'Resolution',
+            default: '720p',
+            options: [
+                { value: '720p', label: '720p' },
+                { value: '1080p', label: '1080p' },
+                { value: '4k', label: '4K' }
+            ]
+        },
+        {
             id: 'prompt',
             type: 'textarea',
             label: 'Motion Prompt',
@@ -56,11 +67,13 @@
         type: 'aflow-i2v-veo31',
         category: 'generation',
         name: 'Image to Video Veo3.1',
-        description: 'Generate Video from Image using Veo3.1 via RunningHub (8s)',
+        description: 'Generate Video from Image using Veo3.1 via RunningHub (8s, up to 3 images)',
         icon: 'clapperboard',
         inputs: [
             { id: 'flow', type: 'flow', label: 'Wait For', optional: true },
-            { id: 'image', type: 'image', label: 'Input Image' },
+            { id: 'image', type: 'image', label: 'Input Image 1' },
+            { id: 'image2', type: 'image', label: 'Input Image 2 (Optional)', optional: true },
+            { id: 'image3', type: 'image', label: 'Input Image 3 (Optional)', optional: true },
             { id: 'text', type: 'text', label: 'Motion Prompt (Optional)', optional: true }
         ],
         outputs: [
@@ -73,12 +86,15 @@
         },
         defaultData: {
             aspectRatio: '9:16',
+            resolution: '720p',
             prompt: '',
             duration: '8'
         },
         execute: async function (node, inputs, context) {
-            const { aspectRatio, prompt, duration } = node.data;
+            const { aspectRatio, resolution, prompt, duration } = node.data;
             const imageUrl = inputs.image || '';
+            const imageUrl2 = inputs.image2 || '';
+            const imageUrl3 = inputs.image3 || '';
 
             // Use connected text input or fall back to node's prompt field
             const finalPrompt = (inputs.text && inputs.text.trim()) ? inputs.text.trim() : prompt;
@@ -96,12 +112,18 @@
                 throw new Error('Motion prompt is too long (maximum 800 characters).');
             }
 
+            // Build imageUrls array (1-3 images, filter out empty)
+            const imageUrls = [imageUrl];
+            if (imageUrl2) imageUrls.push(imageUrl2);
+            if (imageUrl3) imageUrls.push(imageUrl3);
+
             // Return payload for server-side execution
             return {
                 action: PLUGIN_ID,
                 payload: {
-                    image: imageUrl,
+                    imageUrls: imageUrls,
                     aspectRatio: aspectRatio,
+                    resolution: resolution,
                     prompt: finalPrompt,
                     duration: String(duration)
                 }
